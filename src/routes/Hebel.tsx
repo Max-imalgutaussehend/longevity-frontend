@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Chip, SectionLabel, Skeleton } from '../components/ui.js';
-import type { ScoreResult } from '../api/generated.js';
+import type { ScoreResult } from '../api/types.js';
 
 interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
 interface SimResult { base: ScoreResult; simulated: ScoreResult; perMetric: { metric: string; delta: number }[]; }

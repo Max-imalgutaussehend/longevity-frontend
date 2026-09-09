@@ -1,7 +1,7 @@
 import { Outlet, NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
-import type { User } from '../api/generated.js';
+import type { User } from '../api/types.js';
 import brandIcon from '../assets/brand-icon.png';
 
 const NAV_ITEMS = [

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, PercentileBar, Skeleton } from '../components/ui.js';
-import type { ScoreResult } from '../api/generated.js';
+import type { ScoreResult } from '../api/types.js';
 
 const DOMAIN_LABELS: Record<string, string> = {
   cardiometabolic: 'Kardiometabolik',
