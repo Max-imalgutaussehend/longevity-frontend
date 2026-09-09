@@ -1,10 +1,9 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/generated.js';
 
 export function Component() {
-  const navigate = useNavigate();
   useQuery<User>({
     queryKey: ['me'],
     queryFn: () => apiClient<User>('/me'),
@@ -43,7 +42,7 @@ export function Component() {
         ))}
         <div style={{ marginTop: 'auto', padding: '16px' }}>
           <button
-            onClick={async () => { await apiClient('/auth/logout', { method: 'POST' }); navigate('/login'); }}
+            onClick={async () => { await apiClient('/auth/logout', { method: 'POST' }); window.location.href = '/login'; }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--neutral-500)', fontSize: 12 }}
           >
             Abmelden
