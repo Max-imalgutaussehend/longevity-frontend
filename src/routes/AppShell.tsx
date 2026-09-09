@@ -5,7 +5,7 @@ import type { User } from '../api/generated.js';
 
 export function Component() {
   const navigate = useNavigate();
-  const { data: user } = useQuery<User>({
+  useQuery<User>({
     queryKey: ['me'],
     queryFn: () => apiClient<User>('/me'),
   });
