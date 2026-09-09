@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiClient } from '../api/client.js';
 import { Card, Skeleton } from '../components/ui.js';
-import type { ScoreResult } from '../api/generated.js';
+import type { ScoreResult } from '../api/types.js';
 
 interface HistoryPoint { date: string; score: number; coverage: number; }
 interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
