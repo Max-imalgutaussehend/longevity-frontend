@@ -1,10 +1,29 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
+import { Card, Btn, GlassInput, FieldLabel } from '../components/ui.js';
+import brandIcon from '../assets/brand-icon.png';
+
+function AuthShell({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <div className="bg-canvas">
+        <div className="bg-orb" />
+        <div className="bg-orb" />
+        <div className="bg-orb" />
+        <div className="bg-orb" />
+      </div>
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        {children}
+      </div>
+    </>
+  );
+}
 
 export function Component() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -13,7 +32,7 @@ export function Component() {
     setError(null);
     setLoading(true);
     try {
-      await apiClient('/auth/login', { method: 'POST', body: JSON.stringify(form) });
+      await apiClient('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
       const returnTo = new URLSearchParams(window.location.search).get('returnTo') ?? '/dashboard';
       navigate(returnTo);
     } catch (err: unknown) {
@@ -24,30 +43,35 @@ export function Component() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--neutral-50)' }}>
-      <div style={{ width: '100%', maxWidth: 360, background: 'var(--neutral-0)', border: '1px solid var(--neutral-200)', borderRadius: 10, padding: 32 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 500, margin: '0 0 24px' }}>Anmelden</h1>
-        <form onSubmit={handleSubmit}>
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <span style={{ fontSize: 12, color: 'var(--neutral-700)', display: 'block', marginBottom: 4 }}>E-Mail</span>
-            <input type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--neutral-200)', borderRadius: 8, fontSize: 14 }} />
-          </label>
-          <label style={{ display: 'block', marginBottom: 24 }}>
-            <span style={{ fontSize: 12, color: 'var(--neutral-700)', display: 'block', marginBottom: 4 }}>Passwort</span>
-            <input type="password" required value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--neutral-200)', borderRadius: 8, fontSize: 14 }} />
-          </label>
-          {error && <p style={{ color: 'var(--danger-700)', fontSize: 13, marginBottom: 16 }}>{error}</p>}
-          <button type="submit" disabled={loading}
-            style={{ width: '100%', padding: '10px', background: 'var(--accent-600)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
-            {loading ? 'Einen Moment…' : 'Anmelden'}
-          </button>
-        </form>
-        <p style={{ marginTop: 16, fontSize: 13, color: 'var(--neutral-500)', textAlign: 'center' }}>
-          Noch kein Konto? <Link to="/register" style={{ color: 'var(--accent-600)' }}>Registrieren</Link>
+    <AuthShell>
+      <div style={{ width: '100%', maxWidth: 380 }}>
+        <div style={{ textAlign: 'center', marginBottom: 44 }}>
+          <img src={brandIcon} alt="Longevity" style={{ width: 120, height: 120, objectFit: 'contain', display: 'block', margin: '0 auto 20px' }} />
+          <div style={{ fontSize: 24, fontWeight: 500, color: '#22221f', letterSpacing: '-0.01em' }}>Willkommen zurück</div>
+        </div>
+        <Card style={{ padding: '36px 36px 32px' }}>
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div>
+                <FieldLabel>E-Mail</FieldLabel>
+                <GlassInput type="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="login-email" name="email" />
+              </div>
+              <div>
+                <FieldLabel>Passwort</FieldLabel>
+                <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="login-password" name="password" />
+              </div>
+              {error && <p style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
+              <div style={{ paddingTop: 6 }}>
+                <Btn type="submit" full testId="login-submit">{loading ? 'Einen Moment…' : 'Anmelden'}</Btn>
+              </div>
+            </div>
+          </form>
+        </Card>
+        <p style={{ textAlign: 'center', fontSize: 13, color: '#888780', marginTop: 20 }}>
+          Noch kein Konto?{' '}
+          <Link to="/register" style={{ color: '#0f6e56', textDecoration: 'none' }}>Registrieren</Link>
         </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }
