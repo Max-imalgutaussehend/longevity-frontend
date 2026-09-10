@@ -56,15 +56,15 @@ export function Component() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
                 <FieldLabel>E-Mail</FieldLabel>
-                <GlassInput type="email" placeholder="name@domain.de" value={email} onChange={setEmail} />
+                <GlassInput type="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="register-email" name="email" />
               </div>
               <div>
                 <FieldLabel>Passwort</FieldLabel>
-                <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} />
+                <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="register-password" name="password" />
               </div>
               <div>
                 <FieldLabel>Geburtsdatum</FieldLabel>
-                <GlassInput type="date" value={birthDate} onChange={setBirthDate} />
+                <GlassInput type="date" value={birthDate} onChange={setBirthDate} testId="register-birthdate" name="birthDate" />
               </div>
               <div>
                 <FieldLabel>Biologisches Geschlecht</FieldLabel>
@@ -76,6 +76,7 @@ export function Component() {
                     <button
                       key={s}
                       type="button"
+                      data-testid={`register-sex-${s}`}
                       onClick={() => setSex(s)}
                       style={{
                         flex: 1, padding: '10px', borderRadius: 12,
@@ -91,9 +92,9 @@ export function Component() {
                   ))}
                 </div>
               </div>
-              {error && <p style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
+              {error && <p data-testid="register-error" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
               <div style={{ paddingTop: 6 }}>
-                <Btn type="submit" full>{loading ? 'Einen Moment…' : 'Konto erstellen'}</Btn>
+                <Btn type="submit" full testId="register-submit">{loading ? 'Einen Moment…' : 'Konto erstellen'}</Btn>
               </div>
             </div>
           </form>

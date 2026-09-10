@@ -54,15 +54,15 @@ export function Component() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
                 <FieldLabel>E-Mail</FieldLabel>
-                <GlassInput type="email" placeholder="name@domain.de" value={email} onChange={setEmail} />
+                <GlassInput type="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="login-email" name="email" />
               </div>
               <div>
                 <FieldLabel>Passwort</FieldLabel>
-                <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} />
+                <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="login-password" name="password" />
               </div>
               {error && <p style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
               <div style={{ paddingTop: 6 }}>
-                <Btn type="submit" full>{loading ? 'Einen Moment…' : 'Anmelden'}</Btn>
+                <Btn type="submit" full testId="login-submit">{loading ? 'Einen Moment…' : 'Anmelden'}</Btn>
               </div>
             </div>
           </form>
