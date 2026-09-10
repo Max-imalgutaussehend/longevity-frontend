@@ -50,7 +50,7 @@ export function Component() {
                 <div style={{ fontSize: 11, color: '#888780', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 28 }}>
                   Score-Nachweis · Signatur geprüft ✓
                 </div>
-                <div style={{ display: 'inline-flex', padding: '14px 32px', borderRadius: 999, background: 'rgba(29,158,117,0.10)', color: '#0f6e56', fontSize: 32, fontWeight: 500, border: '1px solid rgba(29,158,117,0.22)', marginBottom: 28 }}>
+                <div data-testid="verify-band" style={{ display: 'inline-flex', padding: '14px 32px', borderRadius: 999, background: 'rgba(29,158,117,0.10)', color: '#0f6e56', fontSize: 32, fontWeight: 500, border: '1px solid rgba(29,158,117,0.22)', marginBottom: 28 }}>
                   Band {data.band.low} – {data.band.high}
                 </div>
                 <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 24 }}>
@@ -69,7 +69,7 @@ export function Component() {
                 }}>
                   {data?.reason === 'revoked' ? 'Nachweis widerrufen' : 'Nachweis ungültig'}
                 </div>
-                <div style={{ display: 'inline-flex', padding: '14px 32px', borderRadius: 999, background: 'rgba(163,45,45,0.08)', color: '#a32d2d', fontSize: 22, fontWeight: 500, border: '1px solid rgba(163,45,45,0.2)', marginBottom: 24 }}>
+                <div data-testid="verify-invalid" style={{ display: 'inline-flex', padding: '14px 32px', borderRadius: 999, background: 'rgba(163,45,45,0.08)', color: '#a32d2d', fontSize: 22, fontWeight: 500, border: '1px solid rgba(163,45,45,0.2)', marginBottom: 24 }}>
                   Ungültig
                 </div>
                 <p style={{ fontSize: 13, color: '#55544f' }}>

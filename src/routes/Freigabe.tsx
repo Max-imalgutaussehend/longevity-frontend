@@ -73,7 +73,7 @@ export function Component() {
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <SectionLabel>Aktive Nachweise</SectionLabel>
-          <Btn small onClick={() => setShowCreate(true)}>+ Neuer Nachweis</Btn>
+          <Btn small onClick={() => setShowCreate(true)} testId="create-token-btn">+ Neuer Nachweis</Btn>
         </div>
         <p style={{ fontSize: 12, color: '#888780', marginBottom: 24 }}>
           Übertragen wird ausschließlich das Score-Band und das Ausstelldatum — kein exakter Score, keine Einzelwerte.
@@ -103,14 +103,14 @@ export function Component() {
                       <div style={{ fontSize: 12, color: '#888780', marginBottom: 4 }}>
                         Ausgestellt {new Date(token.issuedAt).toLocaleDateString('de-DE')} · Gültig bis {new Date(token.expiresAt).toLocaleDateString('de-DE')}
                       </div>
-                      <code style={{ fontSize: 11, color: '#a3a29c' }}>{window.location.origin}/verify/{token.id}</code>
+                      <code data-testid="token-verify-url" style={{ fontSize: 11, color: '#a3a29c' }}>{window.location.origin}/verify/{token.id}</code>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <Btn small variant="secondary" onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/verify/${token.id}`)}>
                         Link kopieren
                       </Btn>
                       {!revoked && (
-                        <Btn small variant="danger" onClick={() => revokeMut.mutate(token.id)}>Widerrufen</Btn>
+                        <Btn small variant="danger" onClick={() => revokeMut.mutate(token.id)} testId="revoke-token-btn">Widerrufen</Btn>
                       )}
                     </div>
                   </div>
@@ -148,7 +148,7 @@ export function Component() {
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <Btn variant="ghost" onClick={() => setShowCreate(false)}>Abbrechen</Btn>
-            <Btn onClick={() => createMut.mutate()}>Erstellen</Btn>
+            <Btn onClick={() => createMut.mutate()} testId="confirm-create-token">Erstellen</Btn>
           </div>
         </Modal>
       )}

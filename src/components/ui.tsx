@@ -20,7 +20,7 @@ export function Card({ children, style, className, onClick }: {
 }
 
 export function Btn({
-  children, variant = 'primary', small, full, onClick, type = 'button',
+  children, variant = 'primary', small, full, onClick, type = 'button', testId,
 }: {
   children: ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -28,6 +28,7 @@ export function Btn({
   full?: boolean;
   onClick?: () => void;
   type?: 'button' | 'submit';
+  testId?: string;
 }) {
   const base: CSSProperties = {
     padding: small ? '5px 14px' : '9px 20px',
@@ -71,6 +72,7 @@ export function Btn({
     <button
       type={type}
       onClick={onClick}
+      data-testid={testId}
       style={{ ...base, ...variants[variant] }}
       onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.80')}
       onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
@@ -165,19 +167,23 @@ export function Modal({ onClose, children }: { onClose: () => void; children: Re
   );
 }
 
-export function GlassInput({ placeholder, type = 'text', value, onChange, onFocus, onBlur }: {
+export function GlassInput({ placeholder, type = 'text', value, onChange, onFocus, onBlur, testId, name }: {
   placeholder?: string;
   type?: string;
   value?: string;
   onChange?: (v: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
+  testId?: string;
+  name?: string;
 }) {
   return (
     <input
       type={type}
       placeholder={placeholder}
       value={value}
+      name={name}
+      data-testid={testId}
       onChange={(e) => onChange?.(e.target.value)}
       onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(29,158,117,0.5)'; onFocus?.(); }}
       onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)'; onBlur?.(); }}
