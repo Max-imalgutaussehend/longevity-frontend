@@ -14,5 +14,7 @@ export default defineConfig({
   test: {
     passWithNoTests: true,
     environment: 'jsdom',
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['e2e/**', 'node_modules/**'],
   },
 });
