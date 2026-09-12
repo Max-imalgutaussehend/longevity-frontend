@@ -208,6 +208,51 @@ export function FieldLabel({ children }: { children: ReactNode }) {
   );
 }
 
+export function GlassSelect({ value, onChange, options, testId, name }: {
+  value?: string;
+  onChange?: (v: string) => void;
+  options: { value: string; label: string }[];
+  testId?: string;
+  name?: string;
+}) {
+  return (
+    <select
+      value={value}
+      name={name}
+      data-testid={testId}
+      onChange={(e) => onChange?.(e.target.value)}
+      style={{
+        width: '100%', padding: '10px 16px', borderRadius: 12,
+        border: '1px solid rgba(255,255,255,0.7)',
+        background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)',
+        fontSize: 14, fontFamily: 'inherit', color: '#22221f', outline: 'none',
+        cursor: 'pointer', appearance: 'none',
+      }}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  );
+}
+
+export function InfoTooltip({ text }: { text: string }) {
+  return (
+    <span
+      title={text}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 15, height: 15, borderRadius: 999, marginLeft: 6,
+        fontSize: 10, fontWeight: 600, color: '#888780',
+        background: 'rgba(168,168,156,0.15)', border: '1px solid rgba(168,168,156,0.3)',
+        cursor: 'help', verticalAlign: 'middle',
+      }}
+    >
+      ?
+    </span>
+  );
+}
+
 export function PageTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <div style={{ marginBottom: 40 }}>
