@@ -4,19 +4,11 @@ import { uniqueEmail, registerAndLogin, loginAs } from './helpers.js';
 // Issue: simulator slider — keyboard interaction updates score within 500 ms,
 // tabular-nums prevents layout shift on the score number.
 test.describe('Hebel simulator', () => {
-  const EMAIL = uniqueEmail();
   const PASSWORD = 'longevity-test-2026';
 
-  test.beforeAll(async ({ browser }: { browser: Browser }) => {
-    const page = await browser.newPage();
-    await registerAndLogin(page, EMAIL, PASSWORD);
-    await page.close();
-  });
-
-  test('arrow key on slider updates score within 500 ms without layout shift', async ({ browser }) => {
-    const ctx = await browser.newContext();
-    const page = await ctx.newPage();
-    await loginAs(page, EMAIL, PASSWORD);
+  test('arrow key on slider updates score within 500 ms without layout shift', async ({ page }) => {
+    const email = uniqueEmail();
+    await registerAndLogin(page, email, PASSWORD);
     await page.goto('/hebel');
 
     // Wait for sliders to be ready (levers loaded or page rendered)
@@ -45,7 +37,5 @@ test.describe('Hebel simulator', () => {
     // Width must not change (tabular-nums keeps layout stable)
     const widthAfter = await scoreEl.evaluate((el) => (el as HTMLElement).offsetWidth);
     expect(widthAfter).toBe(widthBefore);
-
-    await ctx.close();
   });
 });

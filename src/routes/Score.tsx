@@ -58,8 +58,7 @@ export function Component() {
                   key={m.metric}
                   className="responsive-metric-row"
                   style={{
-                    display: 'grid', gridTemplateColumns: '1fr 140px 100px 64px',
-                    alignItems: 'center', gap: 20, padding: '14px 0',
+                    padding: '14px 0',
                     borderTop: i === 0 ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)',
                   }}
                 >

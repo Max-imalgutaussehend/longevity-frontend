@@ -282,6 +282,10 @@ input[type='range']::-moz-range-thumb {
   gap: 0 48px;
 }
 
+.score-hero-card {
+  padding: 40px 44px;
+}
+
 @media (max-width: 900px) {
   .responsive-grid-sidebar {
     grid-template-columns: 1fr;
@@ -307,6 +311,14 @@ input[type='range']::-moz-range-thumb {
 }
 
 @media (max-width: 480px) {
+  .score-hero-card {
+    padding: 28px 20px;
+  }
+
+  .score-hero-value {
+    font-size: 56px !important;
+  }
+
   .responsive-metric-row {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;

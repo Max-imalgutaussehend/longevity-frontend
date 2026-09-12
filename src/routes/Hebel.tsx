@@ -78,7 +78,7 @@ export function Component() {
       />
 
       {/* Lever cards */}
-      <div className="responsive-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+      <div className="responsive-grid-3">
         {leversLoading ? [1, 2, 3].map((i) => <Card key={i}><Skeleton height={140} /></Card>) :
           levers?.slice(0, 3).map((lever, i) => (
             <Card key={lever.metric} style={{ borderTop: `3px solid ${i === 0 ? '#1d9e75' : 'rgba(0,0,0,0.08)'}` }}>
@@ -96,7 +96,7 @@ export function Component() {
       </div>
 
       {/* Simulator */}
-      <div className="responsive-grid-sim" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
+      <div className="responsive-grid-sim">
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
             <SectionLabel>Simulator</SectionLabel>

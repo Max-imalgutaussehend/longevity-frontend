@@ -37,9 +37,9 @@ export function Component() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* ── Score Hero ── */}
-      <Card style={{ padding: '40px 44px' }}>
+      <Card className="score-hero-card">
         {loading ? (
-          <div className="responsive-score-hero" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', gap: '0 48px', alignItems: 'center' }}>
+          <div className="responsive-score-hero">
             <Skeleton width={160} height={72} />
             <div />
             <Skeleton width={80} height={60} />
@@ -56,11 +56,11 @@ export function Component() {
           </div>
         ) : (
           <>
-            <div className="responsive-score-hero" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', alignItems: 'center', gap: '0 48px' }}>
+            <div className="responsive-score-hero">
               <div>
                 <div style={{ fontSize: 12, color: '#a3a29c', marginBottom: 8 }}>Vitalitätsscore</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
-                  <span data-testid="score-value" style={{ fontSize: 72, fontWeight: 500, color: '#0f6e56', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                  <span data-testid="score-value" className="score-hero-value" style={{ fontSize: 72, fontWeight: 500, color: '#0f6e56', lineHeight: 1, letterSpacing: '-0.03em' }}>
                     {score.score.toFixed(1)}
                   </span>
                 </div>
@@ -121,7 +121,7 @@ export function Component() {
       </Card>
 
       {/* ── Domains + Sidebar ── */}
-      <div className="responsive-grid-sidebar" style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 16 }}>
+      <div className="responsive-grid-sidebar">
         <Card>
           <div style={{ fontSize: 13, color: '#55544f', marginBottom: 20 }}>Domänen</div>
           {scoreLoading ? (
