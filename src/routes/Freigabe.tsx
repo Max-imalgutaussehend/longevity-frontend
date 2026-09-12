@@ -41,6 +41,28 @@ export function Component() {
     onSuccess: () => { window.location.href = '/login'; },
   });
 
+  const exportMut = useMutation({
+    mutationFn: async () => {
+      const base = import.meta.env.VITE_API_BASE_URL ?? '/api';
+      const res = await fetch(`${base}/account/export`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Export fehlgeschlagen.');
+
+      const disposition = res.headers.get('Content-Disposition') ?? '';
+      const filenameMatch = /filename="([^"]+)"/.exec(disposition);
+      const filename = filenameMatch?.[1] ?? `longevity-export-${new Date().toISOString().slice(0, 10)}.json`;
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <PageTitle title="Datenhoheit & Freigabe" />
@@ -64,9 +86,14 @@ export function Component() {
           </div>
         )}
         <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-          <Btn variant="secondary" small onClick={() => apiClient('/account/export', { method: 'POST' })}>Alle Daten exportieren</Btn>
+          <Btn variant="secondary" small onClick={() => exportMut.mutate()} testId="export-account-btn">
+            {exportMut.isPending ? 'Exportiere…' : 'Alle Daten exportieren'}
+          </Btn>
           <Btn variant="danger" small onClick={() => setShowDelete(true)}>Konto löschen</Btn>
         </div>
+        {exportMut.isError && (
+          <div style={{ fontSize: 12, color: '#a32d2d', marginTop: 10 }}>Export fehlgeschlagen. Bitte erneut versuchen.</div>
+        )}
       </Card>
 
       {/* Tokens */}
