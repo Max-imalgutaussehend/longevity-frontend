@@ -22,7 +22,7 @@ export function Card({ children, style, className, onClick, 'data-testid': testI
 }
 
 export function Btn({
-  children, variant = 'primary', small, full, onClick, type = 'button', testId,
+  children, variant = 'primary', small, full, onClick, type = 'button', testId, disabled,
 }: {
   children: ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -31,18 +31,20 @@ export function Btn({
   onClick?: () => void;
   type?: 'button' | 'submit';
   testId?: string;
+  disabled?: boolean;
 }) {
   const base: CSSProperties = {
     padding: small ? '5px 14px' : '9px 20px',
     borderRadius: 999,
     fontSize: small ? 12 : 13,
     fontWeight: 500,
-    cursor: 'pointer',
+    cursor: disabled ? 'not-allowed' : 'pointer',
     fontFamily: 'inherit',
     width: full ? '100%' : undefined,
     transition: 'opacity 0.15s',
     letterSpacing: '0.01em',
     border: 'none',
+    opacity: disabled ? 0.6 : 1,
   };
   const variants: Record<string, CSSProperties> = {
     primary: {
@@ -73,11 +75,12 @@ export function Btn({
   return (
     <button
       type={type}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
       data-testid={testId}
+      disabled={disabled}
       style={{ ...base, ...variants[variant] }}
-      onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.80')}
-      onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.opacity = '0.80'; }}
+      onMouseLeave={(e) => { if (!disabled) e.currentTarget.style.opacity = '1'; }}
     >
       {children}
     </button>
