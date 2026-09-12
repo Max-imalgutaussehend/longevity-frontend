@@ -37,9 +37,9 @@ export function Component() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       {/* ── Score Hero ── */}
-      <Card style={{ padding: '40px 44px' }}>
+      <Card className="score-hero-card">
         {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', gap: '0 48px', alignItems: 'center' }}>
+          <div className="responsive-score-hero">
             <Skeleton width={160} height={72} />
             <div />
             <Skeleton width={80} height={60} />
@@ -56,11 +56,11 @@ export function Component() {
           </div>
         ) : (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto auto', alignItems: 'center', gap: '0 48px' }}>
+            <div className="responsive-score-hero">
               <div>
                 <div style={{ fontSize: 12, color: '#a3a29c', marginBottom: 8 }}>Vitalitätsscore</div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
-                  <span style={{ fontSize: 72, fontWeight: 500, color: '#0f6e56', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                  <span data-testid="score-value" className="score-hero-value" style={{ fontSize: 72, fontWeight: 500, color: '#0f6e56', lineHeight: 1, letterSpacing: '-0.03em' }}>
                     {score.score.toFixed(1)}
                   </span>
                 </div>
@@ -68,7 +68,7 @@ export function Component() {
               <div />
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 12, color: '#a3a29c', marginBottom: 6 }}>Vitalitätsalter</div>
-                <div style={{ fontSize: 36, fontWeight: 500, color: '#22221f', letterSpacing: '-0.02em', lineHeight: 1 }}>{Math.round(score.bioAge)}</div>
+                <div data-testid="bio-age" style={{ fontSize: 36, fontWeight: 500, color: '#22221f', letterSpacing: '-0.02em', lineHeight: 1 }}>{Math.round(score.bioAge)}</div>
                 <div style={{ fontSize: 11, color: '#a3a29c', marginTop: 4 }}>chron. {Math.round(score.chronoAge)}</div>
               </div>
               <div style={{ textAlign: 'center' }}>
@@ -90,7 +90,7 @@ export function Component() {
       </Card>
 
       {/* ── Trend Chart ── */}
-      <Card style={{ padding: '28px 36px 16px' }}>
+      <Card data-testid="trend-chart" style={{ padding: '28px 36px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <span style={{ fontSize: 13, color: '#55544f' }}>Verlauf · 90 Tage</span>
           <span style={{ fontSize: 12, color: '#a3a29c' }}>
@@ -121,7 +121,7 @@ export function Component() {
       </Card>
 
       {/* ── Domains + Sidebar ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 16 }}>
+      <div className="responsive-grid-sidebar">
         <Card>
           <div style={{ fontSize: 13, color: '#55544f', marginBottom: 20 }}>Domänen</div>
           {scoreLoading ? (

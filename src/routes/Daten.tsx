@@ -64,7 +64,7 @@ export function Component() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
       <PageTitle title="Datenquellen" />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="responsive-grid-2">
         {isLoading ? [1, 2, 3, 4].map((i) => <Card key={i}><Skeleton height={100} /></Card>) :
           sources?.map((s) => {
             const info = SOURCE_LABELS[s.kind] ?? { label: s.kind, metrics: [] };
@@ -166,7 +166,7 @@ export function Component() {
         {tab === 'lab' && (
           <div>
             <p style={{ fontSize: 13, color: '#55544f', marginBottom: 20 }}>Laborwerte manuell erfassen. Alle Angaben sind freiwillig.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="responsive-grid-2">
               {LAB_FIELDS.map((f) => (
                 <div key={f.key}>
                   <FieldLabel>{f.label} <span style={{ color: '#a3a29c', fontWeight: 400 }}>({f.unit})</span></FieldLabel>

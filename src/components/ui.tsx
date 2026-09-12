@@ -2,16 +2,18 @@ import type { CSSProperties, ReactNode, MouseEvent } from 'react';
 
 /* ── Primitives ────────────────────────────────────────────────── */
 
-export function Card({ children, style, className, onClick }: {
+export function Card({ children, style, className, onClick, 'data-testid': testId }: {
   children: ReactNode;
   style?: CSSProperties;
   className?: string;
   onClick?: (e: MouseEvent) => void;
+  'data-testid'?: string;
 }) {
   return (
     <div
       className={`glass ${className ?? ''}`}
       onClick={onClick}
+      data-testid={testId}
       style={{ borderRadius: 20, padding: '28px 32px', ...style }}
     >
       {children}

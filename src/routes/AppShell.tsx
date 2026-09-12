@@ -97,7 +97,7 @@ export function Component() {
 
       {/* Page content */}
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
-        <main style={{ padding: '128px 48px 80px' }}>
+        <main className="main-content" style={{ padding: '128px 48px 80px' }}>
           <div style={{ maxWidth: 1060, margin: '0 auto' }}>
             <Outlet />
           </div>
