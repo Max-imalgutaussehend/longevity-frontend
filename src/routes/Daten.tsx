@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Toggle, MockBadge, Skeleton } from '../components/ui.js';
+import { Card, PageTitle, Btn, GlassInput, GlassSelect, FieldLabel, InfoTooltip, Modal, SectionLabel, Toggle, MockBadge, Skeleton } from '../components/ui.js';
+import type { ScoreResult } from '../api/types.js';
 
 interface Source {
   id: string; kind: string; adapter: string; enabled: boolean;
@@ -24,17 +25,105 @@ const LAB_FIELDS = [
   { key: 'waist', label: 'Taillenumfang', unit: 'cm', placeholder: 'z. B. 84' },
 ];
 
+const SMOKING_OPTIONS = [
+  { value: '0', label: 'Nie' },
+  { value: '1', label: 'Ehemalig (>1 Jahr)' },
+  { value: '2', label: 'Ehemalig (<1 Jahr)' },
+  { value: '3', label: 'Aktuell' },
+];
+
+const LIFESTYLE_FIELDS: Array<{
+  key: 'smoking' | 'alcohol_units' | 'strength_sessions' | 'zone2_minutes';
+  label: string;
+  unit: string;
+  kind: 'select' | 'number';
+  min?: number;
+  max?: number;
+  tooltip?: string;
+  placeholder?: string;
+}> = [
+  { key: 'smoking', label: 'Rauchen', unit: 'category', kind: 'select' },
+  {
+    key: 'alcohol_units', label: 'Alkohol-Einheiten pro Woche', unit: 'units/week', kind: 'number',
+    min: 0, placeholder: 'z. B. 4',
+    tooltip: '1 Einheit = 10g Alkohol ≈ 1 kleines Bier',
+  },
+  {
+    key: 'strength_sessions', label: 'Krafteinheiten pro Woche', unit: '/week', kind: 'number',
+    min: 0, max: 4, placeholder: 'z. B. 2',
+  },
+  {
+    key: 'zone2_minutes', label: 'Zone-2-Minuten pro Woche', unit: 'min/week', kind: 'number',
+    min: 0, placeholder: 'z. B. 90',
+    tooltip: 'Lockeres Ausdauertraining — "könnte sich noch unterhalten"',
+  },
+];
+
+function daysAgoLabel(days: number | null): string | null {
+  if (days === null) return null;
+  if (days < 1) return 'Heute eingetragen';
+  if (days < 2) return 'Vor 1 Tag eingetragen';
+  return `Vor ${Math.round(days)} Tagen eingetragen`;
+}
+
 export function Component() {
   const qc = useQueryClient();
   const [consentId, setConsentId] = useState<string | null>(null);
   const [tab, setTab] = useState<'upload' | 'webhook' | 'lab'>('upload');
   const [labVals, setLabVals] = useState<Record<string, string>>({});
   const [labDate, setLabDate] = useState('');
+  const [lifestyleVals, setLifestyleVals] = useState<Record<string, string>>({});
+  const [lifestyleError, setLifestyleError] = useState<string | null>(null);
 
   const { data: sources, isLoading } = useQuery<Source[]>({
     queryKey: ['sources'],
     queryFn: () => apiClient<Source[]>('/sources'),
   });
+
+  const { data: score } = useQuery<ScoreResult>({
+    queryKey: ['score', 'current'],
+    queryFn: () => apiClient<ScoreResult>('/score/current'),
+  });
+
+  const lifestyleMetrics = score?.domains.flatMap((d) => d.metrics) ?? [];
+  const lifestyleMeta = Object.fromEntries(
+    LIFESTYLE_FIELDS.map((f) => [f.key, lifestyleMetrics.find((m) => m.metric === f.key)]),
+  );
+
+  const labsMut = useMutation({
+    mutationFn: (values: Array<{ metric: string; value: number; unit: string; measuredAt?: string }>) =>
+      apiClient('/labs', { method: 'POST', body: JSON.stringify({ values }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sources'] });
+      qc.invalidateQueries({ queryKey: ['score'] });
+    },
+  });
+
+  function submitLifestyle() {
+    setLifestyleError(null);
+    const values: Array<{ metric: string; value: number; unit: string }> = [];
+
+    for (const f of LIFESTYLE_FIELDS) {
+      const raw = lifestyleVals[f.key];
+      if (raw === undefined || raw === '') continue;
+
+      const num = Number(raw.replace(',', '.'));
+      if (isNaN(num)) continue;
+      if (num < (f.min ?? 0)) {
+        setLifestyleError(`${f.label}: Wert darf nicht negativ sein.`);
+        return;
+      }
+      if (f.max !== undefined && num > f.max) {
+        setLifestyleError(`${f.label}: Wert darf maximal ${f.max} sein.`);
+        return;
+      }
+
+      values.push({ metric: f.key, value: num, unit: f.unit });
+    }
+
+    if (values.length === 0) return;
+    labsMut.mutate(values);
+  }
 
   const patchMut = useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
@@ -179,10 +268,70 @@ export function Component() {
               </div>
             </div>
             <div style={{ marginTop: 24 }}>
-              <Btn>Laborwerte speichern</Btn>
+              <Btn
+                testId="save-lab-values"
+                onClick={() => {
+                  const values = LAB_FIELDS
+                    .filter((f) => labVals[f.key])
+                    .map((f) => ({
+                      metric: f.key,
+                      value: Number(labVals[f.key].replace(',', '.')),
+                      unit: f.unit,
+                      ...(labDate ? { measuredAt: new Date(labDate).toISOString() } : {}),
+                    }))
+                    .filter((v) => !isNaN(v.value));
+                  if (values.length > 0) labsMut.mutate(values);
+                }}
+              >
+                Laborwerte speichern
+              </Btn>
             </div>
           </div>
         )}
+      </Card>
+
+      <Card>
+        <SectionLabel>Lebensstil & Aktivität</SectionLabel>
+        <p style={{ fontSize: 13, color: '#55544f', marginBottom: 20 }}>Alle Angaben sind freiwillig und fließen in deinen Score ein.</p>
+        <div className="responsive-grid-2">
+          {LIFESTYLE_FIELDS.map((f) => {
+            const meta = lifestyleMeta[f.key];
+            const lastLabel = meta?.available ? daysAgoLabel(meta.ageDays) : null;
+            return (
+              <div key={f.key}>
+                <FieldLabel>
+                  {f.label}
+                  {f.tooltip && <InfoTooltip text={f.tooltip} />}
+                </FieldLabel>
+                {f.kind === 'select' ? (
+                  <GlassSelect
+                    testId={`lifestyle-${f.key}`}
+                    options={SMOKING_OPTIONS}
+                    value={lifestyleVals[f.key] ?? String(meta?.value ?? '')}
+                    onChange={(v) => setLifestyleVals((p) => ({ ...p, [f.key]: v }))}
+                  />
+                ) : (
+                  <GlassInput
+                    testId={`lifestyle-${f.key}`}
+                    type="number"
+                    placeholder={f.placeholder}
+                    value={lifestyleVals[f.key] ?? ''}
+                    onChange={(v) => setLifestyleVals((p) => ({ ...p, [f.key]: v }))}
+                  />
+                )}
+                {lastLabel && (
+                  <div style={{ fontSize: 11, color: '#a3a29c', marginTop: 6 }}>{lastLabel}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {lifestyleError && (
+          <div style={{ fontSize: 12, color: '#a32d2d', marginTop: 16 }}>{lifestyleError}</div>
+        )}
+        <div style={{ marginTop: 24 }}>
+          <Btn testId="save-lifestyle-values" onClick={submitLifestyle}>Lebensstil speichern</Btn>
+        </div>
       </Card>
     </div>
   );
