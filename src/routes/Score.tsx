@@ -56,6 +56,7 @@ export function Component() {
               {domain.metrics.map((m, i) => (
                 <div
                   key={m.metric}
+                  className="responsive-metric-row"
                   style={{
                     display: 'grid', gridTemplateColumns: '1fr 140px 100px 64px',
                     alignItems: 'center', gap: 20, padding: '14px 0',
