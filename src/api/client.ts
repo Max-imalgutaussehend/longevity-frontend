@@ -4,10 +4,13 @@ export async function apiClient<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const defaultHeaders: Record<string, string> = isFormData ? {} : { 'Content-Type': 'application/json' };
+
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
+    headers: { ...defaultHeaders, ...(options.headers as Record<string, string> | undefined) },
   });
 
   if (res.status === 401) {
@@ -18,7 +21,8 @@ export async function apiClient<T>(
 
   if (!res.ok) {
     const problem = await res.json().catch(() => ({}));
-    throw Object.assign(new Error(problem.title ?? 'Request failed'), { status: res.status, problem });
+    const message = problem.error || problem.title || problem.message || 'Request failed';
+    throw Object.assign(new Error(message), { status: res.status, problem });
   }
 
   if (res.status === 204) return undefined as T;
