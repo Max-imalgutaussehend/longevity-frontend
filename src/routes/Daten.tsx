@@ -1256,39 +1256,51 @@ export function Component() {
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 11, color: '#55544f' }}>Datenpunkte</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#22221f' }}>{expandedMetric.count} Einträge</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#22221f' }}>
+                {selectedSource === 'all'
+                  ? `${expandedMetric.count} Einträge`
+                  : `${expandedMetric.history.filter((h) => h.sourceKind === selectedSource).length} Einträge (${SOURCE_BADGES[selectedSource]?.label ?? selectedSource})`}
+              </div>
             </div>
           </div>
 
-          <div style={{ maxHeight: 380, overflowY: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', color: '#a3a29c', fontSize: 11, textTransform: 'uppercase' }}>
-                  <th style={{ padding: '8px 10px' }}>Datum</th>
-                  <th style={{ padding: '8px 10px' }}>Wert</th>
-                  <th style={{ padding: '8px 10px' }}>Quelle</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expandedMetric.history.map((h, i) => {
-                  const b = SOURCE_BADGES[h.sourceKind] ?? { label: h.sourceKind, icon: '📍' };
-                  return (
-                    <tr key={h.id ?? i} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)' }}>
-                      <td style={{ padding: '8px 10px', color: '#55544f', whiteSpace: 'nowrap' }}>
-                        {new Date(h.measuredAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                      </td>
-                      <td style={{ padding: '8px 10px', fontWeight: 600, color: '#0f6e56' }}>
-                        {formatMetricVal(expandedMetric.metric, h.value)} <span style={{ fontWeight: 400, color: '#55544f', fontSize: 11 }}>{expandedMetric.unit}</span>
-                      </td>
-                      <td style={{ padding: '8px 10px', fontSize: 12, color: '#55544f' }}>
-                        {b.icon} {b.label}
-                      </td>
+          {(() => {
+            const filteredHistory = selectedSource === 'all'
+              ? expandedMetric.history
+              : expandedMetric.history.filter((h) => h.sourceKind === selectedSource);
+
+            return (
+              <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', color: '#a3a29c', fontSize: 11, textTransform: 'uppercase' }}>
+                      <th style={{ padding: '8px 10px' }}>Datum</th>
+                      <th style={{ padding: '8px 10px' }}>Wert</th>
+                      <th style={{ padding: '8px 10px' }}>Quelle</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {filteredHistory.map((h, i) => {
+                      const b = SOURCE_BADGES[h.sourceKind] ?? { label: h.sourceKind, icon: '📍' };
+                      return (
+                        <tr key={h.id ?? i} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)' }}>
+                          <td style={{ padding: '8px 10px', color: '#55544f', whiteSpace: 'nowrap' }}>
+                            {new Date(h.measuredAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </td>
+                          <td style={{ padding: '8px 10px', fontWeight: 600, color: '#0f6e56' }}>
+                            {formatMetricVal(expandedMetric.metric, h.value)} <span style={{ fontWeight: 400, color: '#55544f', fontSize: 11 }}>{expandedMetric.unit}</span>
+                          </td>
+                          <td style={{ padding: '8px 10px', fontSize: 12, color: '#55544f' }}>
+                            {b.icon} {b.label}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
 
           <div style={{ marginTop: 20, textAlign: 'right' }}>
             <Btn onClick={() => setExpandedMetric(null)}>Schließen</Btn>
