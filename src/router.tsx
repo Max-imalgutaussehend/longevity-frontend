@@ -25,6 +25,8 @@ export const router = createBrowserRouter([
       { path: 'freigabe', lazy: () => import('./routes/Freigabe.js') },
       { path: 'vorteile', lazy: () => import('./routes/Vorteile.js') },
       { path: 'report', lazy: () => import('./routes/Report.js') },
+      { path: 'impressum', lazy: () => import('./routes/Impressum.js') },
+      { path: 'datenschutz', lazy: () => import('./routes/Datenschutz.js') },
     ],
   },
 ]);
