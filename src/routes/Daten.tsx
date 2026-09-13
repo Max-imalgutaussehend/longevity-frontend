@@ -15,7 +15,7 @@ import {
   InfoTooltip,
   SectionLabel,
 } from '../components/ui.js';
-import type { Source, ScoreResult, SamplesSummaryResponse } from '../api/types.js';
+import type { Source, ScoreResult, SamplesSummaryResponse, MetricSummary } from '../api/types.js';
 
 const METRIC_ICONS: Record<string, string> = {
   steps: '👟',
@@ -149,6 +149,8 @@ export function Component() {
   const [activeTab, setActiveTab] = useState<'sources' | 'metrics'>('sources');
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [selectedSource, setSelectedSource] = useState<string>('all');
+  const [expandedMetric, setExpandedMetric] = useState<MetricSummary | null>(null);
+  const [recentLimit, setRecentLimit] = useState(50);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -986,6 +988,17 @@ export function Component() {
               </div>
               <div style={{ fontSize: 11, color: '#55544f', marginTop: 4 }}>Wearables & Schnittstellen</div>
             </Card>
+            {summaryData?.dateRange && (
+              <Card style={{ padding: '20px 24px' }}>
+                <div style={{ fontSize: 12, color: '#a3a29c', marginBottom: 4 }}>Erfasster Zeitraum</div>
+                <div style={{ fontSize: 16, fontWeight: 500, color: '#0f6e56', letterSpacing: '-0.01em', marginTop: 8 }}>
+                  {new Date(summaryData.dateRange.min).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })} – {new Date(summaryData.dateRange.max).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                </div>
+                <div style={{ fontSize: 11, color: '#55544f', marginTop: 4 }}>
+                  {Math.max(1, Math.round((new Date(summaryData.dateRange.max).getTime() - new Date(summaryData.dateRange.min).getTime()) / (1000 * 60 * 60 * 24)))} Tage Historie
+                </div>
+              </Card>
+            )}
           </div>
 
           {/* Filter Bar */}
@@ -1085,9 +1098,27 @@ export function Component() {
                     {/* Recent History Mini Points */}
                     {m.history && m.history.length > 1 && (
                       <div style={{ paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                        <div style={{ fontSize: 11, color: '#a3a29c', marginBottom: 6 }}>Letzte Messungen:</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+                          <div style={{ fontSize: 11, color: '#a3a29c' }}>Letzte Tage:</div>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedMetric(m)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#0f6e56',
+                              fontSize: 11,
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                              padding: 0,
+                              textDecoration: 'underline',
+                            }}
+                          >
+                            Gesamten Verlauf ({m.count} Einträge) ansehen →
+                          </button>
+                        </div>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {m.history.slice(0, 5).map((h, idx) => (
+                          {m.history.slice(0, 7).map((h, idx) => (
                             <span
                               key={idx}
                               style={{
@@ -1114,16 +1145,39 @@ export function Component() {
           {/* Activity Log / Table */}
           {summaryData?.recentSamples && summaryData.recentSamples.length > 0 && (
             <Card>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                 <div>
                   <SectionLabel>Messwert-Protokoll</SectionLabel>
                   <div style={{ fontSize: 12, color: '#55544f', marginTop: 2 }}>
-                    Chronologische Liste der letzten synchronisierten Einzelmessungen
+                    Chronologische Liste der synchronisierten Einzelmessungen
                   </div>
                 </div>
-                <span style={{ fontSize: 12, color: '#a3a29c' }}>
-                  {filteredRecentSamples.length} Messungen angezeigt
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 12, color: '#a3a29c' }}>
+                    {Math.min(filteredRecentSamples.length, recentLimit)} von {filteredRecentSamples.length} Messungen
+                  </span>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {[50, 100, 200].map((lim) => (
+                      <button
+                        key={lim}
+                        type="button"
+                        onClick={() => setRecentLimit(lim)}
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          fontSize: 11,
+                          fontWeight: recentLimit === lim ? 600 : 400,
+                          border: recentLimit === lim ? '1px solid rgba(29,158,117,0.4)' : '1px solid rgba(0,0,0,0.08)',
+                          background: recentLimit === lim ? 'rgba(29,158,117,0.1)' : 'transparent',
+                          color: recentLimit === lim ? '#0f6e56' : '#55544f',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {lim}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div style={{ overflowX: 'auto' }}>
@@ -1137,7 +1191,7 @@ export function Component() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRecentSamples.slice(0, 50).map((s, idx) => {
+                    {filteredRecentSamples.slice(0, recentLimit).map((s, idx) => {
                       const badge = SOURCE_BADGES[s.sourceKind] ?? { label: s.sourceKind, icon: '📍' };
                       const icon = METRIC_ICONS[s.metric] ?? '📊';
                       return (
@@ -1171,6 +1225,75 @@ export function Component() {
             </Card>
           )}
         </div>
+      )}
+
+      {/* Modal: Full Metric History */}
+      {expandedMetric && (
+        <Modal onClose={() => setExpandedMetric(null)}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 24 }}>{METRIC_ICONS[expandedMetric.metric] ?? '📊'}</span>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 600, color: '#22221f' }}>{expandedMetric.label} – Gesamthistorie</div>
+                <div style={{ fontSize: 12, color: '#a3a29c' }}>{expandedMetric.domainLabel}</div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpandedMetric(null)}
+              style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#a3a29c' }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '12px 16px', borderRadius: 8, background: 'rgba(29,158,117,0.06)', border: '1px solid rgba(29,158,117,0.15)', marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 11, color: '#55544f' }}>Aktueller Wert</div>
+              <div style={{ fontSize: 22, fontWeight: 600, color: '#0f6e56' }}>
+                {formatMetricVal(expandedMetric.metric, expandedMetric.latestValue)} {expandedMetric.unit}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 11, color: '#55544f' }}>Datenpunkte</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#22221f' }}>{expandedMetric.count} Einträge</div>
+            </div>
+          </div>
+
+          <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', color: '#a3a29c', fontSize: 11, textTransform: 'uppercase' }}>
+                  <th style={{ padding: '8px 10px' }}>Datum</th>
+                  <th style={{ padding: '8px 10px' }}>Wert</th>
+                  <th style={{ padding: '8px 10px' }}>Quelle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expandedMetric.history.map((h, i) => {
+                  const b = SOURCE_BADGES[h.sourceKind] ?? { label: h.sourceKind, icon: '📍' };
+                  return (
+                    <tr key={h.id ?? i} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)' }}>
+                      <td style={{ padding: '8px 10px', color: '#55544f', whiteSpace: 'nowrap' }}>
+                        {new Date(h.measuredAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </td>
+                      <td style={{ padding: '8px 10px', fontWeight: 600, color: '#0f6e56' }}>
+                        {formatMetricVal(expandedMetric.metric, h.value)} <span style={{ fontWeight: 400, color: '#55544f', fontSize: 11 }}>{expandedMetric.unit}</span>
+                      </td>
+                      <td style={{ padding: '8px 10px', fontSize: 12, color: '#55544f' }}>
+                        {b.icon} {b.label}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ marginTop: 20, textAlign: 'right' }}>
+            <Btn onClick={() => setExpandedMetric(null)}>Schließen</Btn>
+          </div>
+        </Modal>
       )}
 
       {/* Modal: Health Auto Export Webhook */}

@@ -48,4 +48,5 @@ export interface SamplesSummaryResponse {
   metrics: MetricSummary[];
   recentSamples: SampleRecord[];
   totalCount: number;
+  dateRange?: { min: string; max: string } | null;
 }
