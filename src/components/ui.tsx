@@ -22,7 +22,7 @@ export function Card({ children, style, className, onClick, 'data-testid': testI
 }
 
 export function Btn({
-  children, variant = 'primary', small, full, onClick, type = 'button', testId, disabled, title, style,
+  children, variant = 'primary', small, full, onClick, type = 'button', testId, disabled, title, style, className,
 }: {
   children: ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -34,6 +34,7 @@ export function Btn({
   disabled?: boolean;
   title?: string;
   style?: CSSProperties;
+  className?: string;
 }) {
   const base: CSSProperties = {
     padding: small ? '5px 14px' : '9px 20px',
@@ -77,6 +78,7 @@ export function Btn({
   return (
     <button
       type={type}
+      className={className}
       onClick={disabled ? undefined : onClick}
       data-testid={testId}
       disabled={disabled}
