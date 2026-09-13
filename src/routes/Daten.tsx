@@ -429,6 +429,7 @@ export function Component() {
       alert(`Synchronisation erfolgreich! ${res?.inserted ?? 0} Messwerte aktualisiert.`);
       setActiveTab('metrics');
     } catch (err: unknown) {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
       const msg = err instanceof Error ? err.message : 'Synchronisation fehlgeschlagen.';
       alert(msg);
     } finally {
@@ -1128,6 +1129,7 @@ export function Component() {
           {(() => {
             const src = sources.find((s) => s.kind === 'google_fit');
             const sampleCount = src?.sampleCount ?? 0;
+            const isConnected = !!src && (src.connected ?? (src.adapter === 'mock' || false));
             const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
             const isEnabled = !!src?.enabled;
 
@@ -1137,7 +1139,7 @@ export function Component() {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${isConnected ? (isEnabled ? '#1d9e75' : '#a8a89c') : (sampleCount > 0 ? '#ef9a9a' : 'rgba(0,0,0,0.08)')}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -1154,8 +1156,10 @@ export function Component() {
                           />
                         </div>
                       )}
-                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'neutral'}>
-                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'Bereit'}
+                      <Chip color={isConnected ? (isEnabled ? 'teal' : 'neutral') : (sampleCount > 0 ? 'amber' : 'neutral')}>
+                        {isConnected
+                          ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`)
+                          : (sampleCount > 0 ? `Nicht verknüpft (${sampleCount} gespeichert)` : 'Bereit')}
                       </Chip>
                     </div>
                   </div>
@@ -1163,17 +1167,22 @@ export function Component() {
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Schritte, Ruhepuls, Schlafdauer und aktive Minuten direkt aus Google Health (Health Connect Cloud) und Google Fit.
                   </div>
-                  {hasSource && !isEnabled && (
+                  {!isConnected && sampleCount > 0 && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,108,0,0.08)', border: '1px solid rgba(239,108,0,0.25)', fontSize: 12, color: '#b26a00', marginBottom: 12 }}>
+                      ⚠️ Google Health ist aktuell nicht verknüpft (oder die Autorisierung ist abgelaufen). Deine {sampleCount} bereits importierten Werte bleiben erhalten. Um neue Daten abzurufen, verbinde Google Health erneut.
+                    </div>
+                  )}
+                  {isConnected && !isEnabled && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
                       ⏸️ Google Health Daten sind deaktiviert. Die synchronisierten Messwerte fließen aktuell nicht in deinen Score ein.
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: isConnected && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {hasSource && src?.id ? (
+                  {isConnected && src?.id ? (
                     <>
                       {isEnabled ? (
                         <>
@@ -1264,7 +1273,7 @@ export function Component() {
                         full
                         onClick={() => handleOAuthConnect('google-fit')}
                       >
-                        Google Health verbinden
+                        {sampleCount > 0 ? 'Google Health erneut verbinden' : 'Google Health verbinden'}
                       </Btn>
                       <button
                         type="button"
@@ -1282,6 +1291,42 @@ export function Component() {
                       >
                         Codelab-Modus (Code manuell eingeben)
                       </button>
+                      {sampleCount > 0 && src?.id && (
+                        <>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            {isEnabled ? 'Importierte Daten deaktivieren (pausieren)' : 'Importierte Daten wieder aktivieren'}
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Google Health Messwerte löschen?`)) {
+                                deleteSourceSamplesMutation.mutate(src.id);
+                              }
+                            }}
+                            disabled={deleteSourceSamplesMutation.isPending}
+                          >
+                            Importierte Daten löschen ({sampleCount} Werte)
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du diese Quelle und alle zugehörigen Daten endgültig entfernen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird entfernt...' : 'Quelle & Daten entfernen'}
+                          </Btn>
+                        </>
+                      )}
                     </>
                   )}
                 </div>

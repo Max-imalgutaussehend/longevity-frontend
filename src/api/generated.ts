@@ -464,10 +464,12 @@ export interface components {
             kind: string;
             adapter: string;
             enabled: boolean;
+            connected?: boolean;
             /** Format: date-time */
             lastSyncAt: string | null;
             sampleCount: number;
         };
+
         ShareToken: {
             id: string;
             bandLow: number;
