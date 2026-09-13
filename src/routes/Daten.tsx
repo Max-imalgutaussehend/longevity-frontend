@@ -1,24 +1,13 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Btn, Chip, Modal, Skeleton } from '../components/ui.js';
-
-interface SourceStatus {
-  id: string;
-  sourceType:
-    | 'apple_health'
-    | 'health_auto_export'
-    | 'oura'
-    | 'strava'
-    | 'withings'
-    | 'manual';
-  status: 'connected' | 'disconnected' | 'mock';
-  lastSyncAt?: string | null;
-  createdAt?: string;
-  meta?: Record<string, unknown>;
-}
+import type { Source } from '../api/types.js';
 
 export function Component() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [showHaeModal, setShowHaeModal] = useState(false);
@@ -34,29 +23,19 @@ export function Component() {
     data: sources = [],
     isLoading: isLoadingSources,
     refetch: refetchSources,
-  } = useQuery<SourceStatus[]>({
+  } = useQuery<Source[]>({
     queryKey: ['sources'],
-    queryFn: async () => {
-      const res = await fetch('/api/sources', { credentials: 'include' });
-      if (!res.ok) throw new Error('Fehler beim Laden der Datenquellen');
-      return res.json();
-    },
+    queryFn: () => apiClient<Source[]>('/sources'),
   });
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('/api/sources/apple-health/upload', {
+      return apiClient('/sources/apple-health/upload', {
         method: 'POST',
         body: formData,
-        credentials: 'include',
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Fehler beim Upload der Apple Health Datei.');
-      }
-      return res.json();
     },
     onSuccess: () => {
       setUploadSuccess('Apple Health Daten erfolgreich importiert!');
@@ -74,15 +53,9 @@ export function Component() {
   const disconnectMutation = useMutation({
     mutationFn: async (sourceId: string) => {
       setDisconnectingId(sourceId);
-      const res = await fetch(`/api/sources/${sourceId}/disconnect`, {
+      return apiClient(`/sources/${sourceId}/disconnect`, {
         method: 'DELETE',
-        credentials: 'include',
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Fehler beim Trennen der Verbindung.');
-      }
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources'] });
@@ -106,8 +79,18 @@ export function Component() {
     e.target.value = '';
   };
 
-  const handleOAuthConnect = (provider: 'oura' | 'strava' | 'withings') => {
-    window.location.href = `/api/sources/${provider}/connect`;
+  const handleOAuthConnect = async (provider: 'oura' | 'strava' | 'withings') => {
+    try {
+      const data = await apiClient<{ url: string }>(`/sources/${provider}/connect`, {
+        method: 'POST',
+      });
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Verbinden der Datenquelle.';
+      alert(message);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -117,12 +100,8 @@ export function Component() {
   };
 
   const hasRealConnectedSource = sources.some(
-    (s) => s.status === 'connected' && s.sourceType !== 'manual',
+    (s) => s.enabled && s.adapter !== 'mock' && s.kind !== 'lab',
   );
-
-  const getSourceItem = (type: SourceStatus['sourceType']) => {
-    return sources.find((s) => s.sourceType === type);
-  };
 
   const formatDate = (isoString?: string | null) => {
     if (!isoString) return 'Noch nie';
@@ -154,7 +133,7 @@ export function Component() {
       </div>
 
       {uploadSuccess && (
-        <div style={{ padding: '14px 18px', borderRadius: 12, background: 'rgba(59,109,17,0.1)', border: '1px solid rgba(59,109,17,0.25)', color: '#3b6d11', fontSize: 13, fontWeight: 500 }}>
+        <div style={{ padding: '14px 18px', borderRadius: 12, background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.25)', color: '#0f6e56', fontSize: 13, fontWeight: 500 }}>
           {uploadSuccess}
         </div>
       )}
@@ -180,23 +159,29 @@ export function Component() {
         <div className="responsive-grid-2">
           {/* Apple Health */}
           {(() => {
-            const src = getSourceItem('apple_health');
-            const isConnected = src?.status === 'connected';
+            const src = sources.find((s) => s.kind === 'apple_health' && s.adapter !== 'health_auto_export') ?? sources.find((s) => s.kind === 'apple_health');
+            const isConnected = !!src?.enabled;
             return (
-              <Card style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 24 }}>
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🍎</span>
-                    <Chip color={isConnected ? 'green' : 'neutral'}>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
                       {isConnected ? 'Importiert' : 'Nicht verbunden'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Apple Health</div>
-                  <div style={{ fontSize: 13, color: '#55544f', lineHeight: 1.5, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Exportiere Daten aus der Apple Health App (export.xml oder ZIP) und lade sie hier hoch.
                   </div>
-                  <div style={{ fontSize: 12, color: '#888780' }}>
-                    Letzter Import: <strong style={{ color: '#22221f' }}>{formatDate(src?.lastSyncAt || src?.createdAt)}</strong>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Import: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
@@ -210,23 +195,29 @@ export function Component() {
 
           {/* Health Auto Export */}
           {(() => {
-            const src = getSourceItem('health_auto_export');
-            const isConnected = src?.status === 'connected';
+            const src = sources.find((s) => (s.kind === 'apple_health' && s.adapter === 'health_auto_export') || s.kind === 'health_auto_export');
+            const isConnected = !!src?.enabled;
             return (
-              <Card style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 24 }}>
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>📲</span>
-                    <Chip color={isConnected ? 'green' : 'neutral'}>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
                       {isConnected ? 'Verbunden' : 'Nicht eingerichtet'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Health Auto Export</div>
-                  <div style={{ fontSize: 13, color: '#55544f', lineHeight: 1.5, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Hintergrund-Synchronisation über die iOS-App via REST-Webhook.
                   </div>
-                  <div style={{ fontSize: 12, color: '#888780' }}>
-                    Letzter Sync: <strong style={{ color: '#22221f' }}>{formatDate(src?.lastSyncAt || src?.createdAt)}</strong>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
@@ -240,33 +231,50 @@ export function Component() {
 
           {/* Oura Ring */}
           {(() => {
-            const src = getSourceItem('oura');
-            const isConnected = src?.status === 'connected';
+            const src = sources.find((s) => s.kind === 'oura');
+            const isConnected = !!src?.enabled;
             return (
-              <Card style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 24 }}>
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>💍</span>
-                    <Chip color={isConnected ? 'green' : 'neutral'}>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
                       {isConnected ? 'Verbunden' : 'Nicht verbunden'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Oura Ring</div>
-                  <div style={{ fontSize: 13, color: '#55544f', lineHeight: 1.5, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Schlaf-Scores, Readiness, Ruhepuls und HRV-Trends über die Cloud-API.
                   </div>
-                  <div style={{ fontSize: 12, color: '#888780' }}>
-                    Letzter Sync: <strong style={{ color: '#22221f' }}>{formatDate(src?.lastSyncAt || src?.createdAt)}</strong>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                   {isConnected && src?.id ? (
-                    <Btn full variant="danger" onClick={() => disconnectMutation.mutate(src.id)} disabled={disconnectingId === src.id}>
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                    <Btn
+                      full
+                      variant="danger"
+                      disabled
+                      onClick={() => disconnectMutation.mutate(src.id)}
+                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
                     </Btn>
                   ) : (
-                    <Btn full onClick={() => handleOAuthConnect('oura')}>
-                      Oura verbinden
+                    <Btn
+                      full
+                      disabled
+                      onClick={() => handleOAuthConnect('oura')}
+                      title="Oura-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      Oura verbinden (In Kürze)
                     </Btn>
                   )}
                 </div>
@@ -276,33 +284,50 @@ export function Component() {
 
           {/* Strava */}
           {(() => {
-            const src = getSourceItem('strava');
-            const isConnected = src?.status === 'connected';
+            const src = sources.find((s) => s.kind === 'strava');
+            const isConnected = !!src?.enabled;
             return (
-              <Card style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 24 }}>
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🏃</span>
-                    <Chip color={isConnected ? 'green' : 'neutral'}>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
                       {isConnected ? 'Verbunden' : 'Nicht verbunden'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Strava</div>
-                  <div style={{ fontSize: 13, color: '#55544f', lineHeight: 1.5, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Ausdaueraktivitäten, Trainingsbelastung und Pace-Metriken.
                   </div>
-                  <div style={{ fontSize: 12, color: '#888780' }}>
-                    Letzter Sync: <strong style={{ color: '#22221f' }}>{formatDate(src?.lastSyncAt || src?.createdAt)}</strong>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                   {isConnected && src?.id ? (
-                    <Btn full variant="danger" onClick={() => disconnectMutation.mutate(src.id)} disabled={disconnectingId === src.id}>
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                    <Btn
+                      full
+                      variant="danger"
+                      disabled
+                      onClick={() => disconnectMutation.mutate(src.id)}
+                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
                     </Btn>
                   ) : (
-                    <Btn full onClick={() => handleOAuthConnect('strava')}>
-                      Strava verbinden
+                    <Btn
+                      full
+                      disabled
+                      onClick={() => handleOAuthConnect('strava')}
+                      title="Strava-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      Strava verbinden (In Kürze)
                     </Btn>
                   )}
                 </div>
@@ -312,33 +337,50 @@ export function Component() {
 
           {/* Withings */}
           {(() => {
-            const src = getSourceItem('withings');
-            const isConnected = src?.status === 'connected';
+            const src = sources.find((s) => s.kind === 'withings');
+            const isConnected = !!src?.enabled;
             return (
-              <Card style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 24 }}>
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>⚖️</span>
-                    <Chip color={isConnected ? 'green' : 'neutral'}>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
                       {isConnected ? 'Verbunden' : 'Nicht verbunden'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Withings</div>
-                  <div style={{ fontSize: 13, color: '#55544f', lineHeight: 1.5, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Blutdruckmessungen, Körperzusammensetzung und Pulswellengeschwindigkeit.
                   </div>
-                  <div style={{ fontSize: 12, color: '#888780' }}>
-                    Letzter Sync: <strong style={{ color: '#22221f' }}>{formatDate(src?.lastSyncAt || src?.createdAt)}</strong>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                   {isConnected && src?.id ? (
-                    <Btn full variant="danger" onClick={() => disconnectMutation.mutate(src.id)} disabled={disconnectingId === src.id}>
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                    <Btn
+                      full
+                      variant="danger"
+                      disabled
+                      onClick={() => disconnectMutation.mutate(src.id)}
+                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
                     </Btn>
                   ) : (
-                    <Btn full onClick={() => handleOAuthConnect('withings')}>
-                      Withings verbinden
+                    <Btn
+                      full
+                      disabled
+                      onClick={() => handleOAuthConnect('withings')}
+                      title="Withings-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      Withings verbinden (In Kürze)
                     </Btn>
                   )}
                 </div>
@@ -347,22 +389,28 @@ export function Component() {
           })()}
 
           {/* Manuell & Labor */}
-          <Card style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 24 }}>
+          <Card style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 24,
+            borderTop: '3px solid #1d9e75',
+          }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 28 }}>🩸</span>
-                <Chip color="green">Aktiv</Chip>
+                <Chip color="teal">Aktiv</Chip>
               </div>
               <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Manuell & Labor</div>
-              <div style={{ fontSize: 13, color: '#55544f', lineHeight: 1.5, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                 Laborwerte wie ApoB, HbA1c oder manuelle Blutdruckerfassungen.
               </div>
-              <div style={{ fontSize: 12, color: '#888780' }}>
-                Status: <strong style={{ color: '#22221f' }}>Immer aktiv für individuelle Ergänzungen</strong>
+              <div style={{ fontSize: 12, color: '#55544f' }}>
+                Status: <strong style={{ color: '#0f6e56', fontWeight: 500 }}>Immer aktiv für individuelle Ergänzungen</strong>
               </div>
             </div>
             <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-              <Btn full variant="ghost" onClick={() => {}}>
+              <Btn full variant="secondary" onClick={() => navigate('/dashboard')}>
                 Verwaltung im Dashboard
               </Btn>
             </div>
@@ -376,11 +424,11 @@ export function Component() {
           <div style={{ fontSize: 18, fontWeight: 500, color: '#22221f', marginBottom: 12 }}>
             Health Auto Export Setup
           </div>
-          <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.6, marginBottom: 20 }}>
-            Verwende die iOS-App <strong>Health Auto Export</strong> und konfiguriere folgende URL als REST-Webhook:
+          <p style={{ fontSize: 13, color: '#22221f', lineHeight: 1.6, marginBottom: 20 }}>
+            Verwende die iOS-App <strong style={{ color: '#0f6e56' }}>Health Auto Export</strong> und konfiguriere folgende URL als REST-Webhook:
           </p>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 24 }}>
-            <code style={{ flex: 1, padding: '10px 14px', background: 'rgba(0,0,0,0.04)', borderRadius: 12, fontSize: 12, color: '#22221f', wordBreak: 'break-all', border: '1px solid rgba(0,0,0,0.08)' }}>
+            <code style={{ flex: 1, padding: '10px 14px', background: 'rgba(29,158,117,0.06)', borderRadius: 12, fontSize: 12, color: '#0f6e56', fontWeight: 500, wordBreak: 'break-all', border: '1px solid rgba(29,158,117,0.2)' }}>
               {haeWebhookUrl}
             </code>
             <Btn small variant="secondary" onClick={() => copyToClipboard(haeWebhookUrl)}>
