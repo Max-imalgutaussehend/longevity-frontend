@@ -11,3 +11,41 @@ export type Source = components["schemas"]["Source"];
 export type ShareToken = components["schemas"]["ShareToken"];
 export type PartnerOffer = components["schemas"]["PartnerOffer"];
 export type WeeklyReport = components["schemas"]["WeeklyReport"];
+
+export interface MetricHistoryItem {
+  id: number;
+  value: number;
+  measuredAt: string;
+  sourceKind: string;
+}
+
+export interface MetricSummary {
+  metric: string;
+  label: string;
+  domain: string;
+  domainLabel: string;
+  latestValue: number;
+  unit: string;
+  latestMeasuredAt: string;
+  sourceKind: string;
+  sourceAdapter: string | null;
+  count: number;
+  history: MetricHistoryItem[];
+}
+
+export interface SampleRecord {
+  id: number;
+  metric: string;
+  label: string;
+  value: number;
+  unit: string;
+  measuredAt: string;
+  sourceKind: string;
+  sourceAdapter: string | null;
+}
+
+export interface SamplesSummaryResponse {
+  metrics: MetricSummary[];
+  recentSamples: SampleRecord[];
+  totalCount: number;
+}
