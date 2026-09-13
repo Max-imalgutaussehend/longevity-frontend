@@ -280,6 +280,24 @@ export function Component() {
     },
   });
 
+  const generateMockMutation = useMutation({
+    mutationFn: async () => {
+      return apiClient<{ ok: boolean; sampleCount?: number }>('/sources/mock/generate', {
+        method: 'POST',
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+      queryClient.invalidateQueries({ queryKey: ['samples'] });
+      alert(`Erfolgreich 90 Tage Testdaten generiert (${data?.sampleCount ?? 0} Messwerte)!`);
+    },
+    onError: (err: Error) => {
+      alert(err.message);
+    },
+  });
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -574,32 +592,76 @@ export function Component() {
           {(() => {
             const src = sources.find((s) => s.kind === 'apple_health' && s.adapter !== 'health_auto_export') ?? sources.find((s) => s.kind === 'apple_health');
             const isConnected = !!src?.enabled;
+            const isMock = src?.adapter === 'mock';
+
             return (
               <Card style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${isConnected ? (isMock ? '#d97706' : '#1d9e75') : 'rgba(0,0,0,0.08)'}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🍎</span>
-                    <Chip color={isConnected ? 'teal' : 'neutral'}>
-                      {isConnected ? 'Importiert' : 'Nicht verbunden'}
+                    <Chip color={isConnected ? (isMock ? 'amber' : 'teal') : 'neutral'}>
+                      {isConnected ? (isMock ? 'Mock-Daten aktiv' : 'Importiert') : 'Nicht verbunden'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Apple Health</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
-                    Exportiere Daten aus der Apple Health App (export.xml oder ZIP) und lade sie hier hoch.
+                    {isMock && isConnected
+                      ? 'Simulierte 90-Tage-Testdaten für diesen Account. Du kannst sie entfernen, neu generieren oder einen echten Export hochladen.'
+                      : 'Exportiere Daten aus der Apple Health App (export.xml oder ZIP) und lade sie hier hoch.'}
                   </div>
                   <div style={{ fontSize: 12, color: '#55544f' }}>
                     Letzter Import: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
-                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {isConnected && isMock && src?.id && (
+                    <>
+                      <Btn
+                        full
+                        variant="danger"
+                        onClick={() => disconnectMutation.mutate(src.id)}
+                        disabled={disconnectMutation.isPending}
+                      >
+                        {disconnectingId === src.id ? 'Wird entfernt...' : 'Mock-Daten entfernen'}
+                      </Btn>
+                      <Btn
+                        full
+                        variant="secondary"
+                        onClick={() => generateMockMutation.mutate()}
+                        disabled={generateMockMutation.isPending}
+                      >
+                        {generateMockMutation.isPending ? 'Wird generiert...' : 'Testdaten neu generieren'}
+                      </Btn>
+                    </>
+                  )}
+                  {isConnected && !isMock && src?.id && (
+                    <Btn
+                      full
+                      variant="danger"
+                      onClick={() => disconnectMutation.mutate(src.id)}
+                      disabled={disconnectMutation.isPending}
+                    >
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                    </Btn>
+                  )}
+                  {!isConnected && (
+                    <Btn
+                      full
+                      variant="secondary"
+                      onClick={() => generateMockMutation.mutate()}
+                      disabled={generateMockMutation.isPending}
+                    >
+                      {generateMockMutation.isPending ? 'Wird generiert...' : '🎲 90 Tage Testdaten (Mock) generieren'}
+                    </Btn>
+                  )}
                   <Btn full onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
-                    {uploadMutation.isPending ? 'Wird verarbeitet...' : 'Export hochladen (.xml / .zip)'}
+                    {uploadMutation.isPending ? 'Wird verarbeitet...' : 'Echten Export hochladen (.xml / .zip)'}
                   </Btn>
                 </div>
               </Card>
