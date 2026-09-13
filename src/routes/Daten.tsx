@@ -14,6 +14,7 @@ import {
   FieldLabel,
   InfoTooltip,
   SectionLabel,
+  Toggle,
 } from '../components/ui.js';
 import type { Source, ScoreResult, SamplesSummaryResponse, MetricSummary } from '../api/types.js';
 
@@ -275,10 +276,52 @@ export function Component() {
     },
   });
 
-  const disconnectMutation = useMutation({
+  const toggleSourceMutation = useMutation({
+    mutationFn: async ({ sourceId, enabled }: { sourceId: string; enabled: boolean }) => {
+      return apiClient(`/sources/${sourceId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+      queryClient.invalidateQueries({ queryKey: ['samples'] });
+    },
+    onError: (err: Error) => {
+      alert(err.message || 'Fehler beim Ändern des Status.');
+    },
+  });
+
+  const deleteSourceSamplesMutation = useMutation({
     mutationFn: async (sourceId: string) => {
       setDisconnectingId(sourceId);
-      return apiClient(`/sources/${sourceId}/disconnect`, {
+      return apiClient(`/sources/${sourceId}/samples`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+      queryClient.invalidateQueries({ queryKey: ['samples'] });
+    },
+    onError: (err: Error) => {
+      alert(err.message || 'Fehler beim Löschen der Messwerte.');
+    },
+    onSettled: () => {
+      setDisconnectingId(null);
+    },
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: async (arg: string | { sourceId: string; deleteData?: boolean }) => {
+      const sourceId = typeof arg === 'string' ? arg : arg.sourceId;
+      const deleteData = typeof arg === 'object' && arg.deleteData;
+      setDisconnectingId(sourceId);
+      const url = deleteData ? `/sources/${sourceId}/disconnect?deleteData=true` : `/sources/${sourceId}/disconnect`;
+      return apiClient(url, {
         method: 'DELETE',
       });
     },
@@ -438,6 +481,9 @@ export function Component() {
     setTimeout(() => setCopiedHaeUrl(false), 2000);
   };
 
+  const hasActiveMockSource = sources.some(
+    (s) => s.enabled && s.adapter === 'mock',
+  );
   const hasRealConnectedSource = sources.some(
     (s) => s.enabled && s.adapter !== 'mock' && s.kind !== 'lab',
   );
@@ -477,8 +523,14 @@ export function Component() {
           }
         />
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {!hasRealConnectedSource && activeTab === 'sources' && (
+          {activeTab === 'sources' && hasActiveMockSource && (
             <Chip color="amber">Mock-Daten aktiv</Chip>
+          )}
+          {activeTab === 'sources' && !hasActiveMockSource && hasRealConnectedSource && (
+            <Chip color="teal">Echte Daten aktiv</Chip>
+          )}
+          {activeTab === 'sources' && !hasActiveMockSource && !hasRealConnectedSource && (
+            <Chip color="neutral">Keine Datenquelle aktiv</Chip>
           )}
           <Btn
             variant="secondary"
@@ -607,8 +659,10 @@ export function Component() {
               {/* Apple Health */}
           {(() => {
             const src = sources.find((s) => s.kind === 'apple_health' && s.adapter !== 'health_auto_export') ?? sources.find((s) => s.kind === 'apple_health');
-            const isConnected = !!src?.enabled;
             const isMock = src?.adapter === 'mock';
+            const sampleCount = src?.sampleCount ?? 0;
+            const hasSource = !!src && (src.enabled || sampleCount > 0);
+            const isEnabled = !!src?.enabled;
 
             return (
               <Card style={{
@@ -616,32 +670,62 @@ export function Component() {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${isConnected ? (isMock ? '#d97706' : '#1d9e75') : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${hasSource ? (isEnabled ? (isMock ? '#d97706' : '#1d9e75') : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🍎</span>
-                    <Chip color={isConnected ? (isMock ? 'amber' : 'teal') : 'neutral'}>
-                      {isConnected ? (isMock ? 'Mock-Daten aktiv' : 'Importiert') : 'Nicht verbunden'}
-                    </Chip>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {hasSource && src?.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
+                            {isEnabled ? 'Aktiv' : 'Pausiert'}
+                          </span>
+                          <Toggle
+                            on={isEnabled}
+                            onChange={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                          />
+                        </div>
+                      )}
+                      <Chip color={hasSource ? (isEnabled ? (isMock ? 'amber' : 'teal') : 'neutral') : 'neutral'}>
+                        {hasSource
+                          ? (isEnabled
+                              ? (isMock ? `Mock-Daten aktiv${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Importiert${sampleCount > 0 ? ` (${sampleCount})` : ''}`)
+                              : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`)
+                          : 'Nicht verbunden'}
+                      </Chip>
+                    </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Apple Health</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
-                    {isMock && isConnected
-                      ? 'Simulierte 90-Tage-Testdaten für diesen Account. Du kannst sie entfernen, neu generieren oder einen echten Export hochladen.'
+                    {isMock && hasSource
+                      ? 'Simulierte 90-Tage-Testdaten für diesen Account. Du kannst sie deaktivieren, entfernen, neu generieren oder einen echten Export hochladen.'
                       : 'Exportiere Daten aus der Apple Health App (export.xml oder ZIP) und lade sie hier hoch.'}
                   </div>
+                  {hasSource && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
+                      ⏸️ Apple Health Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                    </div>
+                  )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Import: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Import: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {isConnected && isMock && src?.id && (
+                  {hasSource && isMock && src?.id && (
                     <>
                       <Btn
                         full
+                        variant={isEnabled ? 'secondary' : 'primary'}
+                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                        disabled={toggleSourceMutation.isPending}
+                      >
+                        {isEnabled ? 'Mock-Daten deaktivieren (pausieren)' : 'Mock-Daten aktivieren'}
+                      </Btn>
+                      <Btn
+                        full
                         variant="danger"
-                        onClick={() => disconnectMutation.mutate(src.id)}
+                        onClick={() => disconnectMutation.mutate({ sourceId: src.id, deleteData: true })}
                         disabled={disconnectMutation.isPending}
                       >
                         {disconnectingId === src.id ? 'Wird entfernt...' : 'Mock-Daten entfernen'}
@@ -656,17 +740,31 @@ export function Component() {
                       </Btn>
                     </>
                   )}
-                  {isConnected && !isMock && src?.id && (
-                    <Btn
-                      full
-                      variant="danger"
-                      onClick={() => disconnectMutation.mutate(src.id)}
-                      disabled={disconnectMutation.isPending}
-                    >
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
-                    </Btn>
+                  {hasSource && !isMock && src?.id && (
+                    <>
+                      <Btn
+                        full
+                        variant={isEnabled ? 'secondary' : 'primary'}
+                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                        disabled={toggleSourceMutation.isPending}
+                      >
+                        {isEnabled ? 'Daten deaktivieren (pausieren)' : 'Daten aktivieren'}
+                      </Btn>
+                      <Btn
+                        full
+                        variant="danger"
+                        onClick={() => {
+                          if (window.confirm('Möchtest du die importierten Apple Health Daten wirklich löschen und die Verbindung trennen?')) {
+                            disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                          }
+                        }}
+                        disabled={disconnectMutation.isPending}
+                      >
+                        {disconnectingId === src.id ? 'Wird gelöscht...' : 'Daten löschen & trennen'}
+                      </Btn>
+                    </>
                   )}
-                  {!isConnected && (
+                  {!hasSource && (
                     <Btn
                       full
                       variant="secondary"
@@ -687,34 +785,79 @@ export function Component() {
           {/* Health Auto Export */}
           {(() => {
             const src = sources.find((s) => (s.kind === 'apple_health' && s.adapter === 'health_auto_export') || s.kind === 'health_auto_export');
-            const isConnected = !!src?.enabled;
+            const sampleCount = src?.sampleCount ?? 0;
+            const hasSource = !!src && (src.enabled || sampleCount > 0);
+            const isEnabled = !!src?.enabled;
+
             return (
               <Card style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>📲</span>
-                    <Chip color={isConnected ? 'teal' : 'neutral'}>
-                      {isConnected ? 'Verbunden' : 'Nicht eingerichtet'}
-                    </Chip>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {hasSource && src?.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
+                            {isEnabled ? 'Aktiv' : 'Pausiert'}
+                          </span>
+                          <Toggle
+                            on={isEnabled}
+                            onChange={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                          />
+                        </div>
+                      )}
+                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'neutral'}>
+                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'Nicht eingerichtet'}
+                      </Chip>
+                    </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Health Auto Export & Webhook (iOS & Android)</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Hintergrund-Synchronisation über iOS- (Health Auto Export) oder Android-Apps (z. B. Health Sync für Health Connect) via REST-Webhook.
                   </div>
+                  {hasSource && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
+                      ⏸️ Webhook-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                    </div>
+                  )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
-                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <Btn full variant="secondary" onClick={() => setShowHaeModal(true)}>
                     Anleitung & Webhook URL
                   </Btn>
+                  {hasSource && src?.id && (
+                    <>
+                      <Btn
+                        full
+                        variant={isEnabled ? 'secondary' : 'primary'}
+                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                        disabled={toggleSourceMutation.isPending}
+                      >
+                        {isEnabled ? 'Webhook-Daten deaktivieren (pausieren)' : 'Webhook-Daten aktivieren'}
+                      </Btn>
+                      <Btn
+                        full
+                        variant="danger"
+                        onClick={() => {
+                          if (window.confirm('Möchtest du die Webhook-Verbindung trennen und alle empfangenen Messwerte löschen?')) {
+                            disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                          }
+                        }}
+                        disabled={disconnectMutation.isPending}
+                      >
+                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Trennen & Daten löschen'}
+                      </Btn>
+                    </>
+                  )}
                 </div>
               </Card>
             );
@@ -723,39 +866,75 @@ export function Component() {
           {/* Oura Ring */}
           {(() => {
             const src = sources.find((s) => s.kind === 'oura');
-            const isConnected = !!src?.enabled;
+            const sampleCount = src?.sampleCount ?? 0;
+            const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
+            const isEnabled = !!src?.enabled;
+
             return (
               <Card style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>💍</span>
-                    <Chip color={isConnected ? 'teal' : 'amber'}>
-                      {isConnected ? 'Verbunden' : 'In Kürze'}
-                    </Chip>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {hasSource && src?.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
+                            {isEnabled ? 'Aktiv' : 'Pausiert'}
+                          </span>
+                          <Toggle
+                            on={isEnabled}
+                            onChange={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                          />
+                        </div>
+                      )}
+                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'amber'}>
+                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'In Kürze'}
+                      </Chip>
+                    </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Oura Ring</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Schlaf-Scores, Readiness, Ruhepuls und HRV-Trends über die Cloud-API.
                   </div>
+                  {hasSource && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
+                      ⏸️ Oura-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                    </div>
+                  )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
-                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                  {isConnected && src?.id ? (
-                    <Btn
-                      full
-                      variant="danger"
-                      onClick={() => disconnectMutation.mutate(src.id)}
-                    >
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
-                    </Btn>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {hasSource && src?.id ? (
+                    <>
+                      <Btn
+                        full
+                        variant={isEnabled ? 'secondary' : 'primary'}
+                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                        disabled={toggleSourceMutation.isPending}
+                      >
+                        {isEnabled ? 'Daten deaktivieren (pausieren)' : 'Daten aktivieren'}
+                      </Btn>
+                      <Btn
+                        full
+                        variant="danger"
+                        onClick={() => {
+                          if (window.confirm('Möchtest du Oura trennen und alle zugehörigen Daten löschen?')) {
+                            disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                          }
+                        }}
+                        disabled={disconnectMutation.isPending}
+                      >
+                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen & Daten löschen'}
+                      </Btn>
+                    </>
                   ) : (
                     <Btn
                       full
@@ -774,39 +953,75 @@ export function Component() {
           {/* Strava */}
           {(() => {
             const src = sources.find((s) => s.kind === 'strava');
-            const isConnected = !!src?.enabled;
+            const sampleCount = src?.sampleCount ?? 0;
+            const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
+            const isEnabled = !!src?.enabled;
+
             return (
               <Card style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🏃</span>
-                    <Chip color={isConnected ? 'teal' : 'amber'}>
-                      {isConnected ? 'Verbunden' : 'In Kürze'}
-                    </Chip>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {hasSource && src?.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
+                            {isEnabled ? 'Aktiv' : 'Pausiert'}
+                          </span>
+                          <Toggle
+                            on={isEnabled}
+                            onChange={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                          />
+                        </div>
+                      )}
+                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'amber'}>
+                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'In Kürze'}
+                      </Chip>
+                    </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Strava</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Ausdaueraktivitäten, Trainingsbelastung und Pace-Metriken.
                   </div>
+                  {hasSource && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
+                      ⏸️ Strava-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                    </div>
+                  )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
-                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                  {isConnected && src?.id ? (
-                    <Btn
-                      full
-                      variant="danger"
-                      onClick={() => disconnectMutation.mutate(src.id)}
-                    >
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
-                    </Btn>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {hasSource && src?.id ? (
+                    <>
+                      <Btn
+                        full
+                        variant={isEnabled ? 'secondary' : 'primary'}
+                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                        disabled={toggleSourceMutation.isPending}
+                      >
+                        {isEnabled ? 'Daten deaktivieren (pausieren)' : 'Daten aktivieren'}
+                      </Btn>
+                      <Btn
+                        full
+                        variant="danger"
+                        onClick={() => {
+                          if (window.confirm('Möchtest du Strava trennen und alle zugehörigen Daten löschen?')) {
+                            disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                          }
+                        }}
+                        disabled={disconnectMutation.isPending}
+                      >
+                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen & Daten löschen'}
+                      </Btn>
+                    </>
                   ) : (
                     <Btn
                       full
@@ -825,39 +1040,75 @@ export function Component() {
           {/* Withings */}
           {(() => {
             const src = sources.find((s) => s.kind === 'withings');
-            const isConnected = !!src?.enabled;
+            const sampleCount = src?.sampleCount ?? 0;
+            const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
+            const isEnabled = !!src?.enabled;
+
             return (
               <Card style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>⚖️</span>
-                    <Chip color={isConnected ? 'teal' : 'amber'}>
-                      {isConnected ? 'Verbunden' : 'In Kürze'}
-                    </Chip>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {hasSource && src?.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
+                            {isEnabled ? 'Aktiv' : 'Pausiert'}
+                          </span>
+                          <Toggle
+                            on={isEnabled}
+                            onChange={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                          />
+                        </div>
+                      )}
+                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'amber'}>
+                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'In Kürze'}
+                      </Chip>
+                    </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Withings</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Blutdruckmessungen, Körperzusammensetzung und Pulswellengeschwindigkeit.
                   </div>
+                  {hasSource && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
+                      ⏸️ Withings-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                    </div>
+                  )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
-                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                  {isConnected && src?.id ? (
-                    <Btn
-                      full
-                      variant="danger"
-                      onClick={() => disconnectMutation.mutate(src.id)}
-                    >
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
-                    </Btn>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {hasSource && src?.id ? (
+                    <>
+                      <Btn
+                        full
+                        variant={isEnabled ? 'secondary' : 'primary'}
+                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                        disabled={toggleSourceMutation.isPending}
+                      >
+                        {isEnabled ? 'Daten deaktivieren (pausieren)' : 'Daten aktivieren'}
+                      </Btn>
+                      <Btn
+                        full
+                        variant="danger"
+                        onClick={() => {
+                          if (window.confirm('Möchtest du Withings trennen und alle zugehörigen Daten löschen?')) {
+                            disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                          }
+                        }}
+                        disabled={disconnectMutation.isPending}
+                      >
+                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen & Daten löschen'}
+                      </Btn>
+                    </>
                   ) : (
                     <Btn
                       full
@@ -876,54 +1127,136 @@ export function Component() {
           {/* Google Health & Fit */}
           {(() => {
             const src = sources.find((s) => s.kind === 'google_fit');
-            const isConnected = !!src?.enabled;
+            const sampleCount = src?.sampleCount ?? 0;
+            const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
+            const isEnabled = !!src?.enabled;
+
             return (
               <Card style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🤖</span>
-                    <Chip color={isConnected ? 'teal' : 'neutral'}>
-                      {isConnected ? 'Verbunden' : 'Bereit'}
-                    </Chip>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {hasSource && src?.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
+                            {isEnabled ? 'Aktiv' : 'Pausiert'}
+                          </span>
+                          <Toggle
+                            on={isEnabled}
+                            onChange={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                          />
+                        </div>
+                      )}
+                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'neutral'}>
+                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'Bereit'}
+                      </Chip>
+                    </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Google Health & Google Fit</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Schritte, Ruhepuls, Schlafdauer und aktive Minuten direkt aus Google Health (Health Connect Cloud) und Google Fit.
                   </div>
+                  {hasSource && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
+                      ⏸️ Google Health Daten sind deaktiviert. Die synchronisierten Messwerte fließen aktuell nicht in deinen Score ein.
+                    </div>
+                  )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {isConnected && src?.id ? (
+                  {hasSource && src?.id ? (
                     <>
-                      <Btn
-                        full
-                        onClick={handleSyncGoogle}
-                        disabled={syncingGoogle}
-                      >
-                        {syncingGoogle ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
-                      </Btn>
-                      <Btn
-                        full
-                        variant="secondary"
-                        onClick={() => setActiveTab('metrics')}
-                      >
-                        Synchronisierte Daten ansehen →
-                      </Btn>
-                      <Btn
-                        full
-                        variant="danger"
-                        onClick={() => disconnectMutation.mutate(src.id)}
-                      >
-                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
-                      </Btn>
+                      {isEnabled ? (
+                        <>
+                          <Btn
+                            full
+                            onClick={handleSyncGoogle}
+                            disabled={syncingGoogle}
+                          >
+                            {syncingGoogle ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: false })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            Daten deaktivieren (pausieren)
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => setActiveTab('metrics')}
+                          >
+                            Synchronisierte Daten ansehen →
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du Google Health trennen und alle synchronisierten Daten löschen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird getrennt...' : 'Trennen & Daten löschen'}
+                          </Btn>
+                        </>
+                      ) : (
+                        <>
+                          <Btn
+                            full
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: true })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            Daten wieder aktivieren
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={handleSyncGoogle}
+                            disabled={syncingGoogle}
+                          >
+                            {syncingGoogle ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                          </Btn>
+                          {sampleCount > 0 && (
+                            <Btn
+                              full
+                              variant="danger"
+                              onClick={() => {
+                                if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Google Health Messwerte löschen?`)) {
+                                  deleteSourceSamplesMutation.mutate(src.id);
+                                }
+                              }}
+                              disabled={deleteSourceSamplesMutation.isPending}
+                            >
+                              Importierte Daten löschen ({sampleCount} Werte)
+                            </Btn>
+                          )}
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du Google Health trennen und alle synchronisierten Daten löschen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                          </Btn>
+                        </>
+                      )}
                     </>
                   ) : (
                     <>
@@ -956,37 +1289,91 @@ export function Component() {
             );
           })()}
 
-
           {/* Manuell & Labor */}
-          <Card style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: 24,
-            borderTop: '3px solid #1d9e75',
-          }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 28 }}>🩸</span>
-                <Chip color="teal">Aktiv</Chip>
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Manuell & Labor</div>
-              <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
-                Laborwerte wie ApoB, HbA1c oder manuelle Blutdruckerfassungen.
-              </div>
-              <div style={{ fontSize: 12, color: '#55544f' }}>
-                Status: <strong style={{ color: '#0f6e56', fontWeight: 500 }}>Immer aktiv für individuelle Ergänzungen</strong>
-              </div>
-            </div>
-            <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Btn full variant="secondary" onClick={() => fhirFileInputRef.current?.click()} disabled={fhirUploadMutation.isPending}>
-                {fhirUploadMutation.isPending ? 'Wird verarbeitet...' : 'FHIR-Laborbefund (.json) importieren'}
-              </Btn>
-              <Btn full variant="secondary" onClick={() => navigate('/dashboard')}>
-                Verwaltung im Dashboard
-              </Btn>
-            </div>
-          </Card>
+          {(() => {
+            const src = sources.find((s) => s.kind === 'lab');
+            const sampleCount = src?.sampleCount ?? 0;
+            const hasSource = !!src && (src.enabled || sampleCount > 0);
+            const isEnabled = !src || src.enabled;
+
+            return (
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isEnabled ? '#1d9e75' : '#a8a89c'}`,
+              }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <span style={{ fontSize: 28 }}>🩸</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {hasSource && src?.id && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
+                            {isEnabled ? 'Aktiv' : 'Pausiert'}
+                          </span>
+                          <Toggle
+                            on={isEnabled}
+                            onChange={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                          />
+                        </div>
+                      )}
+                      <Chip color={isEnabled ? 'teal' : 'neutral'}>
+                        {isEnabled ? (sampleCount > 0 ? `Aktiv (${sampleCount})` : 'Aktiv') : `Deaktiviert (${sampleCount} pausiert)`}
+                      </Chip>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Manuell & Labor</div>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                    Laborwerte wie ApoB, HbA1c oder manuelle Blutdruckerfassungen.
+                  </div>
+                  {hasSource && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
+                      ⏸️ Laborwerte sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Status: <strong style={{ color: isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>
+                      {isEnabled ? 'Aktiv für individuelle Ergänzungen' : 'Pausiert'}
+                    </strong>
+                  </div>
+                </div>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {hasSource && src?.id && (
+                    <Btn
+                      full
+                      variant={isEnabled ? 'secondary' : 'primary'}
+                      onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                      disabled={toggleSourceMutation.isPending}
+                    >
+                      {isEnabled ? 'Laborwerte deaktivieren (pausieren)' : 'Laborwerte aktivieren'}
+                    </Btn>
+                  )}
+                  <Btn full variant="secondary" onClick={() => fhirFileInputRef.current?.click()} disabled={fhirUploadMutation.isPending}>
+                    {fhirUploadMutation.isPending ? 'Wird verarbeitet...' : 'FHIR-Laborbefund (.json) importieren'}
+                  </Btn>
+                  <Btn full variant="secondary" onClick={() => navigate('/dashboard')}>
+                    Verwaltung im Dashboard
+                  </Btn>
+                  {hasSource && src?.id && sampleCount > 0 && (
+                    <Btn
+                      full
+                      variant="danger"
+                      onClick={() => {
+                        if (window.confirm(`Möchtest du wirklich alle ${sampleCount} gespeicherten Laborwerte löschen?`)) {
+                          deleteSourceSamplesMutation.mutate(src.id);
+                        }
+                      }}
+                      disabled={deleteSourceSamplesMutation.isPending}
+                    >
+                      Laborwerte löschen ({sampleCount} Werte)
+                    </Btn>
+                  )}
+                </div>
+              </Card>
+            );
+          })()}
         </div>
       )}
 
