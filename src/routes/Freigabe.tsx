@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Chip, MockBadge, Skeleton } from '../components/ui.js';
 
-interface Source { id: string; kind: string; adapter: string; sampleCount: number; lastSyncAt: string | null; }
+import type { Source } from '../api/types.js';
 interface Token { id: string; bandLow: number; bandHigh: number; issuedAt: string; expiresAt: string; revokedAt: string | null; }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -72,11 +72,12 @@ export function Component() {
         <SectionLabel>Was gespeichert ist</SectionLabel>
         {srcLoading ? <Skeleton height={120} /> : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {sources?.map((s, i) => (
+            {sources?.filter((s) => s.enabled || s.sampleCount > 0).map((s, i) => (
               <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: i === 0 ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 13, color: '#22221f' }}>{SOURCE_LABELS[s.kind] ?? s.kind}</span>
-                  {s.adapter === 'mock' && <MockBadge />}
+                  {s.adapter === 'mock' && s.enabled && <MockBadge />}
+                  {!s.enabled && <Chip color="neutral">Deaktiviert</Chip>}
                 </div>
                 <span style={{ fontSize: 12, color: '#888780' }}>
                   {s.sampleCount.toLocaleString('de-DE')} Werte · {s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleDateString('de-DE') : 'Noch nie'}
