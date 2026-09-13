@@ -1,29 +1,21 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Btn, GlassInput, GlassSelect, FieldLabel, InfoTooltip, Modal, SectionLabel, Toggle, MockBadge, Skeleton } from '../components/ui.js';
-import type { ScoreResult } from '../api/types.js';
-
-interface Source {
-  id: string; kind: string; adapter: string; enabled: boolean;
-  lastSyncAt: string | null; sampleCount: number;
-}
-
-const SOURCE_LABELS: Record<string, { label: string; metrics: string[] }> = {
-  apple_health: { label: 'Apple Health', metrics: ['VO₂max', 'Ruhepuls', 'HRV', 'Schritte', 'Schlafdauer'] },
-  oura: { label: 'Oura Ring', metrics: ['HRV', 'Schlafdauer', 'Schlafkonsistenz'] },
-  lab: { label: 'Laborwerte', metrics: ['LDL', 'HDL', 'HbA1c', 'Blutdruck', 'hsCRP'] },
-  questionnaire: { label: 'Fragebogen', metrics: ['Rauchen', 'Alkohol'] },
-};
-
-const LAB_FIELDS = [
-  { key: 'ldl', label: 'LDL-Cholesterin', unit: 'mg/dL', placeholder: 'z. B. 110' },
-  { key: 'hdl', label: 'HDL-Cholesterin', unit: 'mg/dL', placeholder: 'z. B. 52' },
-  { key: 'hba1c', label: 'HbA1c', unit: '%', placeholder: 'z. B. 5,2' },
-  { key: 'systolic_bp', label: 'Systolischer Blutdruck', unit: 'mmHg', placeholder: 'z. B. 118' },
-  { key: 'hscrp', label: 'hsCRP', unit: 'mg/L', placeholder: 'z. B. 0,8' },
-  { key: 'waist', label: 'Taillenumfang', unit: 'cm', placeholder: 'z. B. 84' },
-];
+import {
+  Card,
+  PageTitle,
+  Btn,
+  Chip,
+  Modal,
+  Skeleton,
+  GlassInput,
+  GlassSelect,
+  FieldLabel,
+  InfoTooltip,
+  SectionLabel,
+} from '../components/ui.js';
+import type { Source, ScoreResult } from '../api/types.js';
 
 const SMOKING_OPTIONS = [
   { value: '0', label: 'Nie' },
@@ -44,17 +36,30 @@ const LIFESTYLE_FIELDS: Array<{
 }> = [
   { key: 'smoking', label: 'Rauchen', unit: 'category', kind: 'select' },
   {
-    key: 'alcohol_units', label: 'Alkohol-Einheiten pro Woche', unit: 'units/week', kind: 'number',
-    min: 0, placeholder: 'z. B. 4',
+    key: 'alcohol_units',
+    label: 'Alkohol-Einheiten pro Woche',
+    unit: 'units/week',
+    kind: 'number',
+    min: 0,
+    placeholder: 'z. B. 4',
     tooltip: '1 Einheit = 10g Alkohol ≈ 1 kleines Bier',
   },
   {
-    key: 'strength_sessions', label: 'Krafteinheiten pro Woche', unit: '/week', kind: 'number',
-    min: 0, max: 4, placeholder: 'z. B. 2',
+    key: 'strength_sessions',
+    label: 'Krafteinheiten pro Woche',
+    unit: '/week',
+    kind: 'number',
+    min: 0,
+    max: 4,
+    placeholder: 'z. B. 2',
   },
   {
-    key: 'zone2_minutes', label: 'Zone-2-Minuten pro Woche', unit: 'min/week', kind: 'number',
-    min: 0, placeholder: 'z. B. 90',
+    key: 'zone2_minutes',
+    label: 'Zone-2-Minuten pro Woche',
+    unit: 'min/week',
+    kind: 'number',
+    min: 0,
+    placeholder: 'z. B. 90',
     tooltip: 'Lockeres Ausdauertraining — "könnte sich noch unterhalten"',
   },
 ];
@@ -67,15 +72,26 @@ function daysAgoLabel(days: number | null): string | null {
 }
 
 export function Component() {
-  const qc = useQueryClient();
-  const [consentId, setConsentId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'upload' | 'webhook' | 'lab'>('upload');
-  const [labVals, setLabVals] = useState<Record<string, string>>({});
-  const [labDate, setLabDate] = useState('');
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [showHaeModal, setShowHaeModal] = useState(false);
+  const [copiedHaeUrl, setCopiedHaeUrl] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [lifestyleVals, setLifestyleVals] = useState<Record<string, string>>({});
   const [lifestyleError, setLifestyleError] = useState<string | null>(null);
 
-  const { data: sources, isLoading } = useQuery<Source[]>({
+  const haeWebhookUrl =
+    'https://longevity.maxrommel.de/api/sources/health-auto-export/webhook';
+
+  const {
+    data: sources = [],
+    isLoading: isLoadingSources,
+    refetch: refetchSources,
+  } = useQuery<Source[]>({
     queryKey: ['sources'],
     queryFn: () => apiClient<Source[]>('/sources'),
   });
@@ -94,8 +110,8 @@ export function Component() {
     mutationFn: (values: Array<{ metric: string; value: number; unit: string; measuredAt?: string }>) =>
       apiClient('/labs', { method: 'POST', body: JSON.stringify({ values }) }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['sources'] });
-      qc.invalidateQueries({ queryKey: ['score'] });
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
     },
   });
 
@@ -125,174 +141,402 @@ export function Component() {
     labsMut.mutate(values);
   }
 
-  const patchMut = useMutation({
-    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      apiClient(`/sources/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled }) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sources'] }); qc.invalidateQueries({ queryKey: ['score'] }); },
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiClient('/sources/apple-health/upload', {
+        method: 'POST',
+        body: formData,
+      });
+    },
+    onSuccess: () => {
+      setUploadSuccess('Apple Health Daten erfolgreich importiert!');
+      setUploadError(null);
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+    },
+    onError: (err: Error) => {
+      setUploadError(err.message);
+      setUploadSuccess(null);
+    },
   });
 
-  const regenMut = useMutation({
-    mutationFn: (id: string) => apiClient(`/sources/${id}/regenerate`, { method: 'POST' }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sources'] }); qc.invalidateQueries({ queryKey: ['score'] }); },
+  const disconnectMutation = useMutation({
+    mutationFn: async (sourceId: string) => {
+      setDisconnectingId(sourceId);
+      return apiClient(`/sources/${sourceId}/disconnect`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+    },
+    onError: (err: Error) => {
+      alert(err.message);
+    },
+    onSettled: () => {
+      setDisconnectingId(null);
+    },
   });
 
-  function handleToggle(source: Source) {
-    if (!source.enabled) { setConsentId(source.id); return; }
-    patchMut.mutate({ id: source.id, enabled: false });
-  }
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setUploadSuccess(null);
+    uploadMutation.mutate(file);
+    e.target.value = '';
+  };
 
-  function confirmConsent() {
-    if (!consentId) return;
-    patchMut.mutate({ id: consentId, enabled: true });
-    setConsentId(null);
-  }
+  const handleOAuthConnect = async (provider: 'oura' | 'strava' | 'withings') => {
+    try {
+      const data = await apiClient<{ url: string }>(`/sources/${provider}/connect`, {
+        method: 'POST',
+      });
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Verbinden der Datenquelle.';
+      alert(message);
+    }
+  };
 
-  const consentSource = sources?.find((s) => s.id === consentId);
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedHaeUrl(true);
+    setTimeout(() => setCopiedHaeUrl(false), 2000);
+  };
+
+  const hasRealConnectedSource = sources.some(
+    (s) => s.enabled && s.adapter !== 'mock' && s.kind !== 'lab',
+  );
+
+  const formatDate = (isoString?: string | null) => {
+    if (!isoString) return 'Noch nie';
+    try {
+      return new Intl.DateTimeFormat('de-DE', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(new Date(isoString));
+    } catch {
+      return isoString;
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-      <PageTitle title="Datenquellen" />
-
-            <div className="responsive-grid-2">
-        {isLoading ? [1, 2, 3, 4].map((i) => <Card key={i}><Skeleton height={100} /></Card>) :
-          sources?.map((s) => {
-            const info = SOURCE_LABELS[s.kind] ?? { label: s.kind, metrics: [] };
-            const syncAgo = s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleDateString('de-DE') : 'Noch nie';
-            return (
-              <Card key={s.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: '#22221f' }}>{info.label}</span>
-                      {s.adapter === 'mock' && <MockBadge />}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#888780' }}>
-                      {s.sampleCount.toLocaleString('de-DE')} Messwerte · {syncAgo}
-                    </div>
-                  </div>
-                  <Toggle on={s.enabled} onChange={() => handleToggle(s)} />
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {info.metrics.map((m) => (
-                    <span key={m} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.04)', color: '#55544f', border: '1px solid rgba(0,0,0,0.06)' }}>
-                      {m}
-                    </span>
-                  ))}
-                </div>
-                {s.adapter === 'mock' && (
-                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                    <button
-                      onClick={() => regenMut.mutate(s.id)}
-                      style={{ fontSize: 12, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
-                    >
-                      ↻ Daten neu generieren
-                    </button>
-                  </div>
-                )}
-              </Card>
-            );
-          })}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+        <PageTitle
+          title="Daten & Quellen"
+          sub="Verwalte verbundene Wearables, Labordaten und Importe für deinen Longevity Score."
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {!hasRealConnectedSource && (
+            <Chip color="amber">Mock-Daten aktiv</Chip>
+          )}
+          <Btn variant="secondary" onClick={() => refetchSources()} disabled={isLoadingSources}>
+            {isLoadingSources ? 'Lädt...' : 'Aktualisieren'}
+          </Btn>
+        </div>
       </div>
 
-      {consentId && consentSource && (
-        <Modal onClose={() => setConsentId(null)}>
-          <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 10 }}>Datenquelle aktivieren</div>
-          <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 24 }}>
-            <strong>{SOURCE_LABELS[consentSource.kind]?.label ?? consentSource.kind}</strong> liefert Metriken zu {SOURCE_LABELS[consentSource.kind]?.metrics.join(', ')}.
-            Die Verarbeitung erfolgt auf Grundlage deiner ausdrücklichen Einwilligung nach Art. 9 DSGVO.
-          </p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <Btn variant="ghost" onClick={() => setConsentId(null)}>Abbrechen</Btn>
-            <Btn onClick={confirmConsent}>Einwilligen & aktivieren</Btn>
-          </div>
-        </Modal>
+      {uploadSuccess && (
+        <div style={{ padding: '14px 18px', borderRadius: 12, background: 'rgba(29,158,117,0.1)', border: '1px solid rgba(29,158,117,0.25)', color: '#0f6e56', fontSize: 13, fontWeight: 500 }}>
+          {uploadSuccess}
+        </div>
+      )}
+      {uploadError && (
+        <div style={{ padding: '14px 18px', borderRadius: 12, background: 'rgba(163,45,45,0.1)', border: '1px solid rgba(163,45,45,0.25)', color: '#a32d2d', fontSize: 13, fontWeight: 500 }}>
+          {uploadError}
+        </div>
       )}
 
-      <Card>
-        <SectionLabel>Daten importieren</SectionLabel>
-        <div style={{ display: 'flex', gap: 2, marginBottom: 28, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-          {(['upload', 'webhook', 'lab'] as const).map((id) => {
-            const labels = { upload: 'Export-Upload', webhook: 'Webhook-URL', lab: 'Laborwerte' };
-            return (
-              <button key={id} onClick={() => setTab(id)} style={{
-                fontSize: 13, padding: '8px 16px', background: 'none', border: 'none',
-                cursor: 'pointer', fontFamily: 'inherit',
-                color: tab === id ? '#0f6e56' : '#888780',
-                borderBottom: `2px solid ${tab === id ? '#1d9e75' : 'transparent'}`,
-                marginBottom: -1, transition: 'color 0.15s',
-              }}>
-                {labels[id]}
-              </button>
-            );
-          })}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+        accept=".xml,.zip"
+        style={{ display: 'none' }}
+      />
+
+      {isLoadingSources ? (
+        <div className="responsive-grid-2">
+          {[1, 2, 3, 4].map((i) => <Card key={i}><Skeleton height={140} /></Card>)}
         </div>
-
-        {tab === 'upload' && (
-          <div>
-            <p style={{ fontSize: 13, color: '#55544f', marginBottom: 16 }}>Lade deine Apple Health export.xml oder das ZIP-Archiv hoch.</p>
-            <div style={{ border: '1px dashed rgba(0,0,0,0.12)', borderRadius: 16, padding: '48px 32px', textAlign: 'center' }}>
-              <div style={{ fontSize: 28, marginBottom: 10, opacity: 0.4 }}>↑</div>
-              <div style={{ fontSize: 14, color: '#55544f' }}>Datei ablegen oder <span style={{ color: '#0f6e56', cursor: 'pointer' }}>durchsuchen</span></div>
-              <div style={{ fontSize: 12, color: '#a3a29c', marginTop: 4 }}>.xml oder .zip · max. 500 MB</div>
-            </div>
-          </div>
-        )}
-
-        {tab === 'webhook' && (
-          <div>
-            <p style={{ fontSize: 13, color: '#55544f', marginBottom: 16 }}>
-              Verwende <strong>Health Auto Export</strong> auf iOS und konfiguriere diese URL als Push-Ziel.
-            </p>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <code style={{ flex: 1, padding: '10px 14px', background: 'rgba(0,0,0,0.04)', borderRadius: 12, fontSize: 12, color: '#55544f', wordBreak: 'break-all', border: '1px solid rgba(0,0,0,0.07)' }}>
-                {window.location.origin}/api/ingest/webhook/[dein-schlüssel]
-              </code>
-              <Btn small variant="secondary" onClick={() => navigator.clipboard?.writeText('')}>Kopieren</Btn>
-            </div>
-          </div>
-        )}
-
-        {tab === 'lab' && (
-          <div>
-            <p style={{ fontSize: 13, color: '#55544f', marginBottom: 20 }}>Laborwerte manuell erfassen. Alle Angaben sind freiwillig.</p>
-      <div className="responsive-grid-2">
-              {LAB_FIELDS.map((f) => (
-                <div key={f.key}>
-                  <FieldLabel>{f.label} <span style={{ color: '#a3a29c', fontWeight: 400 }}>({f.unit})</span></FieldLabel>
-                  <GlassInput placeholder={f.placeholder} value={labVals[f.key] ?? ''} onChange={(v) => setLabVals((p) => ({ ...p, [f.key]: v }))} />
+      ) : (
+        <div className="responsive-grid-2">
+          {/* Apple Health */}
+          {(() => {
+            const src = sources.find((s) => s.kind === 'apple_health' && s.adapter !== 'health_auto_export') ?? sources.find((s) => s.kind === 'apple_health');
+            const isConnected = !!src?.enabled;
+            return (
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <span style={{ fontSize: 28 }}>🍎</span>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
+                      {isConnected ? 'Importiert' : 'Nicht verbunden'}
+                    </Chip>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Apple Health</div>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                    Exportiere Daten aus der Apple Health App (export.xml oder ZIP) und lade sie hier hoch.
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Import: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                  </div>
                 </div>
-              ))}
-              <div>
-                <FieldLabel>Messdatum</FieldLabel>
-                <GlassInput type="date" value={labDate} onChange={setLabDate} />
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  <Btn full onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
+                    {uploadMutation.isPending ? 'Wird verarbeitet...' : 'Export hochladen (.xml / .zip)'}
+                  </Btn>
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Health Auto Export */}
+          {(() => {
+            const src = sources.find((s) => (s.kind === 'apple_health' && s.adapter === 'health_auto_export') || s.kind === 'health_auto_export');
+            const isConnected = !!src?.enabled;
+            return (
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <span style={{ fontSize: 28 }}>📲</span>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
+                      {isConnected ? 'Verbunden' : 'Nicht eingerichtet'}
+                    </Chip>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Health Auto Export</div>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                    Hintergrund-Synchronisation über die iOS-App via REST-Webhook.
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                  </div>
+                </div>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  <Btn full variant="secondary" onClick={() => setShowHaeModal(true)}>
+                    Anleitung & Webhook URL
+                  </Btn>
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Oura Ring */}
+          {(() => {
+            const src = sources.find((s) => s.kind === 'oura');
+            const isConnected = !!src?.enabled;
+            return (
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <span style={{ fontSize: 28 }}>💍</span>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
+                      {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                    </Chip>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Oura Ring</div>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                    Schlaf-Scores, Readiness, Ruhepuls und HRV-Trends über die Cloud-API.
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                  </div>
+                </div>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  {isConnected && src?.id ? (
+                    <Btn
+                      full
+                      variant="danger"
+                      disabled
+                      onClick={() => disconnectMutation.mutate(src.id)}
+                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
+                    </Btn>
+                  ) : (
+                    <Btn
+                      full
+                      disabled
+                      onClick={() => handleOAuthConnect('oura')}
+                      title="Oura-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      Oura verbinden (In Kürze)
+                    </Btn>
+                  )}
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Strava */}
+          {(() => {
+            const src = sources.find((s) => s.kind === 'strava');
+            const isConnected = !!src?.enabled;
+            return (
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <span style={{ fontSize: 28 }}>🏃</span>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
+                      {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                    </Chip>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Strava</div>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                    Ausdaueraktivitäten, Trainingsbelastung und Pace-Metriken.
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                  </div>
+                </div>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  {isConnected && src?.id ? (
+                    <Btn
+                      full
+                      variant="danger"
+                      disabled
+                      onClick={() => disconnectMutation.mutate(src.id)}
+                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
+                    </Btn>
+                  ) : (
+                    <Btn
+                      full
+                      disabled
+                      onClick={() => handleOAuthConnect('strava')}
+                      title="Strava-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      Strava verbinden (In Kürze)
+                    </Btn>
+                  )}
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Withings */}
+          {(() => {
+            const src = sources.find((s) => s.kind === 'withings');
+            const isConnected = !!src?.enabled;
+            return (
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <span style={{ fontSize: 28 }}>⚖️</span>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
+                      {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                    </Chip>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Withings</div>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                    Blutdruckmessungen, Körperzusammensetzung und Pulswellengeschwindigkeit.
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                  </div>
+                </div>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  {isConnected && src?.id ? (
+                    <Btn
+                      full
+                      variant="danger"
+                      disabled
+                      onClick={() => disconnectMutation.mutate(src.id)}
+                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
+                    </Btn>
+                  ) : (
+                    <Btn
+                      full
+                      disabled
+                      onClick={() => handleOAuthConnect('withings')}
+                      title="Withings-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
+                    >
+                      Withings verbinden (In Kürze)
+                    </Btn>
+                  )}
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Manuell & Labor */}
+          <Card style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 24,
+            borderTop: '3px solid #1d9e75',
+          }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 28 }}>🩸</span>
+                <Chip color="teal">Aktiv</Chip>
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Manuell & Labor</div>
+              <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                Laborwerte wie ApoB, HbA1c oder manuelle Blutdruckerfassungen.
+              </div>
+              <div style={{ fontSize: 12, color: '#55544f' }}>
+                Status: <strong style={{ color: '#0f6e56', fontWeight: 500 }}>Immer aktiv für individuelle Ergänzungen</strong>
               </div>
             </div>
-            <div style={{ marginTop: 24 }}>
-              <Btn
-                testId="save-lab-values"
-                onClick={() => {
-                  const values = LAB_FIELDS
-                    .filter((f) => labVals[f.key])
-                    .map((f) => ({
-                      metric: f.key,
-                      value: Number(labVals[f.key].replace(',', '.')),
-                      unit: f.unit,
-                      ...(labDate ? { measuredAt: new Date(labDate).toISOString() } : {}),
-                    }))
-                    .filter((v) => !isNaN(v.value));
-                  if (values.length > 0) labsMut.mutate(values);
-                }}
-              >
-                Laborwerte speichern
+            <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <Btn full variant="secondary" onClick={() => navigate('/dashboard')}>
+                Verwaltung im Dashboard
               </Btn>
             </div>
-          </div>
-        )}
-      </Card>
+          </Card>
+        </div>
+      )}
 
+      {/* Lebensstil & Aktivität */}
       <Card>
         <SectionLabel>Lebensstil & Aktivität</SectionLabel>
-        <p style={{ fontSize: 13, color: '#55544f', marginBottom: 20 }}>Alle Angaben sind freiwillig und fließen in deinen Score ein.</p>
+        <p style={{ fontSize: 13, color: '#22221f', marginBottom: 20 }}>
+          Alle Angaben sind freiwillig und fließen in deinen Score ein.
+        </p>
         <div className="responsive-grid-2">
           {LIFESTYLE_FIELDS.map((f) => {
             const meta = lifestyleMeta[f.key];
@@ -320,7 +564,7 @@ export function Component() {
                   />
                 )}
                 {lastLabel && (
-                  <div style={{ fontSize: 11, color: '#a3a29c', marginTop: 6 }}>{lastLabel}</div>
+                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 6 }}>{lastLabel}</div>
                 )}
               </div>
             );
@@ -330,9 +574,34 @@ export function Component() {
           <div style={{ fontSize: 12, color: '#a32d2d', marginTop: 16 }}>{lifestyleError}</div>
         )}
         <div style={{ marginTop: 24 }}>
-          <Btn testId="save-lifestyle-values" onClick={submitLifestyle}>Lebensstil speichern</Btn>
+          <Btn testId="save-lifestyle-values" onClick={submitLifestyle} disabled={labsMut.isPending}>
+            {labsMut.isPending ? 'Wird gespeichert...' : 'Lebensstil speichern'}
+          </Btn>
         </div>
       </Card>
+
+      {/* Modal: Health Auto Export Webhook */}
+      {showHaeModal && (
+        <Modal onClose={() => setShowHaeModal(false)}>
+          <div style={{ fontSize: 18, fontWeight: 500, color: '#22221f', marginBottom: 12 }}>
+            Health Auto Export Setup
+          </div>
+          <p style={{ fontSize: 13, color: '#22221f', lineHeight: 1.6, marginBottom: 20 }}>
+            Verwende die iOS-App <strong style={{ color: '#0f6e56' }}>Health Auto Export</strong> und konfiguriere folgende URL als REST-Webhook:
+          </p>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 24 }}>
+            <code style={{ flex: 1, padding: '10px 14px', background: 'rgba(29,158,117,0.06)', borderRadius: 12, fontSize: 12, color: '#0f6e56', fontWeight: 500, wordBreak: 'break-all', border: '1px solid rgba(29,158,117,0.2)' }}>
+              {haeWebhookUrl}
+            </code>
+            <Btn small variant="secondary" onClick={() => copyToClipboard(haeWebhookUrl)}>
+              {copiedHaeUrl ? 'Kopiert ✓' : 'Kopieren'}
+            </Btn>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Btn onClick={() => setShowHaeModal(false)}>Schließen</Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
