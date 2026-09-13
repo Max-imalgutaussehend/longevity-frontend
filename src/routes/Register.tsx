@@ -46,9 +46,9 @@ export function Component() {
 
   return (
     <AuthShell>
-      <div style={{ width: '100%', maxWidth: 380 }}>
-        <div style={{ textAlign: 'center', marginBottom: 44 }}>
-          <img src={brandIcon} alt="Longevity" style={{ width: 120, height: 120, objectFit: 'contain', display: 'block', margin: '0 auto 20px' }} />
+      <div style={{ width: '100%', maxWidth: 440 }}>
+        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          <img src={brandIcon} alt="Longevity" style={{ width: 100, height: 100, objectFit: 'contain', display: 'block', margin: '0 auto 16px' }} />
           <div style={{ fontSize: 24, fontWeight: 500, color: '#22221f', letterSpacing: '-0.01em' }}>Konto erstellen</div>
         </div>
         <Card style={{ padding: '36px 36px 32px' }}>
@@ -67,11 +67,8 @@ export function Component() {
                 <GlassInput type="date" value={birthDate} onChange={setBirthDate} testId="register-birthdate" name="birthDate" />
               </div>
               <div>
-                <FieldLabel>Biologisches Geschlecht</FieldLabel>
-                <p style={{ fontSize: 12, color: '#a3a29c', marginBottom: 10, lineHeight: 1.5, margin: '0 0 10px' }}>
-                  Die Score-Referenzkurven sind nach Geschlecht kalibriert.
-                </p>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <FieldLabel>Biologisches Geschlecht (für Score-Referenzkurven)</FieldLabel>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {(['m', 'f'] as const).map((s) => (
                     <button
                       key={s}
@@ -79,12 +76,15 @@ export function Component() {
                       data-testid={`register-sex-${s}`}
                       onClick={() => setSex(s)}
                       style={{
-                        flex: 1, padding: '10px', borderRadius: 12,
-                        border: `1px solid ${sex === s ? 'rgba(29,158,117,0.4)' : 'rgba(0,0,0,0.1)'}`,
-                        background: sex === s ? 'rgba(29,158,117,0.10)' : 'rgba(255,255,255,0.45)',
+                        padding: '9px 12px',
+                        borderRadius: 8,
+                        border: sex === s ? '2px solid #0f6e56' : '1px solid rgba(0,0,0,0.12)',
+                        background: sex === s ? 'rgba(15,110,86,0.08)' : 'rgba(255,255,255,0.7)',
                         color: sex === s ? '#0f6e56' : '#55544f',
-                        fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-                        backdropFilter: 'blur(8px)',
+                        fontWeight: sex === s ? 500 : 400,
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        transition: 'all 0.15s ease',
                       }}
                     >
                       {s === 'm' ? 'Männlich' : 'Weiblich'}
@@ -102,6 +102,11 @@ export function Component() {
         <p style={{ textAlign: 'center', fontSize: 13, color: '#888780', marginTop: 20 }}>
           Bereits registriert?{' '}
           <Link to="/login" style={{ color: '#0f6e56', textDecoration: 'none' }}>Anmelden</Link>
+        </p>
+        <p style={{ textAlign: 'center', fontSize: 11, color: '#a3a29c', marginTop: 16 }}>
+          <Link to="/impressum" style={{ color: '#a3a29c', textDecoration: 'none' }}>Impressum</Link>
+          {' · '}
+          <Link to="/datenschutz" style={{ color: '#a3a29c', textDecoration: 'none' }}>Datenschutz</Link>
         </p>
       </div>
     </AuthShell>

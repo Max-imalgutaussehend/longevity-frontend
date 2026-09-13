@@ -4,8 +4,10 @@ export async function apiClient<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const hasBody = options.body !== undefined && options.body !== null;
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
-  const defaultHeaders: Record<string, string> = isFormData ? {} : { 'Content-Type': 'application/json' };
+  const defaultHeaders: Record<string, string> =
+    isFormData || !hasBody ? {} : { 'Content-Type': 'application/json' };
 
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',

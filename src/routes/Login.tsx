@@ -71,6 +71,11 @@ export function Component() {
           Noch kein Konto?{' '}
           <Link to="/register" style={{ color: '#0f6e56', textDecoration: 'none' }}>Registrieren</Link>
         </p>
+        <p style={{ textAlign: 'center', fontSize: 11, color: '#a3a29c', marginTop: 16 }}>
+          <Link to="/impressum" style={{ color: '#a3a29c', textDecoration: 'none' }}>Impressum</Link>
+          {' · '}
+          <Link to="/datenschutz" style={{ color: '#a3a29c', textDecoration: 'none' }}>Datenschutz</Link>
+        </p>
       </div>
     </AuthShell>
   );
