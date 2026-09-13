@@ -55,19 +55,35 @@ function formatMetricVal(metric: string, val: number): string {
   return Number.isInteger(val) ? val.toString() : val.toFixed(1);
 }
 
-function timeAgo(dateString: string): string {
+export function timeAgo(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffHours / 24);
 
-  if (diffDays === 0) {
-    if (diffHours <= 0) return 'Heute';
-    if (diffHours === 1) return 'Vor 1 Std.';
-    return `Vor ${diffHours} Std.`;
+  // If timestamp is in the future (e.g. UTC end-of-day) or within the last minute
+  if (diffMs <= 60 * 1000) {
+    return 'Heute';
   }
-  if (diffDays === 1) return 'Gestern';
+
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  if (diffMinutes < 60) {
+    return `Vor ${diffMinutes} Min.`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    const isSameDay =
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate();
+    if (isSameDay) {
+      return diffHours === 1 ? 'Vor 1 Std.' : `Vor ${diffHours} Std.`;
+    }
+    return 'Gestern';
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays <= 1) return 'Gestern';
   if (diffDays < 7) return `Vor ${diffDays} Tagen`;
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 }
