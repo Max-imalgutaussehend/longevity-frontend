@@ -2,8 +2,74 @@ import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Btn, Chip, Modal, Skeleton } from '../components/ui.js';
-import type { Source } from '../api/types.js';
+import {
+  Card,
+  PageTitle,
+  Btn,
+  Chip,
+  Modal,
+  Skeleton,
+  GlassInput,
+  GlassSelect,
+  FieldLabel,
+  InfoTooltip,
+  SectionLabel,
+} from '../components/ui.js';
+import type { Source, ScoreResult } from '../api/types.js';
+
+const SMOKING_OPTIONS = [
+  { value: '0', label: 'Nie' },
+  { value: '1', label: 'Ehemalig (>1 Jahr)' },
+  { value: '2', label: 'Ehemalig (<1 Jahr)' },
+  { value: '3', label: 'Aktuell' },
+];
+
+const LIFESTYLE_FIELDS: Array<{
+  key: 'smoking' | 'alcohol_units' | 'strength_sessions' | 'zone2_minutes';
+  label: string;
+  unit: string;
+  kind: 'select' | 'number';
+  min?: number;
+  max?: number;
+  tooltip?: string;
+  placeholder?: string;
+}> = [
+  { key: 'smoking', label: 'Rauchen', unit: 'category', kind: 'select' },
+  {
+    key: 'alcohol_units',
+    label: 'Alkohol-Einheiten pro Woche',
+    unit: 'units/week',
+    kind: 'number',
+    min: 0,
+    placeholder: 'z. B. 4',
+    tooltip: '1 Einheit = 10g Alkohol ≈ 1 kleines Bier',
+  },
+  {
+    key: 'strength_sessions',
+    label: 'Krafteinheiten pro Woche',
+    unit: '/week',
+    kind: 'number',
+    min: 0,
+    max: 4,
+    placeholder: 'z. B. 2',
+  },
+  {
+    key: 'zone2_minutes',
+    label: 'Zone-2-Minuten pro Woche',
+    unit: 'min/week',
+    kind: 'number',
+    min: 0,
+    placeholder: 'z. B. 90',
+    tooltip: 'Lockeres Ausdauertraining — "könnte sich noch unterhalten"',
+  },
+];
+
+function daysAgoLabel(days: number | null): string | null {
+  if (days === null) return null;
+  if (days < 1) return 'Heute eingetragen';
+  if (days < 2) return 'Vor 1 Tag eingetragen';
+  return `Vor ${Math.round(days)} Tagen eingetragen`;
+}
 
 export function Component() {
   const queryClient = useQueryClient();
@@ -15,6 +81,8 @@ export function Component() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [lifestyleVals, setLifestyleVals] = useState<Record<string, string>>({});
+  const [lifestyleError, setLifestyleError] = useState<string | null>(null);
 
   const haeWebhookUrl =
     'https://longevity.maxrommel.de/api/sources/health-auto-export/webhook';
@@ -27,6 +95,51 @@ export function Component() {
     queryKey: ['sources'],
     queryFn: () => apiClient<Source[]>('/sources'),
   });
+
+  const { data: score } = useQuery<ScoreResult>({
+    queryKey: ['score', 'current'],
+    queryFn: () => apiClient<ScoreResult>('/score/current'),
+  });
+
+  const lifestyleMetrics = score?.domains.flatMap((d) => d.metrics) ?? [];
+  const lifestyleMeta = Object.fromEntries(
+    LIFESTYLE_FIELDS.map((f) => [f.key, lifestyleMetrics.find((m) => m.metric === f.key)]),
+  );
+
+  const labsMut = useMutation({
+    mutationFn: (values: Array<{ metric: string; value: number; unit: string; measuredAt?: string }>) =>
+      apiClient('/labs', { method: 'POST', body: JSON.stringify({ values }) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+    },
+  });
+
+  function submitLifestyle() {
+    setLifestyleError(null);
+    const values: Array<{ metric: string; value: number; unit: string }> = [];
+
+    for (const f of LIFESTYLE_FIELDS) {
+      const raw = lifestyleVals[f.key];
+      if (raw === undefined || raw === '') continue;
+
+      const num = Number(raw.replace(',', '.'));
+      if (isNaN(num)) continue;
+      if (num < (f.min ?? 0)) {
+        setLifestyleError(`${f.label}: Wert darf nicht negativ sein.`);
+        return;
+      }
+      if (f.max !== undefined && num > f.max) {
+        setLifestyleError(`${f.label}: Wert darf maximal ${f.max} sein.`);
+        return;
+      }
+
+      values.push({ metric: f.key, value: num, unit: f.unit });
+    }
+
+    if (values.length === 0) return;
+    labsMut.mutate(values);
+  }
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -417,6 +530,55 @@ export function Component() {
           </Card>
         </div>
       )}
+
+      {/* Lebensstil & Aktivität */}
+      <Card>
+        <SectionLabel>Lebensstil & Aktivität</SectionLabel>
+        <p style={{ fontSize: 13, color: '#22221f', marginBottom: 20 }}>
+          Alle Angaben sind freiwillig und fließen in deinen Score ein.
+        </p>
+        <div className="responsive-grid-2">
+          {LIFESTYLE_FIELDS.map((f) => {
+            const meta = lifestyleMeta[f.key];
+            const lastLabel = meta?.available ? daysAgoLabel(meta.ageDays) : null;
+            return (
+              <div key={f.key}>
+                <FieldLabel>
+                  {f.label}
+                  {f.tooltip && <InfoTooltip text={f.tooltip} />}
+                </FieldLabel>
+                {f.kind === 'select' ? (
+                  <GlassSelect
+                    testId={`lifestyle-${f.key}`}
+                    options={SMOKING_OPTIONS}
+                    value={lifestyleVals[f.key] ?? String(meta?.value ?? '')}
+                    onChange={(v) => setLifestyleVals((p) => ({ ...p, [f.key]: v }))}
+                  />
+                ) : (
+                  <GlassInput
+                    testId={`lifestyle-${f.key}`}
+                    type="number"
+                    placeholder={f.placeholder}
+                    value={lifestyleVals[f.key] ?? ''}
+                    onChange={(v) => setLifestyleVals((p) => ({ ...p, [f.key]: v }))}
+                  />
+                )}
+                {lastLabel && (
+                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 6 }}>{lastLabel}</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {lifestyleError && (
+          <div style={{ fontSize: 12, color: '#a32d2d', marginTop: 16 }}>{lifestyleError}</div>
+        )}
+        <div style={{ marginTop: 24 }}>
+          <Btn testId="save-lifestyle-values" onClick={submitLifestyle} disabled={labsMut.isPending}>
+            {labsMut.isPending ? 'Wird gespeichert...' : 'Lebensstil speichern'}
+          </Btn>
+        </div>
+      </Card>
 
       {/* Modal: Health Auto Export Webhook */}
       {showHaeModal && (
