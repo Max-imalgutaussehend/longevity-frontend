@@ -22,7 +22,7 @@ export function Card({ children, style, className, onClick, 'data-testid': testI
 }
 
 export function Btn({
-  children, variant = 'primary', small, full, onClick, type = 'button', testId, disabled, title,
+  children, variant = 'primary', small, full, onClick, type = 'button', testId, disabled, title, style,
 }: {
   children: ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -33,6 +33,7 @@ export function Btn({
   testId?: string;
   disabled?: boolean;
   title?: string;
+  style?: CSSProperties;
 }) {
   const base: CSSProperties = {
     padding: small ? '5px 14px' : '9px 20px',
@@ -80,7 +81,7 @@ export function Btn({
       data-testid={testId}
       disabled={disabled}
       title={title}
-      style={{ ...base, ...variants[variant] }}
+      style={{ ...base, ...variants[variant], ...style }}
       onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.opacity = '0.80'; }}
       onMouseLeave={(e) => { if (!disabled) e.currentTarget.style.opacity = '1'; }}
     >

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
@@ -84,6 +84,22 @@ export function Component() {
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [lifestyleVals, setLifestyleVals] = useState<Record<string, string>>({});
   const [lifestyleError, setLifestyleError] = useState<string | null>(null);
+
+  const [syncingGoogle, setSyncingGoogle] = useState(false);
+  const [showGoogleManualModal, setShowGoogleManualModal] = useState(false);
+  const [googleManualCode, setGoogleManualCode] = useState('');
+  const [googleManualLoading, setGoogleManualLoading] = useState(false);
+  const [googleAuthCodelabUrl, setGoogleAuthCodelabUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('connected');
+    if (connected) {
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [queryClient]);
 
   const haeWebhookUrl =
     'https://longevity.maxrommel.de/api/sources/health-auto-export/webhook';
@@ -243,6 +259,60 @@ export function Component() {
       alert(message);
     }
   };
+
+  const handleSyncGoogle = async () => {
+    setSyncingGoogle(true);
+    try {
+      const res = await apiClient<{ inserted: number }>('/sources/google-fit/sync', { method: 'POST' });
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+      alert(`Synchronisation erfolgreich! ${res?.inserted ?? 0} Messwerte aktualisiert.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Synchronisation fehlgeschlagen.';
+      alert(msg);
+    } finally {
+      setSyncingGoogle(false);
+    }
+  };
+
+  const handleOpenGoogleCodelabMode = async () => {
+    setShowGoogleManualModal(true);
+    if (!googleAuthCodelabUrl) {
+      try {
+        const data = await apiClient<{ url: string }>('/sources/google-fit/connect', {
+          method: 'POST',
+          body: JSON.stringify({ redirectUri: 'https://www.google.com' }),
+        });
+        if (data?.url) setGoogleAuthCodelabUrl(data.url);
+      } catch {
+        // Fallback to standard url construction if needed
+      }
+    }
+  };
+
+  const handleManualGoogleExchange = async () => {
+    if (!googleManualCode.trim()) return;
+    setGoogleManualLoading(true);
+    try {
+      const res = await apiClient<{ ok: boolean; inserted?: number }>('/sources/google-fit/exchange', {
+        method: 'POST',
+        body: JSON.stringify({ code: googleManualCode.trim(), redirectUri: 'https://www.google.com' }),
+      });
+      if (res?.ok) {
+        queryClient.invalidateQueries({ queryKey: ['sources'] });
+        queryClient.invalidateQueries({ queryKey: ['score'] });
+        setShowGoogleManualModal(false);
+        setGoogleManualCode('');
+        alert(`Google Health erfolgreich verbunden! ${res.inserted ?? 0} Messwerte importiert.`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Verbindung fehlgeschlagen. Bitte prüfe den eingegebenen Code.';
+      alert(msg);
+    } finally {
+      setGoogleManualLoading(false);
+    }
+  };
+
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -540,7 +610,7 @@ export function Component() {
             );
           })()}
 
-          {/* Google Fit / Health Connect */}
+          {/* Google Health & Fit */}
           {(() => {
             const src = sources.find((s) => s.kind === 'google_fit');
             const isConnected = !!src?.enabled;
@@ -555,41 +625,67 @@ export function Component() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🤖</span>
-                    <Chip color={isConnected ? 'teal' : 'amber'}>
-                      {isConnected ? 'Verbunden' : 'In Kürze'}
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
+                      {isConnected ? 'Verbunden' : 'Bereit'}
                     </Chip>
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Google Fit / Health Connect</div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Google Health & Google Fit</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
-                    Schritte, Ruhepuls, Schlafdauer und aktive Minuten von Android-Geräten. Automatische Synchronisation von Health Connect ist bereits über den Webhook möglich.
+                    Schritte, Ruhepuls, Schlafdauer und aktive Minuten direkt aus Google Health (Health Connect Cloud) und Google Fit.
                   </div>
                   <div style={{ fontSize: 12, color: '#55544f' }}>
                     Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
-                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {isConnected && src?.id ? (
-                    <Btn
-                      full
-                      variant="danger"
-                      onClick={() => disconnectMutation.mutate(src.id)}
-                    >
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
-                    </Btn>
+                    <>
+                      <Btn
+                        full
+                        onClick={handleSyncGoogle}
+                        disabled={syncingGoogle}
+                      >
+                        {syncingGoogle ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                      </Btn>
+                      <Btn
+                        full
+                        variant="danger"
+                        onClick={() => disconnectMutation.mutate(src.id)}
+                      >
+                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                      </Btn>
+                    </>
                   ) : (
-                    <Btn
-                      full
-                      disabled
-                      onClick={() => handleOAuthConnect('google-fit')}
-                      title="Direkte Google Cloud OAuth-Verknüpfung wird nach Freigabe der Google Cloud App aktiviert. Android-Nutzer können Daten bereits über den Webhook übertragen."
-                    >
-                      Google Fit verbinden (Bald verfügbar)
-                    </Btn>
+                    <>
+                      <Btn
+                        full
+                        onClick={() => handleOAuthConnect('google-fit')}
+                      >
+                        Google Health verbinden
+                      </Btn>
+                      <button
+                        type="button"
+                        onClick={handleOpenGoogleCodelabMode}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#0f6e56',
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                          padding: 4,
+                          textAlign: 'center',
+                        }}
+                      >
+                        Codelab-Modus (Code manuell eingeben)
+                      </button>
+                    </>
                   )}
                 </div>
               </Card>
             );
           })()}
+
 
           {/* Manuell & Labor */}
           <Card style={{
@@ -692,6 +788,62 @@ export function Component() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Btn onClick={() => setShowHaeModal(false)}>Schließen</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Google Codelab Manual Auth */}
+      {showGoogleManualModal && (
+        <Modal onClose={() => setShowGoogleManualModal(false)}>
+          <div style={{ fontSize: 18, fontWeight: 500, color: '#22221f', marginBottom: 12 }}>
+            Google Health / Codelab-Verknüpfung
+          </div>
+          <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.6, marginBottom: 16 }}>
+            Wenn dein Google Cloud OAuth-Client auf <code>https://www.google.com</code> eingestellt ist (Codelab-Standard), gehe wie folgt vor:
+          </p>
+          <ol style={{ fontSize: 13, color: '#22221f', lineHeight: 1.6, paddingLeft: 20, margin: '0 0 20px 0' }}>
+            <li style={{ marginBottom: 8 }}>
+              Klicke hier, um die Autorisierung bei Google zu starten:{' '}
+              {googleAuthCodelabUrl ? (
+                <a
+                  href={googleAuthCodelabUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ color: '#0f6e56', fontWeight: 500 }}
+                >
+                  Google Autorisierung öffnen ↗
+                </a>
+              ) : (
+                <span style={{ color: '#888780' }}>Wird geladen...</span>
+              )}
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              Melde dich an und erlaube den Zugriff auf deine Gesundheitsdaten.
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              Google leitet dich weiter zu <code>https://www.google.com/?code=...</code>.
+            </li>
+            <li>
+              Kopiere die gesamte URL aus der Adresszeile des Browsers (oder den Code) und füge sie hier ein:
+            </li>
+          </ol>
+          <div style={{ marginBottom: 20 }}>
+            <GlassInput
+              placeholder="https://www.google.com/?code=4/0A... oder Autorisierungscode"
+              value={googleManualCode}
+              onChange={setGoogleManualCode}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <Btn variant="secondary" onClick={() => setShowGoogleManualModal(false)}>
+              Abbrechen
+            </Btn>
+            <Btn
+              onClick={handleManualGoogleExchange}
+              disabled={googleManualLoading || !googleManualCode.trim()}
+            >
+              {googleManualLoading ? 'Wird verknüpft...' : 'Verknüpfen & Synchronisieren'}
+            </Btn>
           </div>
         </Modal>
       )}
