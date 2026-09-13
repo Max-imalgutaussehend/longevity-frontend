@@ -370,9 +370,9 @@ export function Component() {
                       {isConnected ? 'Verbunden' : 'Nicht eingerichtet'}
                     </Chip>
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Health Auto Export</div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Health Auto Export & Webhook (iOS & Android)</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
-                    Hintergrund-Synchronisation über die iOS-App via REST-Webhook.
+                    Hintergrund-Synchronisation über iOS- (Health Auto Export) oder Android-Apps (z. B. Health Sync für Health Connect) via REST-Webhook.
                   </div>
                   <div style={{ fontSize: 12, color: '#55544f' }}>
                     Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
@@ -402,8 +402,8 @@ export function Component() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>💍</span>
-                    <Chip color={isConnected ? 'teal' : 'neutral'}>
-                      {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                    <Chip color={isConnected ? 'teal' : 'amber'}>
+                      {isConnected ? 'Verbunden' : 'In Kürze'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Oura Ring</div>
@@ -426,9 +426,11 @@ export function Component() {
                   ) : (
                     <Btn
                       full
+                      disabled
                       onClick={() => handleOAuthConnect('oura')}
+                      title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
-                      Oura verbinden
+                      Oura verbinden (Bald verfügbar)
                     </Btn>
                   )}
                 </div>
@@ -451,8 +453,8 @@ export function Component() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🏃</span>
-                    <Chip color={isConnected ? 'teal' : 'neutral'}>
-                      {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                    <Chip color={isConnected ? 'teal' : 'amber'}>
+                      {isConnected ? 'Verbunden' : 'In Kürze'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Strava</div>
@@ -475,9 +477,11 @@ export function Component() {
                   ) : (
                     <Btn
                       full
+                      disabled
                       onClick={() => handleOAuthConnect('strava')}
+                      title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
-                      Strava verbinden
+                      Strava verbinden (Bald verfügbar)
                     </Btn>
                   )}
                 </div>
@@ -500,8 +504,8 @@ export function Component() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>⚖️</span>
-                    <Chip color={isConnected ? 'teal' : 'neutral'}>
-                      {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                    <Chip color={isConnected ? 'teal' : 'amber'}>
+                      {isConnected ? 'Verbunden' : 'In Kürze'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Withings</div>
@@ -524,9 +528,11 @@ export function Component() {
                   ) : (
                     <Btn
                       full
+                      disabled
                       onClick={() => handleOAuthConnect('withings')}
+                      title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
-                      Withings verbinden
+                      Withings verbinden (Bald verfügbar)
                     </Btn>
                   )}
                 </div>
@@ -549,13 +555,13 @@ export function Component() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <span style={{ fontSize: 28 }}>🤖</span>
-                    <Chip color={isConnected ? 'teal' : 'neutral'}>
-                      {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                    <Chip color={isConnected ? 'teal' : 'amber'}>
+                      {isConnected ? 'Verbunden' : 'In Kürze'}
                     </Chip>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Google Fit / Health Connect</div>
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
-                    Schritte, Ruhepuls, Schlafdauer und aktive Minuten von Android-Geräten.
+                    Schritte, Ruhepuls, Schlafdauer und aktive Minuten von Android-Geräten. Automatische Synchronisation von Health Connect ist bereits über den Webhook möglich.
                   </div>
                   <div style={{ fontSize: 12, color: '#55544f' }}>
                     Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
@@ -573,9 +579,11 @@ export function Component() {
                   ) : (
                     <Btn
                       full
+                      disabled
                       onClick={() => handleOAuthConnect('google-fit')}
+                      title="Direkte Google Cloud OAuth-Verknüpfung wird nach Freigabe der Google Cloud App aktiviert. Android-Nutzer können Daten bereits über den Webhook übertragen."
                     >
-                      Google Fit verbinden
+                      Google Fit verbinden (Bald verfügbar)
                     </Btn>
                   )}
                 </div>
