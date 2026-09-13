@@ -75,6 +75,7 @@ export function Component() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fhirFileInputRef = useRef<HTMLInputElement>(null);
 
   const [showHaeModal, setShowHaeModal] = useState(false);
   const [copiedHaeUrl, setCopiedHaeUrl] = useState(false);
@@ -192,7 +193,44 @@ export function Component() {
     e.target.value = '';
   };
 
-  const handleOAuthConnect = async (provider: 'oura' | 'strava' | 'withings') => {
+  const fhirUploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const text = await file.text();
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        throw new Error('Ungültige JSON-Datei.');
+      }
+      return apiClient<{ inserted?: number }>('/sources/fhir/upload', {
+        method: 'POST',
+        body: JSON.stringify(parsed),
+      });
+    },
+    onSuccess: (data) => {
+      const count = data?.inserted ?? 'Mehrere';
+      setUploadSuccess(`FHIR-Laborwerte erfolgreich importiert (${count} Werte)!`);
+      setUploadError(null);
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['score'] });
+    },
+    onError: (err: Error) => {
+      setUploadError(err.message);
+      setUploadSuccess(null);
+    },
+  });
+
+  const handleFhirUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setUploadSuccess(null);
+    fhirUploadMutation.mutate(file);
+    e.target.value = '';
+  };
+
+  const handleOAuthConnect = async (provider: 'oura' | 'strava' | 'withings' | 'google-fit') => {
     try {
       const data = await apiClient<{ url: string }>(`/sources/${provider}/connect`, {
         method: 'POST',
@@ -261,6 +299,13 @@ export function Component() {
         ref={fileInputRef}
         onChange={handleFileUpload}
         accept=".xml,.zip"
+        style={{ display: 'none' }}
+      />
+      <input
+        type="file"
+        ref={fhirFileInputRef}
+        onChange={handleFhirUpload}
+        accept=".json"
         style={{ display: 'none' }}
       />
 
@@ -374,20 +419,16 @@ export function Component() {
                     <Btn
                       full
                       variant="danger"
-                      disabled
                       onClick={() => disconnectMutation.mutate(src.id)}
-                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
                     >
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
                     </Btn>
                   ) : (
                     <Btn
                       full
-                      disabled
                       onClick={() => handleOAuthConnect('oura')}
-                      title="Oura-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
                     >
-                      Oura verbinden (In Kürze)
+                      Oura verbinden
                     </Btn>
                   )}
                 </div>
@@ -427,20 +468,16 @@ export function Component() {
                     <Btn
                       full
                       variant="danger"
-                      disabled
                       onClick={() => disconnectMutation.mutate(src.id)}
-                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
                     >
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
                     </Btn>
                   ) : (
                     <Btn
                       full
-                      disabled
                       onClick={() => handleOAuthConnect('strava')}
-                      title="Strava-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
                     >
-                      Strava verbinden (In Kürze)
+                      Strava verbinden
                     </Btn>
                   )}
                 </div>
@@ -480,20 +517,65 @@ export function Component() {
                     <Btn
                       full
                       variant="danger"
-                      disabled
                       onClick={() => disconnectMutation.mutate(src.id)}
-                      title="Verbindung trennen wird nach Merge von Backend PR #40 freigeschaltet"
                     >
-                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen (In Kürze)'}
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
                     </Btn>
                   ) : (
                     <Btn
                       full
-                      disabled
                       onClick={() => handleOAuthConnect('withings')}
-                      title="Withings-Anbindung wird nach Merge von Backend PR #40 freigeschaltet"
                     >
-                      Withings verbinden (In Kürze)
+                      Withings verbinden
+                    </Btn>
+                  )}
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Google Fit / Health Connect */}
+          {(() => {
+            const src = sources.find((s) => s.kind === 'google_fit');
+            const isConnected = !!src?.enabled;
+            return (
+              <Card style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: 24,
+                borderTop: `3px solid ${isConnected ? '#1d9e75' : 'rgba(0,0,0,0.08)'}`,
+              }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <span style={{ fontSize: 28 }}>🤖</span>
+                    <Chip color={isConnected ? 'teal' : 'neutral'}>
+                      {isConnected ? 'Verbunden' : 'Nicht verbunden'}
+                    </Chip>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Google Fit / Health Connect</div>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                    Schritte, Ruhepuls, Schlafdauer und aktive Minuten von Android-Geräten.
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f' }}>
+                    Letzter Sync: <strong style={{ color: isConnected ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                  </div>
+                </div>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                  {isConnected && src?.id ? (
+                    <Btn
+                      full
+                      variant="danger"
+                      onClick={() => disconnectMutation.mutate(src.id)}
+                    >
+                      {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                    </Btn>
+                  ) : (
+                    <Btn
+                      full
+                      onClick={() => handleOAuthConnect('google-fit')}
+                    >
+                      Google Fit verbinden
                     </Btn>
                   )}
                 </div>
@@ -522,7 +604,10 @@ export function Component() {
                 Status: <strong style={{ color: '#0f6e56', fontWeight: 500 }}>Immer aktiv für individuelle Ergänzungen</strong>
               </div>
             </div>
-            <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+            <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Btn full variant="secondary" onClick={() => fhirFileInputRef.current?.click()} disabled={fhirUploadMutation.isPending}>
+                {fhirUploadMutation.isPending ? 'Wird verarbeitet...' : 'FHIR-Laborbefund (.json) importieren'}
+              </Btn>
               <Btn full variant="secondary" onClick={() => navigate('/dashboard')}>
                 Verwaltung im Dashboard
               </Btn>
