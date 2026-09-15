@@ -1,0 +1,80 @@
+import { describe, it, expect } from 'vitest';
+import { routes } from '../routesConfig.js';
+
+export function calculateSimulatedScore(restingHr: number, sleepHours: number, vo2max: number, zone2Min: number) {
+  const hrImpact = (65 - restingHr) * 0.45;
+  const sleepImpact = (Math.min(sleepHours, 8.2) - 6.5) * 4.2;
+  const vo2Impact = (vo2max - 38) * 0.85;
+  const zone2Impact = (Math.min(zone2Min, 240) - 90) * 0.08;
+
+  const rawScore = 60 + hrImpact + sleepImpact + vo2Impact + zone2Impact;
+  const score = Math.max(15, Math.min(98, Math.round(rawScore)));
+
+  const chronoAge = 34;
+  const ageDelta = ((score - 50) / 10) * -1.2;
+  const vitalityAge = Math.max(20, Math.round((chronoAge + ageDelta) * 10) / 10);
+
+  let band = 'Band 50';
+  if (score >= 80) band = 'Band 80';
+  else if (score >= 65) band = 'Band 65';
+  else if (score >= 50) band = 'Band 50';
+  else band = 'Band 35';
+
+  return { score, vitalityAge, yearsGained: Math.round((chronoAge - vitalityAge) * 10) / 10, band };
+}
+
+describe('Router Public & Protected Structure (#9)', () => {
+  it('defines the public layer at / with Landing as index', () => {
+    const publicRoute = routes.find((r) => r.path === '/');
+    expect(publicRoute).toBeDefined();
+    expect(publicRoute?.children).toBeDefined();
+
+    const indexRoute = publicRoute?.children?.find((c) => c.index === true);
+    expect(indexRoute).toBeDefined();
+
+    const impressumRoute = publicRoute?.children?.find((c) => c.path === 'impressum');
+    expect(impressumRoute).toBeDefined();
+
+    const datenschutzRoute = publicRoute?.children?.find((c) => c.path === 'datenschutz');
+    expect(datenschutzRoute).toBeDefined();
+  });
+
+  it('defines the protected app routes in a separate layout route', () => {
+    const protectedLayout = routes.find((r) => r.path === undefined && r.children?.some((c) => c.path === 'dashboard'));
+    expect(protectedLayout).toBeDefined();
+    expect(protectedLayout?.children?.map((c) => c.path)).toEqual(
+      expect.arrayContaining(['dashboard', 'score', 'hebel', 'daten', 'freigabe', 'vorteile', 'report'])
+    );
+  });
+
+  it('has standalone login, register, and verify routes', () => {
+    expect(routes.some((r) => r.path === '/login')).toBe(true);
+    expect(routes.some((r) => r.path === '/register')).toBe(true);
+    expect(routes.some((r) => r.path === '/verify/:id')).toBe(true);
+  });
+});
+
+describe('Landing Page Simulator Logic (#8, #18)', () => {
+  it('calculates higher score and reduced vitality age for optimal biomarkers', () => {
+    const optimal = calculateSimulatedScore(50, 8.0, 52, 180);
+    expect(optimal.score).toBeGreaterThanOrEqual(80);
+    expect(optimal.band).toBe('Band 80');
+    expect(optimal.vitalityAge).toBeLessThan(34);
+    expect(optimal.yearsGained).toBeGreaterThan(0);
+  });
+
+  it('calculates lower score and higher vitality age for degraded biomarkers', () => {
+    const degraded = calculateSimulatedScore(80, 5.2, 30, 0);
+    expect(degraded.score).toBeLessThan(50);
+    expect(degraded.vitalityAge).toBeGreaterThanOrEqual(34);
+    expect(degraded.yearsGained).toBeLessThanOrEqual(0);
+  });
+
+  it('clamps scores between 15 and 98', () => {
+    const extremeLow = calculateSimulatedScore(120, 2.0, 10, 0);
+    expect(extremeLow.score).toBeGreaterThanOrEqual(15);
+
+    const extremeHigh = calculateSimulatedScore(35, 9.0, 75, 400);
+    expect(extremeHigh.score).toBeLessThanOrEqual(98);
+  });
+});

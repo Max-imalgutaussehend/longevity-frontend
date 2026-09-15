@@ -117,6 +117,68 @@ body {
     0 2px 20px rgba(20, 40, 30, 0.06);
 }
 
+/* ── Interactive card hover animation & cursor glow ────────────── */
+.card-interactive {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 14px 34px -4px rgba(20, 45, 35, 0.09),
+    0 0 0 1px rgba(29, 158, 117, 0.18);
+  border-color: rgba(29, 158, 117, 0.35) !important;
+}
+
+.chip-interactive {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.2s ease;
+}
+
+.chip-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(29, 158, 117, 0.14);
+  border-color: rgba(29, 158, 117, 0.4) !important;
+  color: #0f6e56 !important;
+}
+
+/* Ambient cursor light spotlight */
+.cursor-light-spotlight {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 460px;
+  height: 460px;
+  margin-top: -230px;
+  margin-left: -230px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+  background: radial-gradient(
+    circle,
+    rgba(93, 202, 165, 0.14) 0%,
+    rgba(29, 158, 117, 0.05) 42%,
+    transparent 70%
+  );
+  filter: blur(24px);
+  transform: translate3d(-999px, -999px, 0);
+  transition: opacity 0.35s ease-out;
+  will-change: transform, opacity;
+}
+
+@media (hover: none) or (pointer: coarse) {
+  .cursor-light-spotlight {
+    display: none !important;
+  }
+}
+
 /* ── Pill navigation ────────────────────────────────────────────── */
 .pill-nav {
   background: rgba(255, 255, 255, 0.78);
@@ -356,3 +418,22 @@ input[type="range"]::-moz-range-thumb {
     display: none;
   }
 }
+
+/* ── Landing Page Navigation Styles ────────────────────────────── */
+@media (min-width: 860px) {
+  .landing-desktop-nav {
+    display: flex !important;
+  }
+  .landing-mobile-menu-btn {
+    display: none !important;
+  }
+}
+@media (max-width: 859px) {
+  .landing-desktop-nav {
+    display: none !important;
+  }
+  .landing-mobile-menu-btn {
+    display: block !important;
+  }
+}
+

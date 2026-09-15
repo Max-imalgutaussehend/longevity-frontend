@@ -5,6 +5,9 @@ export function uniqueEmail() {
 }
 
 export async function loginAs(page: Page, email: string, password: string) {
+  await page.addInitScript(() => {
+    localStorage.setItem('longevity_tutorial_completed', 'true');
+  });
   await page.goto('/login');
   await page.getByTestId('login-email').fill(email);
   await page.getByTestId('login-password').fill(password);
@@ -13,6 +16,9 @@ export async function loginAs(page: Page, email: string, password: string) {
 }
 
 export async function registerAndLogin(page: Page, email: string, password: string) {
+  await page.addInitScript(() => {
+    localStorage.setItem('longevity_tutorial_completed', 'true');
+  });
   await page.goto('/register');
   await page.getByTestId('register-email').fill(email);
   await page.getByTestId('register-password').fill(password);
