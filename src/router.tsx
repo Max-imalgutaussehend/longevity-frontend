@@ -10,6 +10,14 @@ export const router = createBrowserRouter([
     lazy: () => import('./routes/Register.js'),
   },
   {
+    path: '/forgot-password',
+    lazy: () => import('./routes/ForgotPassword.js'),
+  },
+  {
+    path: '/reset-password/:token',
+    lazy: () => import('./routes/ResetPassword.js'),
+  },
+  {
     path: '/verify/:id',
     lazy: () => import('./routes/Verify.js'),
   },
