@@ -335,7 +335,7 @@ export function Component() {
               marginBottom: 56,
             }}
           >
-            {/* Card 1: Kardiometabolische Vitalität & Erholung */}
+            {/* Card 1: Herz & Erholung */}
             <Card className="card-interactive" style={{ padding: '28px 30px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -349,7 +349,7 @@ export function Component() {
                     }}
                   />
                   <span style={{ fontSize: 11, fontWeight: 600, color: '#0f6e56', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Kardiometabolische Vitalität
+                    Herz & Erholung
                   </span>
                 </div>
                 <span style={{ fontSize: 12, color: '#888780' }}>Wearable-Synchronisation</span>
@@ -358,7 +358,7 @@ export function Component() {
                 Ruhepuls: 52 bpm · HRV: 78 ms
               </div>
               <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
-                Automatisch aggregiert aus deinen Ruhedaten. Hohe Herzfrequenzvariabilität (HRV) spiegelt kardiovaskuläre Resilienz und Langlebigkeit wider.
+                Automatisch aggregiert aus deinen Ruhedaten. Hohe Herzfrequenzvariabilität (HRV) spiegelt Vitalität und Langlebigkeit wider.
               </p>
             </Card>
 
@@ -386,7 +386,7 @@ export function Component() {
                 </span>
               </div>
               <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
-                Berechnet aus deinem kardiometabolischen Profil im Abgleich mit Referenzkohorten.
+                Berechnet aus deinen Vitaldaten im Abgleich mit Referenzkohorten.
               </p>
             </Card>
 
@@ -415,7 +415,7 @@ export function Component() {
                 </span>
               </div>
               <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
-                Kardiometabolik: 91 · Regeneration: 92 · Aktivität: 82.
+                Herzgesundheit: 91 · Regeneration: 92 · Aktivität: 82.
               </p>
             </Card>
           </div>
@@ -573,7 +573,7 @@ export function Component() {
                 Verstehen
               </h3>
               <p style={{ fontSize: 14, color: '#55544f', lineHeight: 1.6, margin: 0 }}>
-                Vier wissenschaftliche Domänen: Kardiometabolik (35%), Regeneration (25%), Aktivität (25%) und Risiko (15%).
+                Vier wissenschaftliche Domänen: Herz-Kreislauf (35%), Regeneration (25%), Aktivität (25%) und Risiko (15%).
                 Aus dem Score wird dein Vitalitätsalter ermittelt – statistisch geeicht an Alterskohorten.
               </p>
             </Card>
