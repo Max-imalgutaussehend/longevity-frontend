@@ -14,6 +14,15 @@ export const router = createBrowserRouter([
     lazy: () => import('./routes/Verify.js'),
   },
   {
+    path: '/insurer',
+    lazy: () => import('./routes/InsurerShell.js'),
+    children: [
+      { index: true, lazy: () => import('./routes/InsurerOverview.js') },
+      { path: 'overview', lazy: () => import('./routes/InsurerOverview.js') },
+      { path: 'vorteile', lazy: () => import('./routes/InsurerOffers.js') },
+    ],
+  },
+  {
     path: '/insurer-invite/:token',
     lazy: () => import('./routes/InsurerInvite.js'),
   },

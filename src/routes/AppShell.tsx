@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet, NavLink, Link } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
@@ -18,14 +18,21 @@ const NAV_ITEMS = [
 ] as const;
 
 export function Component() {
+  const navigate = useNavigate();
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const { data: user } = useQuery<User & { emailVerifiedAt: string | null }>({
+  const { data: user, isLoading: isUserLoading } = useQuery<User & { role?: string; emailVerifiedAt: string | null }>({
     queryKey: ['me'],
     queryFn: () => apiClient('/me'),
   });
+
+  useEffect(() => {
+    if (!isUserLoading && user && (user.role === 'insurer_admin' || user.role === 'insurer_staff')) {
+      navigate('/insurer/overview', { replace: true });
+    }
+  }, [isUserLoading, user, navigate]);
 
   // Auto-launch tutorial on first visit if not yet completed
   useEffect(() => {
