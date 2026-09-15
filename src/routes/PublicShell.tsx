@@ -43,6 +43,8 @@ export function Component() {
     }
   };
 
+  const isHome = location.pathname === '/';
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {/* Background canvas */}
@@ -51,11 +53,13 @@ export function Component() {
         <div className="bg-orb" />
       </div>
 
-      {/* Floating Public Header */}
+      {/* Floating Fixed Public Header */}
       <header
         style={{
-          position: 'sticky',
+          position: 'fixed',
           top: 16,
+          left: 0,
+          right: 0,
           zIndex: 100,
           padding: '0 20px',
           maxWidth: 1140,
@@ -71,7 +75,10 @@ export function Component() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 4px 30px rgba(15, 40, 28, 0.08), 0 1px 0 rgba(255, 255, 255, 0.9) inset',
+            boxShadow: '0 4px 30px rgba(15, 40, 28, 0.12), 0 1px 0 rgba(255, 255, 255, 0.9) inset',
+            background: isHome ? 'rgba(255, 255, 255, 0.82)' : 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(28px)',
+            WebkitBackdropFilter: 'blur(28px)',
           }}
         >
           {/* Brand Logo & Name */}
@@ -248,8 +255,8 @@ export function Component() {
         )}
       </header>
 
-      {/* Main Page Body */}
-      <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+      {/* Main Page Body: 0 padding on home for full-screen hero, 100px on subpages */}
+      <main style={{ flex: 1, position: 'relative', zIndex: 1, paddingTop: isHome ? 0 : 96 }}>
         <Outlet />
       </main>
 
