@@ -18,6 +18,10 @@ export const router = createBrowserRouter([
     lazy: () => import('./routes/InsurerInvite.js'),
   },
   {
+    path: '/verify-email/:token',
+    lazy: () => import('./routes/VerifyEmail.js'),
+  },
+  {
     path: '/',
     lazy: () => import('./routes/AppShell.js'),
     children: [
