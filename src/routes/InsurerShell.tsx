@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
@@ -120,9 +121,10 @@ export function Component() {
                       background: 'transparent', border: 'none', color: '#a32d2d',
                       fontSize: 12, fontWeight: 500, cursor: 'pointer', padding: '4px 6px',
                       width: '100%', textAlign: 'left', fontFamily: 'inherit',
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
                     }}
                   >
-                    🚪 Abmelden
+                    <LogOut size={14} /> Abmelden
                   </button>
                 </div>
               )}

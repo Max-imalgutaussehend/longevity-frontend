@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import brandIcon from '../assets/brand-icon.png';
 import { Btn } from '../components/ui.js';
 
@@ -258,10 +259,11 @@ export function Component() {
                 padding: '6px 8px',
                 cursor: 'pointer',
                 color: '#55544f',
-                fontSize: 18,
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {mobileMenuOpen ? '✕' : '☰'}
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
