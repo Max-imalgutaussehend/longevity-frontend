@@ -23,7 +23,7 @@ test.describe('responsive layout at 375px', () => {
 
     // All nav links are present in the DOM and reachable
     for (const label of ['Dashboard', 'Score', 'Hebel', 'Daten', 'Freigabe', 'Vorteile', 'Bericht']) {
-      await expect(page.getByRole('link', { name: label })).toBeAttached();
+      await expect(page.getByRole('link', { name: label, exact: true })).toBeAttached();
     }
   });
 

@@ -356,3 +356,22 @@ input[type="range"]::-moz-range-thumb {
     display: none;
   }
 }
+
+/* ── Landing Page Navigation Styles ────────────────────────────── */
+@media (min-width: 860px) {
+  .landing-desktop-nav {
+    display: flex !important;
+  }
+  .landing-mobile-menu-btn {
+    display: none !important;
+  }
+}
+@media (max-width: 859px) {
+  .landing-desktop-nav {
+    display: none !important;
+  }
+  .landing-mobile-menu-btn {
+    display: block !important;
+  }
+}
+
