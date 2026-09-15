@@ -8,11 +8,13 @@ export function Component() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== passwordConfirm) { setError('Die Passwörter stimmen nicht überein.'); return; }
     setError(null);
     setLoading(true);
     try {
@@ -48,6 +50,10 @@ export function Component() {
                 <div>
                   <FieldLabel>Passwort</FieldLabel>
                   <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="invite-password" name="password" />
+                </div>
+                <div>
+                  <FieldLabel>Passwort bestätigen</FieldLabel>
+                  <GlassInput type="password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="invite-password-confirm" name="passwordConfirm" />
                 </div>
                 {error && <p data-testid="invite-error" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
                 <div style={{ paddingTop: 6 }}>

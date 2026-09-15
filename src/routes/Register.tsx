@@ -24,6 +24,7 @@ export function Component() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [sex, setSex] = useState<'m' | 'f' | ''>('');
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,7 @@ export function Component() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sex) { setError('Bitte Geschlecht auswählen.'); return; }
+    if (password !== passwordConfirm) { setError('Die Passwörter stimmen nicht überein.'); return; }
     setError(null);
     setLoading(true);
     try {
@@ -86,6 +88,10 @@ export function Component() {
               <div>
                 <FieldLabel>Passwort</FieldLabel>
                 <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="register-password" name="password" />
+              </div>
+              <div>
+                <FieldLabel>Passwort bestätigen</FieldLabel>
+                <GlassInput type="password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="register-password-confirm" name="passwordConfirm" />
               </div>
               <div>
                 <FieldLabel>Geburtsdatum</FieldLabel>
