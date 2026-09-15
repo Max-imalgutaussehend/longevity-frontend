@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
 import { TutorialModal } from '../components/TutorialModal.js';
+import { VerifyEmailBanner } from '../components/VerifyEmailBanner.js';
 import brandIcon from '../assets/brand-icon.png';
 
 const NAV_ITEMS = [
@@ -22,7 +23,7 @@ export function Component() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
-  const { data: user, isLoading: isUserLoading } = useQuery<User & { role?: string }>({
+  const { data: user, isLoading: isUserLoading } = useQuery<User & { role?: string; emailVerifiedAt: string | null }>({
     queryKey: ['me'],
     queryFn: () => apiClient('/me'),
   });
@@ -241,6 +242,7 @@ export function Component() {
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <main className="main-content" style={{ padding: '128px 48px 60px', flex: 1 }}>
           <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+            {user && !user.emailVerifiedAt && <VerifyEmailBanner />}
             <Outlet />
 
             {/* Subtle, elegant footer */}
