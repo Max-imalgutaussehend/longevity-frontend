@@ -1,52 +1,10 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import heroVideo from '../assets/hero-video.mp4';
 import { Card, Btn } from '../components/ui.js';
 
 export function Component() {
-  const heroContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Check auth state for contextual CTA
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  useEffect(() => {
-    const base = import.meta.env.VITE_API_BASE_URL ?? '/api';
-    fetch(`${base}/me`, { credentials: 'include' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.id) setIsLoggedIn(true);
-      })
-      .catch(() => {});
-  }, []);
-
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (videoRef.current.paused) {
-      videoRef.current.play();
-      setIsPlaying(true);
-    } else {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  };
-
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !videoRef.current.muted;
-    setIsMuted(videoRef.current.muted);
-  };
-
-  const toggleFullscreen = () => {
-    if (!heroContainerRef.current) return;
-    if (!document.fullscreenElement) {
-      heroContainerRef.current.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
-    } else {
-      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {});
-    }
-  };
 
   // Interactive Live Simulator State
   const [restingHr, setRestingHr] = useState(62);
@@ -113,23 +71,31 @@ export function Component() {
     }, 600);
   };
 
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    el?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div style={{ width: '100%', position: 'relative' }}>
-      {/* ── 1. FULLSCREEN IMMERSIVE HERO SECTION (100vh) ───────────── */}
+      {/* ── 1. FULLSCREEN CLEAN VIDEO HERO (100vh) ────────────────── */}
       <section
-        ref={heroContainerRef}
+        id="hero"
         style={{
           position: 'relative',
           width: '100%',
-          minHeight: '100vh',
+          height: '100vh',
+          minHeight: 650,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
+          alignItems: 'center',
+          textAlign: 'center',
           overflow: 'hidden',
           background: '#091510',
         }}
       >
-        {/* Fullscreen Video Background */}
+        {/* Fullscreen Video Background (Default Muted, No Controls, Pure Atmosphere) */}
         <video
           ref={videoRef}
           src={heroVideo}
@@ -143,7 +109,6 @@ export function Component() {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            // Scale up slightly to trim the baked-in black letterbox bars seamlessly
             transform: 'scale(1.18)',
             transformOrigin: 'center center',
             zIndex: 1,
@@ -151,100 +116,147 @@ export function Component() {
           }}
         />
 
-        {/* Cinematic Vignette & Lighting Overlays */}
-        {/* 1. Left Dark Vignette for Ultra-Crisp Typography Readability */}
+        {/* Soft Center Vignette */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(90deg, rgba(7, 18, 14, 0.88) 0%, rgba(7, 18, 14, 0.74) 44%, rgba(7, 18, 14, 0.28) 72%, transparent 100%)',
+              'radial-gradient(circle at 50% 50%, rgba(7, 18, 14, 0.45) 0%, rgba(7, 18, 14, 0.75) 70%, rgba(7, 18, 14, 0.90) 100%)',
             zIndex: 2,
             pointerEvents: 'none',
           }}
         />
-        {/* 2. Top Vignette for Floating Navigation Bar */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 140,
-            background: 'linear-gradient(to bottom, rgba(5, 14, 10, 0.65) 0%, transparent 100%)',
-            zIndex: 2,
-            pointerEvents: 'none',
-          }}
-        />
-        {/* 3. Bottom Gradient Seamlessly Blending into the Canvas (#f0f4f1) */}
+
+        {/* Bottom Transition Gradient */}
         <div
           style={{
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            height: 180,
+            height: 160,
             background:
-              'linear-gradient(to bottom, transparent 0%, rgba(240, 244, 241, 0.75) 65%, #f0f4f1 100%)',
+              'linear-gradient(to bottom, transparent 0%, rgba(240, 244, 241, 0.8) 75%, #f0f4f1 100%)',
             zIndex: 2,
             pointerEvents: 'none',
           }}
         />
 
-        {/* Hero Content Staged Over the Video */}
+        {/* Minimalist Hero Content on Video: Pure LONGEVITY & Direct Dashboard Access */}
         <div
           style={{
-            maxWidth: 1180,
-            width: '100%',
-            margin: '0 auto',
-            padding: '130px 24px 90px',
             position: 'relative',
             zIndex: 10,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-            gap: 48,
+            padding: '0 24px',
+            maxWidth: 900,
+            display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
           }}
         >
-          {/* Left Column: Value Proposition & CTAs */}
-          <div>
-            {/* Pill Badge */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
+          <h1
+            style={{
+              fontSize: 'clamp(60px, 12vw, 120px)',
+              fontWeight: 500,
+              color: '#ffffff',
+              letterSpacing: '0.04em',
+              margin: '0 0 28px',
+              lineHeight: 0.95,
+              textShadow: '0 4px 40px rgba(0, 0, 0, 0.65)',
+            }}
+          >
+            LONGEVITY
+          </h1>
+
+          {/* Action CTA: Zum Dashboard */}
+          <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+            <Btn
+              style={{
+                padding: '16px 42px',
+                fontSize: 16,
+                fontWeight: 600,
+                boxShadow: '0 6px 30px rgba(29, 158, 117, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+              }}
+            >
+              Zum Dashboard →
+            </Btn>
+          </Link>
+        </div>
+
+        {/* Bottom Scroll Cue */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <button
+            onClick={() => scrollTo('produkt')}
+            style={{
+              background: 'rgba(255, 255, 255, 0.65)',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              padding: '8px 20px',
+              borderRadius: 999,
+              fontSize: 13,
+              fontWeight: 500,
+              color: '#22221f',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontFamily: 'inherit',
+              boxShadow: '0 2px 14px rgba(0, 0, 0, 0.08)',
+            }}
+          >
+            <span>Produkt entdecken</span>
+            <span>↓</span>
+          </button>
+        </div>
+      </section>
+
+      {/* ── 2. PRODUCT VALUE PROPOSITION & BIOMETRICS HUD ─────────── */}
+      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '60px 20px 0' }}>
+        <section id="produkt" style={{ marginBottom: 96, scrollMarginTop: 110 }}>
+          <div style={{ textAlign: 'center', maxWidth: 840, margin: '0 auto 56px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
               <span
                 style={{
                   fontSize: 12,
                   fontWeight: 500,
-                  padding: '5px 16px',
+                  padding: '4px 14px',
                   borderRadius: 999,
-                  background: 'rgba(29, 158, 117, 0.25)',
-                  color: '#c8eedd',
-                  border: '1px solid rgba(93, 202, 165, 0.45)',
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
-                  boxShadow: '0 2px 14px rgba(0, 0, 0, 0.25)',
-                  letterSpacing: '0.02em',
+                  background: 'rgba(29, 158, 117, 0.12)',
+                  color: '#0f6e56',
+                  border: '1px solid rgba(29, 158, 117, 0.25)',
                 }}
               >
-                ✨ Evidenzbasierte Langlebigkeit · 100% Datensouveränität
+                Das Prinzip LONGEVITY
               </span>
             </div>
 
-            {/* Massive Headline */}
-            <h1
+            <h2
               style={{
-                fontSize: 'clamp(38px, 5.5vw, 62px)',
+                fontSize: 'clamp(32px, 4.5vw, 48px)',
                 fontWeight: 500,
-                color: '#ffffff',
-                lineHeight: 1.1,
-                letterSpacing: '-0.025em',
-                margin: '0 0 22px',
-                textShadow: '0 2px 24px rgba(0, 0, 0, 0.45)',
+                color: '#22221f',
+                lineHeight: 1.15,
+                letterSpacing: '-0.02em',
+                margin: '0 0 20px',
               }}
             >
               Messbare Vitalität.{' '}
               <span
                 style={{
-                  background: 'linear-gradient(135deg, #5dcaa5 0%, #a8f0d6 100%)',
+                  background: 'linear-gradient(135deg, #1d9e75 0%, #0f6e56 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}
@@ -252,105 +264,35 @@ export function Component() {
                 Dein biologisches Alter
               </span>{' '}
               in deiner Hand.
-            </h1>
+            </h2>
 
-            {/* Subtitle */}
             <p
               style={{
                 fontSize: 'clamp(16px, 2vw, 19px)',
-                color: 'rgba(255, 255, 255, 0.90)',
+                color: '#55544f',
                 lineHeight: 1.6,
-                maxWidth: 580,
-                margin: '0 0 36px',
+                margin: '0 auto',
                 fontWeight: 400,
-                textShadow: '0 1px 12px rgba(0, 0, 0, 0.35)',
               }}
             >
               LONGEVITY aggregiert deine Wearables und Laborwerte zu einem transparenten
               Vitalitäts-Score (0–100). Erkenne deine wirksamsten Hebel für gesunde Lebensjahre –
               mathematisch nachvollziehbar, DSGVO-sicher und ohne Weitergabe deiner Rohdaten.
             </p>
-
-            {/* Hero CTAs */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                flexWrap: 'wrap',
-                marginBottom: 24,
-              }}
-            >
-              {isLoggedIn ? (
-                <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-                  <Btn style={{ padding: '14px 34px', fontSize: 16 }}>
-                    Direkt zum Dashboard →
-                  </Btn>
-                </Link>
-              ) : (
-                <>
-                  <Link to="/register" style={{ textDecoration: 'none' }}>
-                    <Btn
-                      style={{
-                        padding: '14px 32px',
-                        fontSize: 15,
-                        boxShadow: '0 4px 20px rgba(29, 158, 117, 0.45)',
-                      }}
-                    >
-                      Kostenlos starten →
-                    </Btn>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      const el = document.getElementById('simulator');
-                      el?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    style={{
-                      padding: '13px 26px',
-                      borderRadius: 999,
-                      fontSize: 15,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      border: '1px solid rgba(255, 255, 255, 0.45)',
-                      background: 'rgba(255, 255, 255, 0.20)',
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      color: '#ffffff',
-                      fontFamily: 'inherit',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.32)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.20)')}
-                  >
-                    Simulator ausprobieren ↓
-                  </button>
-                </>
-              )}
-            </div>
-
-            <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.65)' }}>
-              Keine Kreditkarte erforderlich · In 2 Minuten eingerichtet · Serverstandort Deutschland
-            </div>
           </div>
 
-          {/* Right Column: Floating Glass HUD Biometrics reflecting the serenity in the video */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-end' }}>
+          {/* Biometrics HUD Showcase Cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: 24,
+              marginBottom: 56,
+            }}
+          >
             {/* HUD Card 1: Tiefenatmung & Erholung */}
-            <div
-              className="glass"
-              style={{
-                width: '100%',
-                maxWidth: 380,
-                padding: '16px 22px',
-                borderRadius: 18,
-                background: 'rgba(255, 255, 255, 0.72)',
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-                boxShadow: '0 12px 35px rgba(0, 0, 0, 0.15)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+            <Card style={{ padding: '28px 30px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span
                     style={{
@@ -365,43 +307,30 @@ export function Component() {
                     Live-Biometrie
                   </span>
                 </div>
-                <span style={{ fontSize: 11, color: '#888780' }}>Parasympathikus aktiv</span>
+                <span style={{ fontSize: 12, color: '#888780' }}>Parasympathikus aktiv</span>
               </div>
-              <div style={{ fontSize: 15, fontWeight: 500, color: '#22221f', marginBottom: 2 }}>
+              <div style={{ fontSize: 20, fontWeight: 500, color: '#22221f', marginBottom: 6 }}>
                 Ruhepuls: 52 bpm · HRV: 78 ms
               </div>
-              <div style={{ fontSize: 12, color: '#55544f' }}>
-                Tiefenatmung erkannt · Erholungsindex: 94%
-              </div>
-            </div>
+              <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
+                Tiefenatmung und kardiovaskuläre Ruhephase erkannt. Dein Erholungsindex liegt aktuell bei 94%.
+              </p>
+            </Card>
 
             {/* HUD Card 2: Biologisches Vitalitätsalter */}
-            <div
-              className="glass"
-              style={{
-                width: '100%',
-                maxWidth: 380,
-                padding: '16px 22px',
-                borderRadius: 18,
-                background: 'rgba(255, 255, 255, 0.72)',
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-                boxShadow: '0 12px 35px rgba(0, 0, 0, 0.15)',
-              }}
-            >
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+            <Card style={{ padding: '28px 30px' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
                 Biologisches Alter
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: 24, fontWeight: 500, color: '#22221f' }}>
-                  26,8 <span style={{ fontSize: 14, color: '#888780' }}>Jahre</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ fontSize: 32, fontWeight: 500, color: '#22221f', lineHeight: 1 }}>
+                  26,8 <span style={{ fontSize: 15, color: '#888780', fontWeight: 400 }}>Jahre</span>
                 </div>
                 <span
                   style={{
                     fontSize: 12,
                     fontWeight: 600,
-                    padding: '3px 10px',
+                    padding: '3px 12px',
                     borderRadius: 999,
                     background: '#e1f5ee',
                     color: '#0f6e56',
@@ -411,33 +340,20 @@ export function Component() {
                   −5,2 Jahre jünger
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: '#888780', marginTop: 4 }}>
-                Chronologisches Alter: 32 Jahre
-              </div>
-            </div>
+              <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
+                Berechnet aus deinem kardiometabolischen Profil im Abgleich mit Referenzkohorten.
+              </p>
+            </Card>
 
             {/* HUD Card 3: LONGEVITY Score & Band */}
-            <div
-              className="glass"
-              style={{
-                width: '100%',
-                maxWidth: 380,
-                padding: '16px 22px',
-                borderRadius: 18,
-                background: 'rgba(255, 255, 255, 0.78)',
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-                boxShadow: '0 12px 35px rgba(0, 0, 0, 0.15)',
-              }}
-            >
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>
+            <Card style={{ padding: '28px 30px' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
                 LONGEVITY Score
               </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontSize: 32, fontWeight: 500, color: '#0f6e56', lineHeight: 1 }}>88</span>
-                  <span style={{ fontSize: 14, color: '#888780' }}>/ 100</span>
+                  <span style={{ fontSize: 36, fontWeight: 500, color: '#0f6e56', lineHeight: 1 }}>88</span>
+                  <span style={{ fontSize: 15, color: '#888780' }}>/ 100</span>
                 </div>
                 <span
                   style={{
@@ -453,117 +369,43 @@ export function Component() {
                   ✓ Band 80 Verifiziert
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: '#888780', marginTop: 4 }}>
-                Kardiometabolik: 91 · Regeneration: 92 · Aktivität: 82
-              </div>
+              <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
+                Kardiometabolik: 91 · Regeneration: 92 · Aktivität: 82.
+              </p>
+            </Card>
+          </div>
+
+          {/* Ecosystem Sources Bar */}
+          <div style={{ textAlign: 'center', marginBottom: 44 }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 18 }}>
+              Kompatibel mit führenden Wearables & Diagnostik-Schnittstellen
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 14,
+              }}
+            >
+              {['Apple Health', 'Google Fit', 'Oura Ring', 'Garmin', 'Withings', 'Strava', 'Labordiagnostik (FHIR)'].map((p) => (
+                <span
+                  key={p}
+                  className="glass"
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: 999,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: '#55544f',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  ✓ {p}
+                </span>
+              ))}
             </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar: Scroll Indicator & Cinematic Video Controls */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 24,
-            left: 0,
-            right: 0,
-            zIndex: 15,
-            padding: '0 24px',
-            maxWidth: 1180,
-            margin: '0 auto',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          {/* Scroll Down Invitation */}
-          <button
-            onClick={() => {
-              const el = document.getElementById('funktionen');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            style={{
-              background: 'rgba(255, 255, 255, 0.65)',
-              border: '1px solid rgba(255, 255, 255, 0.8)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              padding: '8px 18px',
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 500,
-              color: '#22221f',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontFamily: 'inherit',
-              boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-            }}
-          >
-            <span>Funktionsweise & Simulator</span>
-            <span>↓</span>
-          </button>
-
-          {/* Cinematic Controls: Play/Pause, Mute/Unmute, Fullscreen */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={togglePlay}
-              title={isPlaying ? 'Pause' : 'Abspielen'}
-              style={videoControlBtnStyle}
-            >
-              {isPlaying ? '❚❚' : '▶'}
-            </button>
-            <button
-              onClick={toggleMute}
-              title={isMuted ? 'Ton an' : 'Ton aus'}
-              style={videoControlBtnStyle}
-            >
-              {isMuted ? '🔇' : '🔊'}
-            </button>
-            <button
-              onClick={toggleFullscreen}
-              title={isFullscreen ? 'Vollbild beenden' : 'Vollbild'}
-              style={videoControlBtnStyle}
-            >
-              {isFullscreen ? '⤦' : '⛶'}
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 2. PLATFORM & TRUST METRICS BAR ───────────────────────── */}
-      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '60px 20px 0' }}>
-        <section style={{ marginBottom: 96, textAlign: 'center' }}>
-          <p style={{ fontSize: 12, fontWeight: 500, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 20 }}>
-            Nahtlose Integration deiner Gesundheitsquellen
-          </p>
-
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 16,
-              marginBottom: 44,
-            }}
-          >
-            {['Apple Health', 'Google Fit', 'Oura Ring', 'Garmin', 'Withings', 'Strava', 'Labordiagnostik (FHIR)'].map((p) => (
-              <span
-                key={p}
-                className="glass"
-                style={{
-                  padding: '8px 18px',
-                  borderRadius: 999,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: '#55544f',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-                }}
-              >
-                ✓ {p}
-              </span>
-            ))}
           </div>
 
           {/* 3 Core Trust Badges */}
@@ -616,7 +458,7 @@ export function Component() {
         </section>
 
         {/* ── 3. FUNKTIONSWEISE: DAS 3-SÄULEN-PRINZIP ───────────────── */}
-        <section id="funktionen" style={{ marginBottom: 110, scrollMarginTop: 100 }}>
+        <section id="funktionen" style={{ marginBottom: 110, scrollMarginTop: 110 }}>
           <div style={{ textAlign: 'center', marginBottom: 50 }}>
             <span style={{ fontSize: 12, fontWeight: 500, color: '#0f6e56', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               Wie LONGEVITY funktioniert
@@ -724,7 +566,7 @@ export function Component() {
           id="simulator"
           style={{
             marginBottom: 110,
-            scrollMarginTop: 100,
+            scrollMarginTop: 110,
           }}
         >
           <div
@@ -936,7 +778,7 @@ export function Component() {
         </section>
 
         {/* ── 5. DATENSCHUTZ & ZERO-KNOWLEDGE SHARING ──────────────── */}
-        <section id="datenschutz" style={{ marginBottom: 110 }}>
+        <section id="datenschutz" style={{ marginBottom: 110, scrollMarginTop: 110 }}>
           <div style={{ textAlign: 'center', marginBottom: 44 }}>
             <span style={{ fontSize: 12, fontWeight: 500, color: '#0f6e56', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               Privatsphäre by Design
@@ -1003,7 +845,7 @@ export function Component() {
         </section>
 
         {/* ── 6. FÜR KRANKENKASSEN & PARTNER (#10 KONTAKTFORMULAR) ──── */}
-        <section id="kassen" style={{ marginBottom: 110, scrollMarginTop: 100 }}>
+        <section id="kassen" style={{ marginBottom: 110, scrollMarginTop: 110 }}>
           <div
             className="glass-deep"
             style={{
@@ -1135,7 +977,7 @@ export function Component() {
         </section>
 
         {/* ── 7. ÜBER UNS & DHBW FORSCHUNGSKONTEXT ───────────────────── */}
-        <section id="ueber-uns" style={{ marginBottom: 110, textAlign: 'center' }}>
+        <section id="ueber-uns" style={{ marginBottom: 110, textAlign: 'center', scrollMarginTop: 110 }}>
           <span style={{ fontSize: 12, fontWeight: 500, color: '#0f6e56', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
             Hinter den Kulissen
           </span>
@@ -1204,24 +1046,6 @@ export function Component() {
     </div>
   );
 }
-
-const videoControlBtnStyle: React.CSSProperties = {
-  width: 38,
-  height: 38,
-  borderRadius: 999,
-  border: '1px solid rgba(255, 255, 255, 0.85)',
-  background: 'rgba(255, 255, 255, 0.75)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 14,
-  color: '#22221f',
-  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
-  transition: 'transform 0.15s, background 0.15s',
-};
 
 const inputStyle: React.CSSProperties = {
   width: '100%',

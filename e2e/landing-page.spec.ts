@@ -1,25 +1,28 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Landing Page & Public Layer (#8, #9, #10, #18)', () => {
-  test('renders hero section with video, headline, and CTAs', async ({ page }) => {
+  test('renders full-screen hero section with video, LONGEVITY title, and direct CTA', async ({ page }) => {
     await page.goto('/');
 
-    // Check main title
+    // Check main title on hero video
     const heading = page.locator('h1');
-    await expect(heading).toContainText('Messbare Vitalität');
-    await expect(heading).toContainText('Dein biologisches Alter');
+    await expect(heading).toContainText('LONGEVITY');
 
-    // Check hero video exists and is playing/ready
+    // Check hero video exists, is muted, and has no control buttons
     const video = page.locator('video');
     await expect(video).toBeVisible();
+    await expect(page.getByRole('button', { name: /mute|stumm/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /pause/i })).toHaveCount(0);
 
-    // Check HUD overlays
-    await expect(page.getByText('LONGEVITY Score')).toBeVisible();
-    await expect(page.getByText('Biologisches Alter', { exact: true }).first()).toBeVisible();
+    // Check direct CTA to Dashboard
+    await expect(page.getByRole('link', { name: 'Zum Dashboard →' }).first()).toBeVisible();
 
-    // Check CTAs
-    await expect(page.getByRole('link', { name: 'Kostenlos starten' }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Anmelden' }).first()).toBeVisible();
+    // Check product section below hero video
+    const productSection = page.locator('#produkt');
+    await expect(productSection).toBeVisible();
+    await expect(productSection.locator('h2')).toContainText('Messbare Vitalität');
+    await expect(productSection.getByText('LONGEVITY Score')).toBeVisible();
+    await expect(productSection.getByText('Biologisches Alter', { exact: true }).first()).toBeVisible();
   });
 
   test('interactive simulator updates live score on the landing page', async ({ page }) => {
@@ -61,4 +64,20 @@ test.describe('Landing Page & Public Layer (#8, #9, #10, #18)', () => {
     await page.goto('/datenschutz');
     await expect(page.locator('h1')).toContainText('Datenschutzerklärung');
   });
+
+  test('navigation buttons scroll to respective sections', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+
+    // Click 'Produkt' in navbar
+    const produktBtn = page.getByRole('button', { name: 'Produkt' }).first();
+    await produktBtn.click();
+    await expect(page.locator('#produkt')).toBeInViewport({ timeout: 5000 });
+
+    // Click 'Live-Simulator' in navbar
+    const simBtn = page.getByRole('button', { name: 'Live-Simulator' }).first();
+    await simBtn.click();
+    await expect(page.locator('#simulator')).toBeInViewport({ timeout: 5000 });
+  });
 });
+

@@ -13,6 +13,7 @@ export function Component() {
   const location = useLocation();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
 
   // Check authentication safely without triggering 401 redirect
   useEffect(() => {
@@ -31,6 +32,47 @@ export function Component() {
     };
   }, [location.pathname]);
 
+  // Active section scroll spy
+  useEffect(() => {
+    if (location.pathname !== '/') {
+      setActiveSection('');
+      return;
+    }
+
+    const sectionIds = ['produkt', 'funktionen', 'simulator', 'datenschutz', 'kassen', 'ueber-uns'];
+
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 250;
+      let current = '';
+
+      // If scrolled near bottom of page, activate last section
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100) {
+        current = 'ueber-uns';
+        setActiveSection(current);
+        return;
+      }
+
+      for (const id of sectionIds) {
+        const el = document.getElementById(id);
+        if (el) {
+          const top = el.getBoundingClientRect().top + window.scrollY;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            current = id;
+            break;
+          }
+        }
+      }
+
+      setActiveSection(current);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
+
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
     if (location.pathname !== '/') {
@@ -44,6 +86,24 @@ export function Component() {
   };
 
   const isHome = location.pathname === '/';
+
+  const getNavLinkStyle = (id: string): React.CSSProperties => {
+    const isActive = activeSection === id;
+    return {
+      background: isActive ? 'rgba(29, 158, 117, 0.14)' : 'transparent',
+      color: isActive ? '#0f6e56' : '#55544f',
+      boxShadow: isActive ? '0 0 0 1px rgba(29, 158, 117, 0.28) inset' : 'none',
+      fontWeight: isActive ? 500 : 400,
+      borderRadius: 999,
+      padding: '7px 14px',
+      border: 'none',
+      fontFamily: 'inherit',
+      fontSize: 13,
+      cursor: 'pointer',
+      transition: 'background 0.15s, color 0.15s, box-shadow 0.15s',
+      whiteSpace: 'nowrap',
+    };
+  };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -71,7 +131,7 @@ export function Component() {
           className="glass-deep"
           style={{
             borderRadius: 999,
-            padding: '8px 18px 8px 14px',
+            padding: '7px 16px 7px 14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -95,7 +155,7 @@ export function Component() {
             <img
               src={brandIcon}
               alt="Longevity"
-              style={{ width: 34, height: 34, objectFit: 'contain' }}
+              style={{ width: 32, height: 32, objectFit: 'contain' }}
             />
             <span
               style={{
@@ -124,68 +184,66 @@ export function Component() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation with Active Scroll Spy */}
           <nav
             style={{
               display: 'none',
               alignItems: 'center',
-              gap: 24,
+              gap: 6,
             }}
             className="landing-desktop-nav"
           >
             <button
+              onClick={() => scrollTo('produkt')}
+              style={getNavLinkStyle('produkt')}
+            >
+              Produkt
+            </button>
+            <button
               onClick={() => scrollTo('funktionen')}
-              style={navLinkStyle}
+              style={getNavLinkStyle('funktionen')}
             >
               Funktionsweise
             </button>
             <button
               onClick={() => scrollTo('simulator')}
-              style={navLinkStyle}
+              style={getNavLinkStyle('simulator')}
             >
               Live-Simulator
             </button>
             <button
               onClick={() => scrollTo('datenschutz')}
-              style={navLinkStyle}
+              style={getNavLinkStyle('datenschutz')}
             >
               Datenschutz
             </button>
             <button
               onClick={() => scrollTo('kassen')}
-              style={navLinkStyle}
+              style={getNavLinkStyle('kassen')}
             >
               Für Krankenkassen
             </button>
             <button
               onClick={() => scrollTo('ueber-uns')}
-              style={navLinkStyle}
+              style={getNavLinkStyle('ueber-uns')}
             >
               Über uns
             </button>
           </nav>
 
           {/* Action CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {user ? (
-              <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-                <Btn small>
-                  Zum Dashboard →
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+              <Btn small variant={user ? 'primary' : 'secondary'}>
+                Zum Dashboard →
+              </Btn>
+            </Link>
+            {!user && (
+              <Link to="/register" style={{ textDecoration: 'none' }}>
+                <Btn variant="primary" small>
+                  Registrieren
                 </Btn>
               </Link>
-            ) : (
-              <>
-                <Link to="/login" style={{ textDecoration: 'none' }}>
-                  <Btn variant="ghost" small>
-                    Anmelden
-                  </Btn>
-                </Link>
-                <Link to="/register" style={{ textDecoration: 'none' }}>
-                  <Btn variant="primary" small>
-                    Kostenlos starten
-                  </Btn>
-                </Link>
-              </>
             )}
 
             {/* Mobile Hamburger Button */}
@@ -208,7 +266,7 @@ export function Component() {
           </div>
         </div>
 
-        {/* Mobile Dropdown Menu */}
+        {/* Mobile Dropdown Menu with Active State */}
         {mobileMenuOpen && (
           <div
             className="glass-deep"
@@ -218,36 +276,42 @@ export function Component() {
               padding: '16px 20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 8,
             }}
           >
             <button
+              onClick={() => scrollTo('produkt')}
+              style={{ ...getNavLinkStyle('produkt'), textAlign: 'left' }}
+            >
+              Produkt
+            </button>
+            <button
               onClick={() => scrollTo('funktionen')}
-              style={{ ...navLinkStyle, textAlign: 'left', padding: '8px 0' }}
+              style={{ ...getNavLinkStyle('funktionen'), textAlign: 'left' }}
             >
               Funktionsweise
             </button>
             <button
               onClick={() => scrollTo('simulator')}
-              style={{ ...navLinkStyle, textAlign: 'left', padding: '8px 0' }}
+              style={{ ...getNavLinkStyle('simulator'), textAlign: 'left' }}
             >
               Live-Simulator
             </button>
             <button
               onClick={() => scrollTo('datenschutz')}
-              style={{ ...navLinkStyle, textAlign: 'left', padding: '8px 0' }}
+              style={{ ...getNavLinkStyle('datenschutz'), textAlign: 'left' }}
             >
               Datenschutz
             </button>
             <button
               onClick={() => scrollTo('kassen')}
-              style={{ ...navLinkStyle, textAlign: 'left', padding: '8px 0' }}
+              style={{ ...getNavLinkStyle('kassen'), textAlign: 'left' }}
             >
               Für Krankenkassen
             </button>
             <button
               onClick={() => scrollTo('ueber-uns')}
-              style={{ ...navLinkStyle, textAlign: 'left', padding: '8px 0' }}
+              style={{ ...getNavLinkStyle('ueber-uns'), textAlign: 'left' }}
             >
               Über uns
             </button>
@@ -255,7 +319,7 @@ export function Component() {
         )}
       </header>
 
-      {/* Main Page Body: 0 padding on home for full-screen hero, 100px on subpages */}
+      {/* Main Page Body */}
       <main style={{ flex: 1, position: 'relative', zIndex: 1, paddingTop: isHome ? 0 : 96 }}>
         <Outlet />
       </main>
@@ -301,6 +365,11 @@ export function Component() {
               </div>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <li>
+                  <button onClick={() => scrollTo('produkt')} style={footerLinkStyle}>
+                    Produktübersicht
+                  </button>
+                </li>
+                <li>
                   <button onClick={() => scrollTo('funktionen')} style={footerLinkStyle}>
                     Funktionsweise (3 Säulen)
                   </button>
@@ -316,8 +385,8 @@ export function Component() {
                   </button>
                 </li>
                 <li>
-                  <Link to="/login" style={footerLinkStyle}>
-                    Dashboard Login
+                  <Link to="/dashboard" style={footerLinkStyle}>
+                    Dashboard
                   </Link>
                 </li>
               </ul>
@@ -420,18 +489,6 @@ export function Component() {
     </div>
   );
 }
-
-const navLinkStyle: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  padding: 0,
-  fontFamily: 'inherit',
-  fontSize: 13,
-  fontWeight: 500,
-  color: '#55544f',
-  cursor: 'pointer',
-  transition: 'color 0.15s',
-};
 
 const footerLinkStyle: React.CSSProperties = {
   background: 'none',
