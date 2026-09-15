@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, Btn } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
@@ -48,8 +49,9 @@ export function Component() {
                 <div style={{ fontSize: 11, color: '#888780', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 20 }}>
                   E-Mail bestätigt
                 </div>
-                <div data-testid="verify-email-success" style={{ display: 'inline-flex', padding: '14px 32px', borderRadius: 999, background: 'rgba(29,158,117,0.10)', color: '#0f6e56', fontSize: 20, fontWeight: 500, border: '1px solid rgba(29,158,117,0.22)', marginBottom: 24 }}>
-                  ✓ Deine E-Mail-Adresse wurde bestätigt.
+                <div data-testid="verify-email-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '14px 32px', borderRadius: 999, background: 'rgba(29,158,117,0.10)', color: '#0f6e56', fontSize: 20, fontWeight: 500, border: '1px solid rgba(29,158,117,0.22)', marginBottom: 24 }}>
+                  <Check size={22} color="#0f6e56" />
+                  <span>Deine E-Mail-Adresse wurde bestätigt.</span>
                 </div>
                 <div>
                   <Link to="/dashboard"><Btn>Zum Dashboard</Btn></Link>

@@ -1,7 +1,27 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { Check, X } from 'lucide-react';
 import heroVideo from '../assets/hero-video.mp4';
 import { Card, Btn } from '../components/ui.js';
+
+function useScrollReveal() {
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
+    );
+    const elements = document.querySelectorAll('.scroll-reveal');
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+}
 
 function CursorSpotlight() {
   const spotlightRef = useRef<HTMLDivElement>(null);
@@ -46,6 +66,7 @@ function CursorSpotlight() {
 }
 
 export function Component() {
+  useScrollReveal();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Interactive Live Simulator State
@@ -270,7 +291,7 @@ export function Component() {
 
       {/* ── 2. PRODUCT VALUE PROPOSITION & BIOMETRICS HUD ─────────── */}
       <div style={{ maxWidth: 1140, margin: '0 auto', padding: '60px 20px 0' }}>
-        <section id="produkt" style={{ marginBottom: 96, scrollMarginTop: 110 }}>
+        <section id="produkt" className="scroll-reveal" style={{ marginBottom: 96, scrollMarginTop: 110 }}>
           <div style={{ textAlign: 'center', maxWidth: 840, margin: '0 auto 56px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
               <span
@@ -409,9 +430,12 @@ export function Component() {
                     background: '#e1f5ee',
                     color: '#0f6e56',
                     border: '1px solid rgba(29, 158, 117, 0.25)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
                   }}
                 >
-                  ✓ Band 80 Verifiziert
+                  <Check size={12} /> Band 80 Verifiziert
                 </span>
               </div>
               <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
@@ -446,9 +470,13 @@ export function Component() {
                     color: '#55544f',
                     cursor: 'default',
                     boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
-                  ✓ {p}
+                  <Check size={13} color="#0f6e56" />
+                  <span>{p}</span>
                 </span>
               ))}
             </div>
@@ -543,11 +571,11 @@ export function Component() {
                 1
               </div>
               <h3 style={{ fontSize: 19, fontWeight: 500, color: '#22221f', margin: '0 0 10px' }}>
-                Aggregieren
+                Messen (Aggregate)
               </h3>
               <p style={{ fontSize: 14, color: '#55544f', lineHeight: 1.6, margin: 0 }}>
-                Verbinde mühelos Apple Health, Oura, Garmin oder lade deine Laborwerte per PDF/FHIR hoch.
-                Alle Daten werden in ein einheitliches Zeitreihenmodell ohne Duplikate überführt.
+                Verbinde Apple Health, Google Fit oder Wearables. LONGEVITY aggregiert 16 evidenzbasierte Biomarker
+                über 90 Tage – von Ruhepuls und HRV über Tiefschlaf bis zu Laborwerten.
               </p>
             </Card>
 
@@ -570,11 +598,11 @@ export function Component() {
                 2
               </div>
               <h3 style={{ fontSize: 19, fontWeight: 500, color: '#22221f', margin: '0 0 10px' }}>
-                Verstehen
+                Verstehen (Score 0–100)
               </h3>
               <p style={{ fontSize: 14, color: '#55544f', lineHeight: 1.6, margin: 0 }}>
-                Vier wissenschaftliche Domänen: Herz-Kreislauf (35%), Regeneration (25%), Aktivität (25%) und Risiko (15%).
-                Aus dem Score wird dein Vitalitätsalter ermittelt – statistisch geeicht an Alterskohorten.
+                Vier transparente Domänen: Herzgesundheit, Regeneration, Aktivität und Risiko-Faktoren.
+                Sie fließen in deinen Vitalitätsscore und dein biologisches Alter ein.
               </p>
             </Card>
 
@@ -610,6 +638,7 @@ export function Component() {
         {/* ── 4. INTERAKTIVER SIMULATOR (DER PITCH!) ─────────────────── */}
         <section
           id="simulator"
+          className="scroll-reveal"
           style={{
             marginBottom: 110,
             scrollMarginTop: 110,
@@ -824,7 +853,7 @@ export function Component() {
         </section>
 
         {/* ── 5. DATENSCHUTZ & ZERO-KNOWLEDGE SHARING ──────────────── */}
-        <section id="datenschutz" style={{ marginBottom: 110, scrollMarginTop: 110 }}>
+        <section id="datenschutz" className="scroll-reveal" style={{ marginBottom: 110, scrollMarginTop: 110 }}>
           <div style={{ textAlign: 'center', marginBottom: 44 }}>
             <span style={{ fontSize: 12, fontWeight: 500, color: '#0f6e56', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
               Privatsphäre by Design
@@ -855,14 +884,17 @@ export function Component() {
                 Volle Rohdatenübertragung
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, color: '#55544f' }}>
-                <li style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ color: '#a32d2d' }}>✕</span> Partner und Werbenetzwerke erhalten jede Herzfrequenz & Schlafminute
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <X size={16} color="#a32d2d" style={{ flexShrink: 0 }} />
+                  <span>Partner und Werbenetzwerke erhalten jede Herzfrequenz & Schlafminute</span>
                 </li>
-                <li style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ color: '#a32d2d' }}>✕</span> Hohes Missbrauchs- und Datenleck-Risiko
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <X size={16} color="#a32d2d" style={{ flexShrink: 0 }} />
+                  <span>Hohes Missbrauchs- und Datenleck-Risiko</span>
                 </li>
-                <li style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ color: '#a32d2d' }}>✕</span> Keine Kontrolle über spätere Profilbildung
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <X size={16} color="#a32d2d" style={{ flexShrink: 0 }} />
+                  <span>Keine Kontrolle über spätere Profilbildung</span>
                 </li>
               </ul>
             </Card>
@@ -876,14 +908,17 @@ export function Component() {
                 Kryptographische Zero-Knowledge-Bänder
               </h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13, color: '#55544f' }}>
-                <li style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ color: '#0f6e56' }}>✓</span> Deine Rohdaten bleiben verschlüsselt in deiner Hand
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Check size={16} color="#0f6e56" style={{ flexShrink: 0 }} />
+                  <span>Deine Rohdaten bleiben verschlüsselt in deiner Hand</span>
                 </li>
-                <li style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ color: '#0f6e56' }}>✓</span> Partner verifizieren ausschließlich das erreichte Band (z.B. Band 80)
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Check size={16} color="#0f6e56" style={{ flexShrink: 0 }} />
+                  <span>Partner verifizieren ausschließlich das erreichte Band (z.B. Band 80)</span>
                 </li>
-                <li style={{ display: 'flex', gap: 8 }}>
-                  <span style={{ color: '#0f6e56' }}>✓</span> Jederzeit per Mausklick widerrufbar via Ed25519-Signatur
+                <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Check size={16} color="#0f6e56" style={{ flexShrink: 0 }} />
+                  <span>Jederzeit per Mausklick widerrufbar via Ed25519-Signatur</span>
                 </li>
               </ul>
             </Card>
@@ -891,7 +926,7 @@ export function Component() {
         </section>
 
         {/* ── 6. FÜR KRANKENKASSEN & PARTNER (#10 KONTAKTFORMULAR) ──── */}
-        <section id="kassen" style={{ marginBottom: 110, scrollMarginTop: 110 }}>
+        <section id="kassen" className="scroll-reveal" style={{ marginBottom: 110, scrollMarginTop: 110 }}>
           <div
             className="glass-deep"
             style={{
@@ -922,15 +957,15 @@ export function Component() {
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13, color: '#55544f' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ color: '#1d9e75', fontWeight: 600 }}>✓</span>
+                    <Check size={16} color="#1d9e75" style={{ flexShrink: 0 }} />
                     <span>100% DSGVO-konforme Bonusprogramme ohne Rohdatenzugriff</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ color: '#1d9e75', fontWeight: 600 }}>✓</span>
+                    <Check size={16} color="#1d9e75" style={{ flexShrink: 0 }} />
                     <span>Fälschungssichere Verifikation via <code>/verify/:id</code></span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ color: '#1d9e75', fontWeight: 600 }}>✓</span>
+                    <Check size={16} color="#1d9e75" style={{ flexShrink: 0 }} />
                     <span>Persönliche Betreuung & maßgeschneiderte Pilotprojekte</span>
                   </div>
                 </div>
@@ -940,7 +975,7 @@ export function Component() {
               <Card className="card-interactive" style={{ padding: '32px 28px', background: 'rgba(255, 255, 255, 0.85)' }}>
                 {contactSubmitted ? (
                   <div style={{ textAlign: 'center', padding: '24px 8px' }}>
-                    <div style={{ fontSize: 36, marginBottom: 12 }}>✓</div>
+                    <Check size={40} color="#0f6e56" style={{ margin: '0 auto 12px', display: 'block' }} />
                     <h3 style={{ fontSize: 18, fontWeight: 500, color: '#0f6e56', margin: '0 0 8px' }}>
                       Vielen Dank für Ihre Anfrage!
                     </h3>
@@ -1023,7 +1058,7 @@ export function Component() {
         </section>
 
         {/* ── 7. ÜBER UNS & DHBW FORSCHUNGSKONTEXT ───────────────────── */}
-        <section id="ueber-uns" style={{ marginBottom: 110, textAlign: 'center', scrollMarginTop: 110 }}>
+        <section id="ueber-uns" className="scroll-reveal" style={{ marginBottom: 110, textAlign: 'center', scrollMarginTop: 110 }}>
           <span style={{ fontSize: 12, fontWeight: 500, color: '#0f6e56', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
             Hinter den Kulissen
           </span>
@@ -1063,7 +1098,7 @@ export function Component() {
         </section>
 
         {/* ── 8. FINAL CALL TO ACTION BANNER ────────────────────────── */}
-        <section style={{ marginBottom: 40 }}>
+        <section className="scroll-reveal" style={{ marginBottom: 40 }}>
           <div
             className="glass-deep"
             style={{

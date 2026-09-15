@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ShieldAlert } from 'lucide-react';
 import { Card, PageTitle, Chip } from '../components/ui.js';
 
 export function Component() {
@@ -42,7 +43,7 @@ export function Component() {
           padding: '16px 20px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 18 }}>⚕️</span>
+            <ShieldAlert size={20} color="#854f0b" />
             <strong style={{ color: '#854f0b', fontSize: 14 }}>Wichtiger Hinweis: Kein Medizinprodukt!</strong>
           </div>
           <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
