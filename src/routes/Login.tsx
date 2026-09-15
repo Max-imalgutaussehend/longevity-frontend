@@ -59,6 +59,9 @@ export function Component() {
               <div>
                 <FieldLabel>Passwort</FieldLabel>
                 <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="login-password" name="password" />
+                <div style={{ textAlign: 'right', marginTop: 6 }}>
+                  <Link to="/forgot-password" style={{ color: '#888780', fontSize: 12, textDecoration: 'none' }}>Passwort vergessen?</Link>
+                </div>
               </div>
               {error && <p style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
               <div style={{ paddingTop: 6 }}>

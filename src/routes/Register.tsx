@@ -24,25 +24,52 @@ export function Component() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [sex, setSex] = useState<'m' | 'f' | ''>('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sex) { setError('Bitte Geschlecht auswählen.'); return; }
+    if (password !== passwordConfirm) { setError('Die Passwörter stimmen nicht überein.'); return; }
     setError(null);
     setLoading(true);
     try {
       await apiClient('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, birthDate, sex }) });
-      navigate('/dashboard');
+      setRegistered(true);
     } catch (err: unknown) {
       setError((err as Error).message ?? 'Registrierung fehlgeschlagen.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (registered) {
+    return (
+      <AuthShell>
+        <div style={{ width: '100%', maxWidth: 440 }}>
+          <div style={{ textAlign: 'center', marginBottom: 36 }}>
+            <img src={brandIcon} alt="Longevity" style={{ width: 100, height: 100, objectFit: 'contain', display: 'block', margin: '0 auto 16px' }} />
+          </div>
+          <Card style={{ padding: '36px 36px 32px', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: '#888780', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16 }}>
+              Fast geschafft
+            </div>
+            <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 12 }}>
+              Bitte bestätige deine E-Mail-Adresse
+            </div>
+            <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 24 }}>
+              Wir haben dir einen Bestätigungslink an <strong>{email}</strong> geschickt. Öffne die E-Mail und klicke auf den Link, um dein Konto vollständig zu nutzen.
+            </p>
+            <Btn full testId="register-go-dashboard" onClick={() => navigate('/dashboard')}>Weiter zum Dashboard</Btn>
+          </Card>
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell>
@@ -61,6 +88,10 @@ export function Component() {
               <div>
                 <FieldLabel>Passwort</FieldLabel>
                 <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="register-password" name="password" />
+              </div>
+              <div>
+                <FieldLabel>Passwort bestätigen</FieldLabel>
+                <GlassInput type="password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="register-password-confirm" name="passwordConfirm" />
               </div>
               <div>
                 <FieldLabel>Geburtsdatum</FieldLabel>

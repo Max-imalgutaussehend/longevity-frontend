@@ -10,8 +10,33 @@ export const routes: RouteObject[] = [
     lazy: () => import('./routes/Register.js'),
   },
   {
+    path: '/forgot-password',
+    lazy: () => import('./routes/ForgotPassword.js'),
+  },
+  {
+    path: '/reset-password/:token',
+    lazy: () => import('./routes/ResetPassword.js'),
+  },
+  {
+    path: '/verify-email/:token',
+    lazy: () => import('./routes/VerifyEmail.js'),
+  },
+  {
     path: '/verify/:id',
     lazy: () => import('./routes/Verify.js'),
+  },
+  {
+    path: '/insurer',
+    lazy: () => import('./routes/InsurerShell.js'),
+    children: [
+      { index: true, lazy: () => import('./routes/InsurerOverview.js') },
+      { path: 'overview', lazy: () => import('./routes/InsurerOverview.js') },
+      { path: 'vorteile', lazy: () => import('./routes/InsurerOffers.js') },
+    ],
+  },
+  {
+    path: '/insurer-invite/:token',
+    lazy: () => import('./routes/InsurerInvite.js'),
   },
   // Public layer
   {
