@@ -1,7 +1,49 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import heroVideo from '../assets/hero-video.mp4';
 import { Card, Btn } from '../components/ui.js';
+
+function CursorSpotlight() {
+  const spotlightRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = spotlightRef.current;
+    if (!el) return;
+
+    let rafId: number;
+    const handleMove = (e: MouseEvent) => {
+      rafId = requestAnimationFrame(() => {
+        if (el) {
+          el.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+          el.style.opacity = '1';
+        }
+      });
+    };
+
+    const handleLeave = () => {
+      if (el) {
+        el.style.opacity = '0';
+      }
+    };
+
+    window.addEventListener('mousemove', handleMove, { passive: true });
+    document.addEventListener('mouseleave', handleLeave);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseleave', handleLeave);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={spotlightRef}
+      className="cursor-light-spotlight"
+      aria-hidden="true"
+    />
+  );
+}
 
 export function Component() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -78,6 +120,9 @@ export function Component() {
 
   return (
     <div style={{ width: '100%', position: 'relative' }}>
+      {/* Subtle Ambient Cursor Light Spotlight */}
+      <CursorSpotlight />
+
       {/* ── 1. FULLSCREEN CLEAN VIDEO HERO (100vh) ────────────────── */}
       <section
         id="hero"
@@ -281,7 +326,7 @@ export function Component() {
             </p>
           </div>
 
-          {/* Biometrics HUD Showcase Cards */}
+          {/* Biometrics Showcase Cards */}
           <div
             style={{
               display: 'grid',
@@ -290,35 +335,35 @@ export function Component() {
               marginBottom: 56,
             }}
           >
-            {/* HUD Card 1: Tiefenatmung & Erholung */}
-            <Card style={{ padding: '28px 30px' }}>
+            {/* Card 1: Kardiometabolische Vitalität & Erholung */}
+            <Card className="card-interactive" style={{ padding: '28px 30px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span
                     style={{
-                      width: 9,
-                      height: 9,
+                      width: 8,
+                      height: 8,
                       borderRadius: 999,
                       background: '#1d9e75',
-                      boxShadow: '0 0 10px #1d9e75',
+                      boxShadow: '0 0 8px rgba(29, 158, 117, 0.6)',
                     }}
                   />
                   <span style={{ fontSize: 11, fontWeight: 600, color: '#0f6e56', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Live-Biometrie
+                    Kardiometabolische Vitalität
                   </span>
                 </div>
-                <span style={{ fontSize: 12, color: '#888780' }}>Parasympathikus aktiv</span>
+                <span style={{ fontSize: 12, color: '#888780' }}>Wearable-Synchronisation</span>
               </div>
               <div style={{ fontSize: 20, fontWeight: 500, color: '#22221f', marginBottom: 6 }}>
                 Ruhepuls: 52 bpm · HRV: 78 ms
               </div>
               <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
-                Tiefenatmung und kardiovaskuläre Ruhephase erkannt. Dein Erholungsindex liegt aktuell bei 94%.
+                Automatisch aggregiert aus deinen Ruhedaten. Hohe Herzfrequenzvariabilität (HRV) spiegelt kardiovaskuläre Resilienz und Langlebigkeit wider.
               </p>
             </Card>
 
-            {/* HUD Card 2: Biologisches Vitalitätsalter */}
-            <Card style={{ padding: '28px 30px' }}>
+            {/* Card 2: Biologisches Vitalitätsalter */}
+            <Card className="card-interactive" style={{ padding: '28px 30px' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
                 Biologisches Alter
               </div>
@@ -345,8 +390,8 @@ export function Component() {
               </p>
             </Card>
 
-            {/* HUD Card 3: LONGEVITY Score & Band */}
-            <Card style={{ padding: '28px 30px' }}>
+            {/* Card 3: LONGEVITY Score & Band */}
+            <Card className="card-interactive" style={{ padding: '28px 30px' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
                 LONGEVITY Score
               </div>
@@ -392,13 +437,14 @@ export function Component() {
               {['Apple Health', 'Google Fit', 'Oura Ring', 'Garmin', 'Withings', 'Strava', 'Labordiagnostik (FHIR)'].map((p) => (
                 <span
                   key={p}
-                  className="glass"
+                  className="glass chip-interactive"
                   style={{
                     padding: '7px 16px',
                     borderRadius: 999,
                     fontSize: 13,
                     fontWeight: 500,
                     color: '#55544f',
+                    cursor: 'default',
                     boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
                   }}
                 >
@@ -416,7 +462,7 @@ export function Component() {
               gap: 20,
             }}
           >
-            <Card style={{ padding: '24px 28px', textAlign: 'left' }}>
+            <Card className="card-interactive" style={{ padding: '24px 28px', textAlign: 'left' }}>
               <div style={{ fontSize: 28, fontWeight: 500, color: '#0f6e56', marginBottom: 6 }}>
                 0 Rohdaten
               </div>
@@ -429,7 +475,7 @@ export function Component() {
               </p>
             </Card>
 
-            <Card style={{ padding: '24px 28px', textAlign: 'left' }}>
+            <Card className="card-interactive" style={{ padding: '24px 28px', textAlign: 'left' }}>
               <div style={{ fontSize: 28, fontWeight: 500, color: '#0f6e56', marginBottom: 6 }}>
                 0 – 100
               </div>
@@ -442,7 +488,7 @@ export function Component() {
               </p>
             </Card>
 
-            <Card style={{ padding: '24px 28px', textAlign: 'left' }}>
+            <Card className="card-interactive" style={{ padding: '24px 28px', textAlign: 'left' }}>
               <div style={{ fontSize: 28, fontWeight: 500, color: '#0f6e56', marginBottom: 6 }}>
                 100% DSGVO
               </div>
@@ -479,7 +525,7 @@ export function Component() {
             }}
           >
             {/* Säule 1 */}
-            <Card style={{ padding: '36px 32px' }}>
+            <Card className="card-interactive" style={{ padding: '36px 32px' }}>
               <div
                 style={{
                   width: 44,
@@ -506,7 +552,7 @@ export function Component() {
             </Card>
 
             {/* Säule 2 */}
-            <Card style={{ padding: '36px 32px' }}>
+            <Card className="card-interactive" style={{ padding: '36px 32px' }}>
               <div
                 style={{
                   width: 44,
@@ -533,7 +579,7 @@ export function Component() {
             </Card>
 
             {/* Säule 3 */}
-            <Card style={{ padding: '36px 32px' }}>
+            <Card className="card-interactive" style={{ padding: '36px 32px' }}>
               <div
                 style={{
                   width: 44,
@@ -561,7 +607,7 @@ export function Component() {
           </div>
         </section>
 
-        {/* ── 4. INTERAKTIVER LIVE-SIMULATOR (DER PITCH!) ───────────── */}
+        {/* ── 4. INTERAKTIVER SIMULATOR (DER PITCH!) ─────────────────── */}
         <section
           id="simulator"
           style={{
@@ -593,7 +639,7 @@ export function Component() {
                 Interaktive Demo
               </span>
               <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 500, color: '#22221f', margin: '10px 0 8px' }}>
-                Teste die LONGEVITY-Hebel-Engine live
+                Erlebe die LONGEVITY-Hebel-Engine interaktiv
               </h2>
               <p style={{ fontSize: 15, color: '#55544f', maxWidth: 620, margin: '0 auto' }}>
                 Bewege die Regler und beobachte, wie sich kleine Lebensstil-Anpassungen direkt auf deinen
@@ -694,9 +740,9 @@ export function Component() {
                 </div>
               </div>
 
-              {/* Live Result Score Card */}
+              {/* Result Score Card */}
               <div
-                className="glass"
+                className="glass card-interactive"
                 style={{
                   borderRadius: 20,
                   padding: '36px 32px',
@@ -801,7 +847,7 @@ export function Component() {
             }}
           >
             {/* Left: What traditional apps do */}
-            <Card style={{ padding: '36px 32px', background: 'rgba(255, 240, 240, 0.45)', border: '1px solid rgba(163, 45, 45, 0.2)' }}>
+            <Card className="card-interactive" style={{ padding: '36px 32px', background: 'rgba(255, 240, 240, 0.45)', border: '1px solid rgba(163, 45, 45, 0.2)' }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#a32d2d', textTransform: 'uppercase', marginBottom: 12 }}>
                 Herkömmliche Gesundheits-Apps
               </div>
@@ -822,7 +868,7 @@ export function Component() {
             </Card>
 
             {/* Right: What LONGEVITY does */}
-            <Card style={{ padding: '36px 32px', background: 'rgba(225, 245, 238, 0.55)', border: '1px solid rgba(29, 158, 117, 0.35)' }}>
+            <Card className="card-interactive" style={{ padding: '36px 32px', background: 'rgba(225, 245, 238, 0.55)', border: '1px solid rgba(29, 158, 117, 0.35)' }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#0f6e56', textTransform: 'uppercase', marginBottom: 12 }}>
                 Der LONGEVITY-Ansatz
               </div>
@@ -891,7 +937,7 @@ export function Component() {
               </div>
 
               {/* Contact Form (#10) */}
-              <Card style={{ padding: '32px 28px', background: 'rgba(255, 255, 255, 0.85)' }}>
+              <Card className="card-interactive" style={{ padding: '32px 28px', background: 'rgba(255, 255, 255, 0.85)' }}>
                 {contactSubmitted ? (
                   <div style={{ textAlign: 'center', padding: '24px 8px' }}>
                     <div style={{ fontSize: 36, marginBottom: 12 }}>✓</div>
