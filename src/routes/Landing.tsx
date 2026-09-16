@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import heroVideo from '../assets/hero-video.mp4';
 import { Card, Btn } from '../components/ui.js';
+import { BrandLogosRibbon, BrandEcosystemSection } from '../components/BrandLogos.js';
 
 function useScrollReveal() {
   useEffect(() => {
@@ -289,8 +290,11 @@ export function Component() {
         </div>
       </section>
 
+      {/* ── BRAND LOGOS & PLATFORM INTEGRATIONS RIBBON ─────────────── */}
+      <BrandLogosRibbon />
+
       {/* ── 2. PRODUCT VALUE PROPOSITION & BIOMETRICS HUD ─────────── */}
-      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '60px 20px 0' }}>
+      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '32px 20px 0' }}>
         <section id="produkt" className="scroll-reveal" style={{ marginBottom: 96, scrollMarginTop: 110 }}>
           <div style={{ textAlign: 'center', maxWidth: 840, margin: '0 auto 56px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
@@ -444,43 +448,8 @@ export function Component() {
             </Card>
           </div>
 
-          {/* Ecosystem Sources Bar */}
-          <div style={{ textAlign: 'center', marginBottom: 44 }}>
-            <p style={{ fontSize: 12, fontWeight: 500, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 18 }}>
-              Kompatibel mit führenden Wearables & Diagnostik-Schnittstellen
-            </p>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 14,
-              }}
-            >
-              {['Apple Health', 'Google Fit', 'Oura Ring', 'Garmin', 'Withings', 'Strava', 'Labordiagnostik (FHIR)'].map((p) => (
-                <span
-                  key={p}
-                  className="glass chip-interactive"
-                  style={{
-                    padding: '7px 16px',
-                    borderRadius: 999,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: '#55544f',
-                    cursor: 'default',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <Check size={13} color="#0f6e56" />
-                  <span>{p}</span>
-                </span>
-              ))}
-            </div>
-          </div>
+          {/* Ecosystem Sources Showcase with Logos */}
+          <BrandEcosystemSection />
 
           {/* 3 Core Trust Badges */}
           <div
