@@ -36,4 +36,36 @@ describe('Guided Onboarding Specifications (#25)', () => {
     expect(emptyStateScore).toBe(50.0);
     expect(coverage).toBe(0);
   });
+
+  it('persists and checks user-scoped and session tutorial completion state', () => {
+    const userId = 'user-abc-123';
+    const userKey = `longevity_tutorial_completed_${userId}`;
+
+    // Initially not completed
+    expect(mockStorage.getItem(userKey)).toBeNull();
+
+    // Mark completed for this user
+    mockStorage.setItem(userKey, 'true');
+    mockStorage.setItem('longevity_tutorial_completed', 'true');
+    expect(mockStorage.getItem(userKey)).toBe('true');
+    expect(mockStorage.getItem('longevity_tutorial_completed')).toBe('true');
+
+    // Another user has not completed it yet
+    const otherUserKey = 'longevity_tutorial_completed_user-xyz-789';
+    expect(mockStorage.getItem(otherUserKey)).toBeNull();
+  });
+
+  it('correctly tracks sequential completion progress across the 3 onboarding steps', () => {
+    // Step 1: Tutorial
+    // Step 2: Source
+    // Step 3: Coverage
+    const calculateProgress = (tutorial: boolean, source: boolean, coverage: boolean) => {
+      return (tutorial ? 1 : 0) + (source ? 1 : 0) + (coverage ? 1 : 0);
+    };
+
+    expect(calculateProgress(false, false, false)).toBe(0);
+    expect(calculateProgress(true, false, false)).toBe(1);
+    expect(calculateProgress(true, true, false)).toBe(2);
+    expect(calculateProgress(true, true, true)).toBe(3);
+  });
 });

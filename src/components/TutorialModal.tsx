@@ -23,14 +23,13 @@ import {
   Building2,
   Dumbbell,
   Watch,
-  BarChart3,
-  Sliders,
-  Radio,
   ArrowLeft,
   ArrowRight,
   Lightbulb,
+  CheckCircle2,
 } from 'lucide-react';
 import { apiClient } from '../api/client.js';
+import type { User } from '../api/types.js';
 import { Btn, Chip } from './ui.js';
 import brandIcon from '../assets/brand-icon.png';
 
@@ -123,6 +122,18 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
   const [step, setStep] = useState(initialStep);
   const [dontShowAgain, setDontShowAgain] = useState(true);
 
+  const { data: user } = useQuery<User>({
+    queryKey: ['me'],
+    queryFn: () => apiClient<User>('/me'),
+  });
+
+  // Reset step whenever opened
+  useEffect(() => {
+    if (isOpen) {
+      setStep(initialStep);
+    }
+  }, [isOpen, initialStep]);
+
   // ── Step 1 State: Interactive Archetypes & Dynamic Count-Up ────────
   const [selectedArchetype, setSelectedArchetype] = useState<Archetype>('athletic');
   const [userAge, setUserAge] = useState<number>(30);
@@ -212,9 +223,13 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
   const handleClose = useCallback(() => {
     if (dontShowAgain) {
       localStorage.setItem('longevity_tutorial_completed', 'true');
+      if (user?.id) {
+        localStorage.setItem(`longevity_tutorial_completed_${user.id}`, 'true');
+      }
     }
+    window.dispatchEvent(new CustomEvent('tutorial-completed'));
     onClose();
-  }, [dontShowAgain, onClose]);
+  }, [dontShowAgain, onClose, user?.id]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -963,108 +978,164 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
               </div>
             )}
 
-            {/* ════════ STEP 5: Grand Finale & Cockpit Tour ════════ */}
+            {/* ════════ STEP 5: Grand Finale & Onboarding Transition ════════ */}
             {step === 5 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ textAlign: 'center' }}>
                   <Chip color="green">
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Schritt 5 von 5 · Bereit zum Start <Sparkles size={12} />
+                      Schritt 5 von 5 · Einführung abgeschlossen <Sparkles size={12} />
                     </span>
                   </Chip>
                   <h2 style={{ fontSize: 22, fontWeight: 600, color: '#22221f', margin: '10px 0 4px', letterSpacing: '-0.02em' }}>
-                    Dein persönliches Cockpit ist startklar!
+                    Nahtloser Übergang zum Onboarding
                   </h2>
-                  <p style={{ fontSize: 13, color: '#55544f', maxWidth: 500, margin: '0 auto', lineHeight: 1.45 }}>
-                    Klicke auf einen Bereich, um direkt dorthin zu navigieren:
+                  <p style={{ fontSize: 13, color: '#55544f', maxWidth: 540, margin: '0 auto', lineHeight: 1.5 }}>
+                    Du hast die Grundlagen kennengelernt! Wähle jetzt deinen ersten Schritt, um dein Cockpit mit echten Vitalitätsdaten zu beleben:
                   </p>
                 </div>
 
-                {/* 4 Interactive App Tour Tiles */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {/* 2 Primary Action Cards for Onboarding */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {/* Card 1: Connect Tracker */}
+                  <div
+                    style={{
+                      padding: 16,
+                      borderRadius: 16,
+                      border: '1.5px solid rgba(29,158,117,0.3)',
+                      background: 'rgba(255,255,255,0.9)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      boxShadow: '0 4px 16px -4px rgba(15,110,86,0.08)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(29,158,117,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f6e56' }}>
+                          <Watch size={18} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 11, color: '#0f6e56', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Empfohlen</span>
+                          <strong style={{ fontSize: 13, color: '#22221f', display: 'block' }}>1. Tracker verbinden</strong>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12, color: '#55544f', margin: 0, lineHeight: 1.45 }}>
+                        Apple Health, Google Health / Fit, Garmin oder Oura verbinden für kontinuierliches Tracking.
+                      </p>
+                    </div>
+                    <Btn
+                      small
+                      full
+                      onClick={() => {
+                        handleClose();
+                        navigate('/daten');
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    >
+                      Tracker verbinden <ArrowRight size={13} />
+                    </Btn>
+                  </div>
+
+                  {/* Card 2: 90 Days Mock Data */}
+                  <div
+                    style={{
+                      padding: 16,
+                      borderRadius: 16,
+                      border: mockSuccess ? '1.5px solid rgba(29,158,117,0.4)' : '1px solid rgba(0,0,0,0.08)',
+                      background: mockSuccess ? 'rgba(29,158,117,0.06)' : 'rgba(255,255,255,0.9)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
+                          <Dices size={18} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: 11, color: '#888780', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sofort testen</span>
+                          <strong style={{ fontSize: 13, color: '#22221f', display: 'block' }}>2. 90 Tage Beispieldaten</strong>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12, color: '#55544f', margin: 0, lineHeight: 1.45 }}>
+                        {mockSuccess ? (
+                          <span style={{ color: '#0f6e56', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle2 size={15} /> Beispieldaten erfolgreich generiert! Dein Dashboard ist jetzt befüllt.
+                          </span>
+                        ) : (
+                          'Erkunde das Cockpit sofort mit realistischen Schritten, Schlaf- und Ruhepulskurven.'
+                        )}
+                      </p>
+                    </div>
+                    {mockSuccess ? (
+                      <Btn
+                        small
+                        full
+                        variant="secondary"
+                        onClick={() => {
+                          handleClose();
+                          navigate('/dashboard');
+                        }}
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      >
+                        Dashboard öffnen <ArrowRight size={13} />
+                      </Btn>
+                    ) : (
+                      <Btn
+                        small
+                        full
+                        variant="secondary"
+                        onClick={handleTriggerMock}
+                        disabled={generateMockMutation.isPending}
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      >
+                        {generateMockMutation.isPending ? (
+                          'Wird geladen...'
+                        ) : (
+                          <>
+                            <Zap size={13} /> Testdaten laden
+                          </>
+                        )}
+                      </Btn>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick links to cockpit features */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, fontSize: 12, color: '#55544f' }}>
+                  <span>Oder direkt zu:</span>
                   <button
                     type="button"
-                    className="card-interactive"
                     onClick={() => { handleClose(); navigate('/dashboard'); }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 14,
-                      border: '1px solid rgba(0,0,0,0.08)',
-                      background: 'rgba(255,255,255,0.85)',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
+                    style={{ background: 'none', border: 'none', color: '#0f6e56', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 12 }}
                   >
-                    <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', color: '#0f6e56' }}><BarChart3 size={20} /></div>
-                    <strong style={{ fontSize: 12, color: '#22221f', display: 'block' }}>Dashboard & Score</strong>
-                    <span style={{ fontSize: 11, color: '#55544f', lineHeight: 1.3 }}>
-                      90-Tage Trendlinie & 4 Domänen im Überblick.
-                    </span>
+                    Dashboard
                   </button>
-
+                  <span>·</span>
                   <button
                     type="button"
-                    className="card-interactive"
                     onClick={() => { handleClose(); navigate('/hebel'); }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 14,
-                      border: '1px solid rgba(0,0,0,0.08)',
-                      background: 'rgba(255,255,255,0.85)',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
+                    style={{ background: 'none', border: 'none', color: '#0f6e56', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 12 }}
                   >
-                    <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', color: '#0f6e56' }}><Sliders size={20} /></div>
-                    <strong style={{ fontSize: 12, color: '#22221f', display: 'block' }}>Hebel-Simulator</strong>
-                    <span style={{ fontSize: 11, color: '#55544f', lineHeight: 1.3 }}>
-                      Finde deine wirkungsvollsten Gewohnheiten.
-                    </span>
+                    Hebel-Simulator
                   </button>
-
+                  <span>·</span>
                   <button
                     type="button"
-                    className="card-interactive"
-                    onClick={() => { handleClose(); navigate('/daten'); }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 14,
-                      border: '1px solid rgba(0,0,0,0.08)',
-                      background: 'rgba(255,255,255,0.85)',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', color: '#0f6e56' }}><Radio size={20} /></div>
-                    <strong style={{ fontSize: 12, color: '#22221f', display: 'block' }}>Daten & Wearables</strong>
-                    <span style={{ fontSize: 11, color: '#55544f', lineHeight: 1.3 }}>
-                      Google Health, Apple Health & Laborwerte.
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="card-interactive"
                     onClick={() => { handleClose(); navigate('/freigabe'); }}
-                    style={{
-                      padding: 12,
-                      borderRadius: 14,
-                      border: '1px solid rgba(0,0,0,0.08)',
-                      background: 'rgba(255,255,255,0.85)',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
+                    style={{ background: 'none', border: 'none', color: '#0f6e56', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 12 }}
                   >
-                    <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', color: '#0f6e56' }}><Shield size={20} /></div>
-                    <strong style={{ fontSize: 12, color: '#22221f', display: 'block' }}>Freigabe & Vorteile</strong>
-                    <span style={{ fontSize: 11, color: '#55544f', lineHeight: 1.3 }}>
-                      Verifizierbare Links erstellen & Partner-Boni.
-                    </span>
+                    Freigaben
                   </button>
                 </div>
 
                 {/* Dont show again checkbox */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 2 }}>
                   <input
                     type="checkbox"
                     id="dontShowAgain"
@@ -1073,7 +1144,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     style={{ accentColor: '#0f6e56', cursor: 'pointer' }}
                   />
                   <label htmlFor="dontShowAgain" style={{ fontSize: 12, color: '#55544f', cursor: 'pointer' }}>
-                    Dieses Tutorial beim Start nicht mehr automatisch anzeigen (jederzeit im Profil abrufbar)
+                    Dieses Tutorial beim Start nicht mehr automatisch anzeigen (jederzeit im Profil und Onboarding abrufbar)
                   </label>
                 </div>
               </div>
@@ -1107,8 +1178,15 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                   Weiter <ArrowRight size={14} />
                 </Btn>
               ) : (
-                <Btn onClick={handleClose} className="anim-shimmer" style={{ color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  Jetzt Dashboard entdecken <Sparkles size={14} />
+                <Btn
+                  onClick={() => {
+                    handleClose();
+                    navigate('/dashboard');
+                  }}
+                  className="anim-shimmer"
+                  style={{ color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  Weiter zum Onboarding <Sparkles size={14} />
                 </Btn>
               )}
             </div>
