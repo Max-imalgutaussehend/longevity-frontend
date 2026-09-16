@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { routes } from '../routesConfig.js';
+import { SUPPORTED_BRANDS } from '../components/BrandLogos.js';
 
 export function calculateSimulatedScore(restingHr: number, sleepHours: number, vo2max: number, zone2Min: number) {
   const hrImpact = (65 - restingHr) * 0.45;
@@ -76,5 +77,28 @@ describe('Landing Page Simulator Logic (#8, #18)', () => {
 
     const extremeHigh = calculateSimulatedScore(35, 9.0, 75, 400);
     expect(extremeHigh.score).toBeLessThanOrEqual(98);
+  });
+});
+
+describe('Landing Page Partner Brand Logos', () => {
+  it('defines the key supported health & wearable platforms', () => {
+    const brandIds = SUPPORTED_BRANDS.map((b) => b.id);
+    expect(brandIds).toContain('apple');
+    expect(brandIds).toContain('google');
+    expect(brandIds).toContain('fitbit');
+    expect(brandIds).toContain('garmin');
+    expect(brandIds).toContain('oura');
+    expect(brandIds).toContain('strava');
+    expect(brandIds).toContain('withings');
+  });
+
+  it('provides valid Logo component and metadata for each brand', () => {
+    for (const brand of SUPPORTED_BRANDS) {
+      expect(brand.name).toBeTruthy();
+      expect(brand.category).toBeTruthy();
+      expect(brand.metrics).toBeTruthy();
+      expect(brand.badge).toBeTruthy();
+      expect(typeof brand.Logo).toBe('function');
+    }
   });
 });
