@@ -36,6 +36,7 @@ import {
   Shield,
   ShieldCheck,
   AlertTriangle,
+  Info,
 } from 'lucide-react';
 import { ConsentModal } from '../components/ConsentModal.js';
 import { apiClient } from '../api/client.js';
@@ -1166,8 +1167,26 @@ export function Component() {
                     </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Oura Ring</div>
-                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 12 }}>
                     Schlaf-Scores, Readiness, Ruhepuls und HRV-Trends über die Cloud-API.
+                  </div>
+                  <div style={{
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: 'rgba(238, 108, 43, 0.08)',
+                    border: '1px solid rgba(238, 108, 43, 0.25)',
+                    fontSize: 12,
+                    color: '#c2410c',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    lineHeight: 1.45,
+                  }}>
+                    <Info size={16} color="#c2410c" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <strong>Hinweis:</strong> Die Verknüpfung mit Oura erfordert ein Oura-Abonnement und ist derzeit noch nicht implementiert.
+                    </div>
                   </div>
                   {info.isTokenExpired && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,108,0,0.08)', border: '1px solid rgba(239,108,0,0.25)', fontSize: 12, color: '#b26a00', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
@@ -1315,9 +1334,11 @@ export function Component() {
                     <>
                       <Btn
                         full
-                        onClick={() => withConsent(() => handleOAuthConnect('oura'), 'Oura Ring')}
+                        disabled
+                        title="Die Verknüpfung mit Oura erfordert ein Oura-Abonnement und ist derzeit noch nicht implementiert."
+                        style={{ opacity: 0.65, cursor: 'not-allowed' }}
                       >
-                        {sampleCount > 0 || info.isTokenExpired ? 'Oura erneut verbinden' : 'Oura verbinden'}
+                        {sampleCount > 0 || info.isTokenExpired ? 'Oura erneut verbinden (In Kürze)' : 'Oura verbinden (In Kürze)'}
                       </Btn>
                       {sampleCount > 0 && src?.id && (
                         <>
@@ -1402,8 +1423,26 @@ export function Component() {
                     </div>
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Strava</div>
-                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 12 }}>
                     Ausdaueraktivitäten, Trainingsbelastung und Pace-Metriken.
+                  </div>
+                  <div style={{
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    background: 'rgba(238, 108, 43, 0.08)',
+                    border: '1px solid rgba(238, 108, 43, 0.25)',
+                    fontSize: 12,
+                    color: '#c2410c',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    lineHeight: 1.45,
+                  }}>
+                    <Info size={16} color="#c2410c" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <strong>Hinweis:</strong> Die Verknüpfung mit Strava erfordert ein Strava-Pro-Abonnement und ist derzeit noch nicht implementiert.
+                    </div>
                   </div>
                   {info.isTokenExpired && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,108,0,0.08)', border: '1px solid rgba(239,108,0,0.25)', fontSize: 12, color: '#b26a00', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
@@ -1551,9 +1590,11 @@ export function Component() {
                     <>
                       <Btn
                         full
-                        onClick={() => withConsent(() => handleOAuthConnect('strava'), 'Strava')}
+                        disabled
+                        title="Die Verknüpfung mit Strava erfordert ein Strava-Pro-Abonnement und ist derzeit noch nicht implementiert."
+                        style={{ opacity: 0.65, cursor: 'not-allowed' }}
                       >
-                        {sampleCount > 0 || info.isTokenExpired ? 'Strava erneut verbinden' : 'Strava verbinden'}
+                        {sampleCount > 0 || info.isTokenExpired ? 'Strava erneut verbinden (In Kürze)' : 'Strava verbinden (In Kürze)'}
                       </Btn>
                       {sampleCount > 0 && src?.id && (
                         <>
