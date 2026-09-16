@@ -4,7 +4,6 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { apiClient } from '../api/client.js';
 import { Card, Skeleton } from '../components/ui.js';
 import { OnboardingCard } from '../components/OnboardingCard.js';
-import { BrandLogosDashboardCard } from '../components/BrandLogos.js';
 import type { ScoreResult } from '../api/types.js';
 
 interface HistoryPoint { date: string; score: number; coverage: number; }
@@ -93,9 +92,6 @@ export function Component() {
           </>
         )}
       </Card>
-
-      {/* ── Kompatible Tracker & Apps Logos ── */}
-      <BrandLogosDashboardCard />
 
       {/* ── Trend Chart ── */}
       <Card data-testid="trend-chart" style={{ padding: '28px 36px 16px' }}>
