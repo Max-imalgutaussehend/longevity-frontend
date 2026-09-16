@@ -33,7 +33,10 @@ import {
   X,
   Check,
   ExternalLink,
+  Shield,
+  ShieldCheck,
 } from 'lucide-react';
+import { ConsentModal } from '../components/ConsentModal.js';
 import { apiClient } from '../api/client.js';
 import {
   Card,
@@ -238,6 +241,40 @@ export function Component() {
 
   const haeWebhookUrl =
     'https://longevity.maxrommel.de/api/sources/health-auto-export/webhook';
+
+  interface ConsentStatus {
+    hasConsented: boolean;
+    consentAt: string | null;
+    version: string | null;
+    latestVersion: string;
+    consentText: string;
+  }
+
+  const { data: consentData } = useQuery<ConsentStatus>({
+    queryKey: ['account', 'consent'],
+    queryFn: () => apiClient<ConsentStatus>('/account/consent'),
+  });
+
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [pendingConsentAction, setPendingConsentAction] = useState<{ action: () => void; label?: string } | null>(null);
+
+  function withConsent(action: () => void, label?: string) {
+    if (consentData?.hasConsented) {
+      action();
+    } else {
+      setPendingConsentAction({ action, label });
+      setShowConsentModal(true);
+    }
+  }
+
+  const revokeConsentMutation = useMutation({
+    mutationFn: () => apiClient('/account/consent/revoke', { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['account', 'consent'] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+    },
+  });
 
   const {
     data: sources = [],
@@ -682,6 +719,69 @@ export function Component() {
 
       {activeTab === 'sources' && (
         <>
+          {/* DSGVO Art. 9 Einwilligung Status / Aufforderung */}
+          {consentData && (
+            <div style={{
+              background: consentData.hasConsented ? 'rgba(29,158,117,0.06)' : 'rgba(245,158,11,0.08)',
+              border: consentData.hasConsented ? '1px solid rgba(29,158,117,0.2)' : '1px solid rgba(245,158,11,0.3)',
+              borderRadius: 16,
+              padding: '14px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {consentData.hasConsented ? (
+                  <ShieldCheck size={20} color="#0f6e56" style={{ flexShrink: 0 }} />
+                ) : (
+                  <Shield size={20} color="#d97706" style={{ flexShrink: 0 }} />
+                )}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: consentData.hasConsented ? '#0f6e56' : '#92400e' }}>
+                    {consentData.hasConsented
+                      ? `DSGVO Art. 9 Einwilligung aktiv (${consentData.version ?? '2026-09-v1'})`
+                      : 'DSGVO-Einwilligung erforderlich (Art. 9 DSGVO)'}
+                  </div>
+                  <div style={{ fontSize: 11, color: consentData.hasConsented ? '#55544f' : '#78350f' }}>
+                    {consentData.hasConsented
+                      ? `Erteilt am ${consentData.consentAt ? new Date(consentData.consentAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'heute'} · Verarbeitung besonderer Kategorien personenbezogener Daten`
+                      : 'Vor dem Verbinden von Wearables oder Gesundheitsdaten ist deine ausdrückliche Einwilligung gesetzlich vorgeschrieben.'}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <a
+                  href="/datenschutz"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: 12, color: '#0f6e56', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 500 }}
+                >
+                  Datenschutz <ExternalLink size={12} />
+                </a>
+                {consentData.hasConsented ? (
+                  <Btn
+                    small
+                    variant="ghost"
+                    onClick={() => {
+                      if (window.confirm('Möchtest du deine DSGVO-Einwilligung zur Verarbeitung von Gesundheitsdaten (Art. 9 DSGVO) wirklich widerrufen?')) {
+                        revokeConsentMutation.mutate();
+                      }
+                    }}
+                    disabled={revokeConsentMutation.isPending}
+                  >
+                    {revokeConsentMutation.isPending ? 'Wird widerrufen...' : 'Widerrufen'}
+                  </Btn>
+                ) : (
+                  <Btn small onClick={() => setShowConsentModal(true)}>
+                    Einwilligung einsehen & erteilen
+                  </Btn>
+                )}
+              </div>
+            </div>
+          )}
+
           {(summaryData?.totalCount ?? 0) > 0 && (
             <div
               onClick={() => setActiveTab('metrics')}
@@ -789,7 +889,7 @@ export function Component() {
                       <Btn
                         full
                         variant="secondary"
-                        onClick={() => generateMockMutation.mutate()}
+                        onClick={() => withConsent(() => generateMockMutation.mutate(), 'Apple Health Testdaten')}
                         disabled={generateMockMutation.isPending}
                       >
                         {generateMockMutation.isPending ? 'Wird generiert...' : 'Testdaten neu generieren'}
@@ -824,7 +924,7 @@ export function Component() {
                     <Btn
                       full
                       variant="secondary"
-                      onClick={() => generateMockMutation.mutate()}
+                      onClick={() => withConsent(() => generateMockMutation.mutate(), 'Apple Health Testdaten')}
                       disabled={generateMockMutation.isPending}
                     >
                       {generateMockMutation.isPending ? 'Wird generiert...' : (
@@ -834,7 +934,7 @@ export function Component() {
                       )}
                     </Btn>
                   )}
-                  <Btn full onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
+                  <Btn full onClick={() => withConsent(() => fileInputRef.current?.click(), 'Apple Health Export')} disabled={uploadMutation.isPending}>
                     {uploadMutation.isPending ? 'Wird verarbeitet...' : 'Echten Export hochladen (.xml / .zip)'}
                   </Btn>
                 </div>
@@ -893,7 +993,7 @@ export function Component() {
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <Btn full variant="secondary" onClick={() => setShowHaeModal(true)}>
+                  <Btn full variant="secondary" onClick={() => withConsent(() => setShowHaeModal(true), 'Health Auto Export Webhook')}>
                     Anleitung & Webhook URL
                   </Btn>
                   {hasSource && src?.id && (
@@ -1003,7 +1103,7 @@ export function Component() {
                     <Btn
                       full
                       disabled
-                      onClick={() => handleOAuthConnect('oura')}
+                      onClick={() => withConsent(() => handleOAuthConnect('oura'), 'Oura Ring')}
                       title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
                       Oura verbinden (Bald verfügbar)
@@ -1092,7 +1192,7 @@ export function Component() {
                     <Btn
                       full
                       disabled
-                      onClick={() => handleOAuthConnect('strava')}
+                      onClick={() => withConsent(() => handleOAuthConnect('strava'), 'Strava')}
                       title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
                       Strava verbinden (Bald verfügbar)
@@ -1181,7 +1281,7 @@ export function Component() {
                     <Btn
                       full
                       disabled
-                      onClick={() => handleOAuthConnect('withings')}
+                      onClick={() => withConsent(() => handleOAuthConnect('withings'), 'Withings')}
                       title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
                       Withings verbinden (Bald verfügbar)
@@ -1332,13 +1432,13 @@ export function Component() {
                     <>
                       <Btn
                         full
-                        onClick={() => handleOAuthConnect('google-fit')}
+                        onClick={() => withConsent(() => handleOAuthConnect('google-fit'), 'Google Health')}
                       >
                         Google Health verbinden
                       </Btn>
                       <button
                         type="button"
-                        onClick={handleOpenGoogleCodelabMode}
+                        onClick={() => withConsent(() => handleOpenGoogleCodelabMode(), 'Google Health Codelab')}
                         style={{
                           background: 'none',
                           border: 'none',
@@ -1420,7 +1520,7 @@ export function Component() {
                       {isEnabled ? 'Laborwerte deaktivieren (pausieren)' : 'Laborwerte aktivieren'}
                     </Btn>
                   )}
-                  <Btn full variant="secondary" onClick={() => fhirFileInputRef.current?.click()} disabled={fhirUploadMutation.isPending}>
+                  <Btn full variant="secondary" onClick={() => withConsent(() => fhirFileInputRef.current?.click(), 'FHIR Laborbefund')} disabled={fhirUploadMutation.isPending}>
                     {fhirUploadMutation.isPending ? 'Wird verarbeitet...' : 'FHIR-Laborbefund (.json) importieren'}
                   </Btn>
                   <Btn full variant="secondary" onClick={() => navigate('/dashboard')}>
@@ -1490,7 +1590,7 @@ export function Component() {
           <div style={{ fontSize: 12, color: '#a32d2d', marginTop: 16 }}>{lifestyleError}</div>
         )}
         <div style={{ marginTop: 24 }}>
-          <Btn testId="save-lifestyle-values" onClick={submitLifestyle} disabled={labsMut.isPending}>
+          <Btn testId="save-lifestyle-values" onClick={() => withConsent(() => submitLifestyle(), 'Lebensstil-Angaben')} disabled={labsMut.isPending}>
             {labsMut.isPending ? 'Wird gespeichert...' : 'Lebensstil speichern'}
           </Btn>
         </div>
@@ -1933,6 +2033,21 @@ export function Component() {
           </div>
         </Modal>
       )}
+
+      {/* DSGVO Art. 9 Consent Modal */}
+      <ConsentModal
+        isOpen={showConsentModal}
+        onClose={() => {
+          setShowConsentModal(false);
+          setPendingConsentAction(null);
+        }}
+        sourceLabel={pendingConsentAction?.label}
+        onConsented={() => {
+          const pending = pendingConsentAction;
+          setPendingConsentAction(null);
+          pending?.action();
+        }}
+      />
     </div>
   );
 }
