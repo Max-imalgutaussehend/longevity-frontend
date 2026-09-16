@@ -39,6 +39,7 @@ export function Component() {
     setLoading(true);
     try {
       await apiClient('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, birthDate, sex }) });
+      sessionStorage.setItem('longevity_auto_open_tutorial', 'true');
       setRegistered(true);
     } catch (err: unknown) {
       setError((err as Error).message ?? 'Registrierung fehlgeschlagen.');
@@ -64,7 +65,10 @@ export function Component() {
             <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 24 }}>
               Wir haben dir einen Bestätigungslink an <strong>{email}</strong> geschickt. Öffne die E-Mail und klicke auf den Link, um dein Konto vollständig zu nutzen.
             </p>
-            <Btn full testId="register-go-dashboard" onClick={() => navigate('/dashboard')}>Weiter zum Dashboard</Btn>
+            <Btn full testId="register-go-dashboard" onClick={() => {
+              sessionStorage.setItem('longevity_auto_open_tutorial', 'true');
+              navigate('/dashboard');
+            }}>Weiter zum Dashboard</Btn>
           </Card>
         </div>
       </AuthShell>

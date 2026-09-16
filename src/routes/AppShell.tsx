@@ -24,6 +24,8 @@ export function Component() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
+  const hasAutoOpenedRef = useRef(false);
+
   const { data: user, isLoading: isUserLoading } = useQuery<User & { role?: string; emailVerifiedAt: string | null }>({
     queryKey: ['me'],
     queryFn: () => apiClient('/me'),
@@ -35,22 +37,32 @@ export function Component() {
     }
   }, [isUserLoading, user, navigate]);
 
-  // Auto-launch tutorial on first visit if not yet completed, and listen for manual trigger
+  // Listen for manual tutorial trigger from anywhere in the app
   useEffect(() => {
     const handleOpenTutorial = () => setShowTutorial(true);
     window.addEventListener('open-tutorial', handleOpenTutorial);
-
-    const hasCompleted = localStorage.getItem('longevity_tutorial_completed');
-    if (!hasCompleted) {
-      // Small timeout for smooth initial render
-      const timer = setTimeout(() => setShowTutorial(true), 400);
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('open-tutorial', handleOpenTutorial);
-      };
-    }
     return () => window.removeEventListener('open-tutorial', handleOpenTutorial);
   }, []);
+
+  // Auto-launch tutorial on user entry / first visit if not yet completed for this account
+  useEffect(() => {
+    if (isUserLoading || !user || hasAutoOpenedRef.current) return;
+    if (user.role === 'insurer_admin' || user.role === 'insurer_staff') return;
+
+    const sessionAutoOpen = sessionStorage.getItem('longevity_auto_open_tutorial') === 'true';
+    const userCompletedKey = `longevity_tutorial_completed_${user.id}`;
+    const userCompleted = localStorage.getItem(userCompletedKey) === 'true';
+
+    // Auto-open if explicitly requested by session flag OR user has never completed it for their account
+    if (sessionAutoOpen || !userCompleted) {
+      hasAutoOpenedRef.current = true;
+      if (sessionAutoOpen) {
+        sessionStorage.removeItem('longevity_auto_open_tutorial');
+      }
+      const timer = setTimeout(() => setShowTutorial(true), 350);
+      return () => clearTimeout(timer);
+    }
+  }, [isUserLoading, user]);
 
   // Close profile menu when clicking outside
   useEffect(() => {
