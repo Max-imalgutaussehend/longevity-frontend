@@ -101,4 +101,11 @@ describe('Landing Page Partner Brand Logos', () => {
       expect(typeof brand.Logo).toBe('function');
     }
   });
+
+  it('verifies Apple brand logo uses standard 24x24 viewBox', () => {
+    const appleBrand = SUPPORTED_BRANDS.find((b) => b.id === 'apple');
+    expect(appleBrand).toBeDefined();
+    expect(appleBrand?.name).toBe('Apple Health');
+    expect(appleBrand?.accentColor).toBe('#1d1d1f');
+  });
 });
