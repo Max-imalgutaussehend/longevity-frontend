@@ -35,6 +35,7 @@ import {
   ExternalLink,
   Shield,
   ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import { ConsentModal } from '../components/ConsentModal.js';
 import { apiClient } from '../api/client.js';
@@ -108,6 +109,99 @@ function formatMetricVal(metric: string, val: number): string {
   if (metric === 'sleep_duration' || metric === 'vo2max') return val.toFixed(1);
   if (metric === 'resting_hr' || metric === 'systolic_bp') return Math.round(val).toString();
   return Number.isInteger(val) ? val.toString() : val.toFixed(1);
+}
+
+export interface SourceSyncStatusInfo {
+  status: 'ok' | 'token_expired' | 'error' | 'paused' | 'ready';
+  badgeLabel: string;
+  badgeColor: 'teal' | 'neutral' | 'red' | 'amber' | 'green';
+  isTokenExpired: boolean;
+  isError: boolean;
+  isConnected: boolean;
+  needsReconnect: boolean;
+}
+
+export function getSourceSyncStatusInfo(
+  src: Source | undefined,
+  defaultReadyLabel = 'Bereit',
+): SourceSyncStatusInfo {
+  if (!src) {
+    return {
+      status: 'ready',
+      badgeLabel: defaultReadyLabel,
+      badgeColor: 'neutral',
+      isTokenExpired: false,
+      isError: false,
+      isConnected: false,
+      needsReconnect: false,
+    };
+  }
+
+  const sampleCount = src.sampleCount ?? 0;
+  const isMock = src.adapter === 'mock';
+  const isConnected = !!(src.connected ?? (isMock || false));
+  const isEnabled = src.enabled;
+  const syncStatus = src.syncStatus;
+
+  if (syncStatus === 'token_expired' || (!isConnected && sampleCount > 0 && !isMock)) {
+    return {
+      status: 'token_expired',
+      badgeLabel: 'Token abgelaufen',
+      badgeColor: 'amber',
+      isTokenExpired: true,
+      isError: false,
+      isConnected: false,
+      needsReconnect: true,
+    };
+  }
+
+  if (syncStatus === 'error') {
+    return {
+      status: 'error',
+      badgeLabel: 'Sync-Fehler',
+      badgeColor: 'red',
+      isTokenExpired: false,
+      isError: true,
+      isConnected,
+      needsReconnect: true,
+    };
+  }
+
+  if (isConnected) {
+    if (!isEnabled) {
+      return {
+        status: 'paused',
+        badgeLabel: `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`,
+        badgeColor: 'neutral',
+        isTokenExpired: false,
+        isError: false,
+        isConnected: true,
+        needsReconnect: false,
+      };
+    }
+
+    return {
+      status: 'ok',
+      badgeLabel: isMock
+        ? `Mock-Daten aktiv${sampleCount > 0 ? ` (${sampleCount})` : ''}`
+        : `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}`,
+      badgeColor: isMock ? 'amber' : 'teal',
+      isTokenExpired: false,
+      isError: false,
+      isConnected: true,
+      needsReconnect: false,
+    };
+  }
+
+  return {
+    status: 'ready',
+    badgeLabel: defaultReadyLabel,
+    badgeColor: 'neutral',
+    isTokenExpired: false,
+    isError: false,
+    isConnected: false,
+    needsReconnect: false,
+  };
 }
 
 export function timeAgo(dateString: string): string {
@@ -211,7 +305,8 @@ export function Component() {
   const [lifestyleVals, setLifestyleVals] = useState<Record<string, string>>({});
   const [lifestyleError, setLifestyleError] = useState<string | null>(null);
 
-  const [syncingGoogle, setSyncingGoogle] = useState(false);
+  const [syncingProvider, setSyncingProvider] = useState<string | null>(null);
+  const syncingGoogle = syncingProvider === 'google-fit';
   const [showGoogleManualModal, setShowGoogleManualModal] = useState(false);
   const [googleManualCode, setGoogleManualCode] = useState('');
   const [googleManualLoading, setGoogleManualLoading] = useState(false);
@@ -507,23 +602,28 @@ export function Component() {
     }
   };
 
-  const handleSyncGoogle = async () => {
-    setSyncingGoogle(true);
+  const handleSyncSource = async (provider: 'oura' | 'strava' | 'withings' | 'google-fit', label: string) => {
+    setSyncingProvider(provider);
     try {
-      const res = await apiClient<{ inserted: number }>('/sources/google-fit/sync', { method: 'POST' });
+      const endpoint = provider === 'google-fit' ? '/sources/google-fit/sync' : `/sources/${provider}/sync`;
+      const res = await apiClient<{ inserted: number }>(endpoint, { method: 'POST' });
       queryClient.invalidateQueries({ queryKey: ['sources'] });
       queryClient.invalidateQueries({ queryKey: ['score'] });
       queryClient.invalidateQueries({ queryKey: ['samples'] });
-      alert(`Synchronisation erfolgreich! ${res?.inserted ?? 0} Messwerte aktualisiert.`);
+      queryClient.invalidateQueries({ queryKey: ['samplesSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      alert(`${label}: Synchronisation erfolgreich! ${res?.inserted ?? 0} Messwerte aktualisiert.`);
       setActiveTab('metrics');
     } catch (err: unknown) {
       queryClient.invalidateQueries({ queryKey: ['sources'] });
       const msg = err instanceof Error ? err.message : 'Synchronisation fehlgeschlagen.';
       alert(msg);
     } finally {
-      setSyncingGoogle(false);
+      setSyncingProvider(null);
     }
   };
+
+  const handleSyncGoogle = () => handleSyncSource('google-fit', 'Google Health');
 
   const handleOpenGoogleCodelabMode = async () => {
     setShowGoogleManualModal(true);
@@ -1030,8 +1130,9 @@ export function Component() {
           {(() => {
             const src = sources.find((s) => s.kind === 'oura');
             const sampleCount = src?.sampleCount ?? 0;
-            const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
+            const info = getSourceSyncStatusInfo(src, 'In Kürze');
             const isEnabled = !!src?.enabled;
+            const isSyncing = syncingProvider === 'oura';
 
             return (
               <Card style={{
@@ -1039,13 +1140,13 @@ export function Component() {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${info.isError ? '#ef5350' : (info.isTokenExpired ? '#f59e0b' : (info.isConnected ? (isEnabled ? '#1d9e75' : '#a8a89c') : (sampleCount > 0 ? '#ef9a9a' : 'rgba(0,0,0,0.08)')))}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <CircleDot size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      {hasSource && src?.id && (
+                      {info.isConnected && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
                             {isEnabled ? 'Aktiv' : 'Pausiert'}
@@ -1056,8 +1157,11 @@ export function Component() {
                           />
                         </div>
                       )}
-                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'amber'}>
-                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'In Kürze'}
+                      <Chip color={info.badgeColor}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {(info.isTokenExpired || info.isError) && <AlertTriangle size={12} />}
+                          {info.badgeLabel}
+                        </span>
                       </Chip>
                     </div>
                   </div>
@@ -1065,50 +1169,193 @@ export function Component() {
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Schlaf-Scores, Readiness, Ruhepuls und HRV-Trends über die Cloud-API.
                   </div>
-                  {hasSource && !isEnabled && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <PauseCircle size={14} /> Oura-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
-                      </span>
+                  {info.isTokenExpired && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,108,0,0.08)', border: '1px solid rgba(239,108,0,0.25)', fontSize: 12, color: '#b26a00', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <AlertTriangle size={15} color="#b26a00" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        Oura ist aktuell nicht verknüpft oder die Autorisierung ist abgelaufen.{sampleCount > 0 ? ` Deine ${sampleCount} bereits importierten Werte bleiben erhalten.` : ''} Um neue Daten abzurufen, verbinde Oura erneut.
+                      </div>
+                    </div>
+                  )}
+                  {info.isError && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(163,45,45,0.08)', border: '1px solid rgba(163,45,45,0.25)', fontSize: 12, color: '#a32d2d', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <AlertTriangle size={15} color="#a32d2d" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        Synchronisation fehlgeschlagen: {src?.syncError || 'Ein unerwarteter Fehler ist aufgetreten.'}
+                      </div>
+                    </div>
+                  )}
+                  {info.isConnected && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <PauseCircle size={14} /> Oura-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: info.isConnected && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {hasSource && src?.id ? (
+                  {info.isConnected && src?.id && !info.isError ? (
+                    <>
+                      {isEnabled ? (
+                        <>
+                          <Btn
+                            full
+                            onClick={() => handleSyncSource('oura', 'Oura Ring')}
+                            disabled={isSyncing}
+                          >
+                            {isSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: false })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            Daten deaktivieren (pausieren)
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => setActiveTab('metrics')}
+                          >
+                            Synchronisierte Daten ansehen →
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du Oura trennen und alle synchronisierten Daten löschen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird getrennt...' : 'Trennen & Daten löschen'}
+                          </Btn>
+                        </>
+                      ) : (
+                        <>
+                          <Btn
+                            full
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: true })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            Daten wieder aktivieren
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => handleSyncSource('oura', 'Oura Ring')}
+                            disabled={isSyncing}
+                          >
+                            {isSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                          </Btn>
+                          {sampleCount > 0 && (
+                            <Btn
+                              full
+                              variant="danger"
+                              onClick={() => {
+                                if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Oura Messwerte löschen?`)) {
+                                  deleteSourceSamplesMutation.mutate(src.id);
+                                }
+                              }}
+                              disabled={deleteSourceSamplesMutation.isPending}
+                            >
+                              Importierte Daten löschen ({sampleCount} Werte)
+                            </Btn>
+                          )}
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du Oura trennen und alle synchronisierten Daten löschen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                          </Btn>
+                        </>
+                      )}
+                    </>
+                  ) : info.isError && src?.id ? (
                     <>
                       <Btn
                         full
-                        variant={isEnabled ? 'secondary' : 'primary'}
-                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
-                        disabled={toggleSourceMutation.isPending}
+                        onClick={() => handleSyncSource('oura', 'Oura Ring')}
+                        disabled={isSyncing}
                       >
-                        {isEnabled ? 'Daten deaktivieren (pausieren)' : 'Daten aktivieren'}
+                        {isSyncing ? 'Synchronisiere...' : 'Jetzt erneut synchronisieren'}
                       </Btn>
                       <Btn
                         full
-                        variant="danger"
-                        onClick={() => {
-                          if (window.confirm('Möchtest du Oura trennen und alle zugehörigen Daten löschen?')) {
-                            disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
-                          }
-                        }}
-                        disabled={disconnectMutation.isPending}
+                        variant="secondary"
+                        onClick={() => withConsent(() => handleOAuthConnect('oura'), 'Oura Ring')}
                       >
-                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen & Daten löschen'}
+                        Oura erneut verbinden
                       </Btn>
+                      {sampleCount > 0 && (
+                        <Btn
+                          full
+                          variant="danger"
+                          onClick={() => {
+                            if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Oura Messwerte löschen?`)) {
+                              deleteSourceSamplesMutation.mutate(src.id);
+                            }
+                          }}
+                          disabled={deleteSourceSamplesMutation.isPending}
+                        >
+                          Importierte Daten löschen ({sampleCount} Werte)
+                        </Btn>
+                      )}
                     </>
                   ) : (
-                    <Btn
-                      full
-                      disabled
-                      onClick={() => withConsent(() => handleOAuthConnect('oura'), 'Oura Ring')}
-                      title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
-                    >
-                      Oura verbinden (Bald verfügbar)
-                    </Btn>
+                    <>
+                      <Btn
+                        full
+                        onClick={() => withConsent(() => handleOAuthConnect('oura'), 'Oura Ring')}
+                      >
+                        {sampleCount > 0 || info.isTokenExpired ? 'Oura erneut verbinden' : 'Oura verbinden'}
+                      </Btn>
+                      {sampleCount > 0 && src?.id && (
+                        <>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            {isEnabled ? 'Importierte Daten deaktivieren (pausieren)' : 'Importierte Daten wieder aktivieren'}
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Oura Messwerte löschen?`)) {
+                                deleteSourceSamplesMutation.mutate(src.id);
+                              }
+                            }}
+                            disabled={deleteSourceSamplesMutation.isPending}
+                          >
+                            Importierte Daten löschen ({sampleCount} Werte)
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du diese Quelle und alle zugehörigen Daten endgültig entfernen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird entfernt...' : 'Quelle & Daten entfernen'}
+                          </Btn>
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               </Card>
@@ -1119,8 +1366,9 @@ export function Component() {
           {(() => {
             const src = sources.find((s) => s.kind === 'strava');
             const sampleCount = src?.sampleCount ?? 0;
-            const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
+            const info = getSourceSyncStatusInfo(src, 'In Kürze');
             const isEnabled = !!src?.enabled;
+            const isSyncing = syncingProvider === 'strava';
 
             return (
               <Card style={{
@@ -1128,13 +1376,13 @@ export function Component() {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${info.isError ? '#ef5350' : (info.isTokenExpired ? '#f59e0b' : (info.isConnected ? (isEnabled ? '#1d9e75' : '#a8a89c') : (sampleCount > 0 ? '#ef9a9a' : 'rgba(0,0,0,0.08)')))}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <Activity size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      {hasSource && src?.id && (
+                      {info.isConnected && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
                             {isEnabled ? 'Aktiv' : 'Pausiert'}
@@ -1145,8 +1393,11 @@ export function Component() {
                           />
                         </div>
                       )}
-                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'amber'}>
-                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'In Kürze'}
+                      <Chip color={info.badgeColor}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {(info.isTokenExpired || info.isError) && <AlertTriangle size={12} />}
+                          {info.badgeLabel}
+                        </span>
                       </Chip>
                     </div>
                   </div>
@@ -1154,50 +1405,193 @@ export function Component() {
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Ausdaueraktivitäten, Trainingsbelastung und Pace-Metriken.
                   </div>
-                  {hasSource && !isEnabled && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <PauseCircle size={14} /> Strava-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
-                      </span>
+                  {info.isTokenExpired && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,108,0,0.08)', border: '1px solid rgba(239,108,0,0.25)', fontSize: 12, color: '#b26a00', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <AlertTriangle size={15} color="#b26a00" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        Strava ist aktuell nicht verknüpft oder die Autorisierung ist abgelaufen.{sampleCount > 0 ? ` Deine ${sampleCount} bereits importierten Werte bleiben erhalten.` : ''} Um neue Daten abzurufen, verbinde Strava erneut.
+                      </div>
+                    </div>
+                  )}
+                  {info.isError && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(163,45,45,0.08)', border: '1px solid rgba(163,45,45,0.25)', fontSize: 12, color: '#a32d2d', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <AlertTriangle size={15} color="#a32d2d" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        Synchronisation fehlgeschlagen: {src?.syncError || 'Ein unerwarteter Fehler ist aufgetreten.'}
+                      </div>
+                    </div>
+                  )}
+                  {info.isConnected && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <PauseCircle size={14} /> Strava-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: info.isConnected && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {hasSource && src?.id ? (
+                  {info.isConnected && src?.id && !info.isError ? (
+                    <>
+                      {isEnabled ? (
+                        <>
+                          <Btn
+                            full
+                            onClick={() => handleSyncSource('strava', 'Strava')}
+                            disabled={isSyncing}
+                          >
+                            {isSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: false })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            Daten deaktivieren (pausieren)
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => setActiveTab('metrics')}
+                          >
+                            Synchronisierte Daten ansehen →
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du Strava trennen und alle synchronisierten Daten löschen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird getrennt...' : 'Trennen & Daten löschen'}
+                          </Btn>
+                        </>
+                      ) : (
+                        <>
+                          <Btn
+                            full
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: true })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            Daten wieder aktivieren
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => handleSyncSource('strava', 'Strava')}
+                            disabled={isSyncing}
+                          >
+                            {isSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                          </Btn>
+                          {sampleCount > 0 && (
+                            <Btn
+                              full
+                              variant="danger"
+                              onClick={() => {
+                                if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Strava Messwerte löschen?`)) {
+                                  deleteSourceSamplesMutation.mutate(src.id);
+                                }
+                              }}
+                              disabled={deleteSourceSamplesMutation.isPending}
+                            >
+                              Importierte Daten löschen ({sampleCount} Werte)
+                            </Btn>
+                          )}
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du Strava trennen und alle synchronisierten Daten löschen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                          </Btn>
+                        </>
+                      )}
+                    </>
+                  ) : info.isError && src?.id ? (
                     <>
                       <Btn
                         full
-                        variant={isEnabled ? 'secondary' : 'primary'}
-                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
-                        disabled={toggleSourceMutation.isPending}
+                        onClick={() => handleSyncSource('strava', 'Strava')}
+                        disabled={isSyncing}
                       >
-                        {isEnabled ? 'Daten deaktivieren (pausieren)' : 'Daten aktivieren'}
+                        {isSyncing ? 'Synchronisiere...' : 'Jetzt erneut synchronisieren'}
                       </Btn>
                       <Btn
                         full
-                        variant="danger"
-                        onClick={() => {
-                          if (window.confirm('Möchtest du Strava trennen und alle zugehörigen Daten löschen?')) {
-                            disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
-                          }
-                        }}
-                        disabled={disconnectMutation.isPending}
+                        variant="secondary"
+                        onClick={() => withConsent(() => handleOAuthConnect('strava'), 'Strava')}
                       >
-                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen & Daten löschen'}
+                        Strava erneut verbinden
                       </Btn>
+                      {sampleCount > 0 && (
+                        <Btn
+                          full
+                          variant="danger"
+                          onClick={() => {
+                            if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Strava Messwerte löschen?`)) {
+                              deleteSourceSamplesMutation.mutate(src.id);
+                            }
+                          }}
+                          disabled={deleteSourceSamplesMutation.isPending}
+                        >
+                          Importierte Daten löschen ({sampleCount} Werte)
+                        </Btn>
+                      )}
                     </>
                   ) : (
-                    <Btn
-                      full
-                      disabled
-                      onClick={() => withConsent(() => handleOAuthConnect('strava'), 'Strava')}
-                      title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
-                    >
-                      Strava verbinden (Bald verfügbar)
-                    </Btn>
+                    <>
+                      <Btn
+                        full
+                        onClick={() => withConsent(() => handleOAuthConnect('strava'), 'Strava')}
+                      >
+                        {sampleCount > 0 || info.isTokenExpired ? 'Strava erneut verbinden' : 'Strava verbinden'}
+                      </Btn>
+                      {sampleCount > 0 && src?.id && (
+                        <>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            {isEnabled ? 'Importierte Daten deaktivieren (pausieren)' : 'Importierte Daten wieder aktivieren'}
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Strava Messwerte löschen?`)) {
+                                deleteSourceSamplesMutation.mutate(src.id);
+                              }
+                            }}
+                            disabled={deleteSourceSamplesMutation.isPending}
+                          >
+                            Importierte Daten löschen ({sampleCount} Werte)
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du diese Quelle und alle zugehörigen Daten endgültig entfernen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird entfernt...' : 'Quelle & Daten entfernen'}
+                          </Btn>
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               </Card>
@@ -1208,8 +1602,9 @@ export function Component() {
           {(() => {
             const src = sources.find((s) => s.kind === 'withings');
             const sampleCount = src?.sampleCount ?? 0;
-            const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
+            const info = getSourceSyncStatusInfo(src, 'In Kürze');
             const isEnabled = !!src?.enabled;
+            const isSyncing = syncingProvider === 'withings';
 
             return (
               <Card style={{
@@ -1217,13 +1612,13 @@ export function Component() {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${hasSource ? (isEnabled ? '#1d9e75' : '#a8a89c') : 'rgba(0,0,0,0.08)'}`,
+                borderTop: `3px solid ${info.isError ? '#ef5350' : (info.isTokenExpired ? '#f59e0b' : (info.isConnected ? (isEnabled ? '#1d9e75' : '#a8a89c') : (sampleCount > 0 ? '#ef9a9a' : 'rgba(0,0,0,0.08)')))}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <Scale size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      {hasSource && src?.id && (
+                      {info.isConnected && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
                             {isEnabled ? 'Aktiv' : 'Pausiert'}
@@ -1234,8 +1629,11 @@ export function Component() {
                           />
                         </div>
                       )}
-                      <Chip color={hasSource ? (isEnabled ? 'teal' : 'neutral') : 'amber'}>
-                        {hasSource ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`) : 'In Kürze'}
+                      <Chip color={info.badgeColor}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {(info.isTokenExpired || info.isError) && <AlertTriangle size={12} />}
+                          {info.badgeLabel}
+                        </span>
                       </Chip>
                     </div>
                   </div>
@@ -1243,50 +1641,193 @@ export function Component() {
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Blutdruckmessungen, Körperzusammensetzung und Pulswellengeschwindigkeit.
                   </div>
-                  {hasSource && !isEnabled && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <PauseCircle size={14} /> Withings-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
-                      </span>
+                  {info.isTokenExpired && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,108,0,0.08)', border: '1px solid rgba(239,108,0,0.25)', fontSize: 12, color: '#b26a00', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <AlertTriangle size={15} color="#b26a00" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        Withings ist aktuell nicht verknüpft oder die Autorisierung ist abgelaufen.{sampleCount > 0 ? ` Deine ${sampleCount} bereits importierten Werte bleiben erhalten.` : ''} Um neue Daten abzurufen, verbinde Withings erneut.
+                      </div>
+                    </div>
+                  )}
+                  {info.isError && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(163,45,45,0.08)', border: '1px solid rgba(163,45,45,0.25)', fontSize: 12, color: '#a32d2d', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <AlertTriangle size={15} color="#a32d2d" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        Synchronisation fehlgeschlagen: {src?.syncError || 'Ein unerwarteter Fehler ist aufgetreten.'}
+                      </div>
+                    </div>
+                  )}
+                  {info.isConnected && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <PauseCircle size={14} /> Withings-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: hasSource && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: info.isConnected && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {hasSource && src?.id ? (
+                  {info.isConnected && src?.id && !info.isError ? (
+                    <>
+                      {isEnabled ? (
+                        <>
+                          <Btn
+                            full
+                            onClick={() => handleSyncSource('withings', 'Withings')}
+                            disabled={isSyncing}
+                          >
+                            {isSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: false })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            Daten deaktivieren (pausieren)
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => setActiveTab('metrics')}
+                          >
+                            Synchronisierte Daten ansehen →
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du Withings trennen und alle synchronisierten Daten löschen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird getrennt...' : 'Trennen & Daten löschen'}
+                          </Btn>
+                        </>
+                      ) : (
+                        <>
+                          <Btn
+                            full
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: true })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            Daten wieder aktivieren
+                          </Btn>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => handleSyncSource('withings', 'Withings')}
+                            disabled={isSyncing}
+                          >
+                            {isSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                          </Btn>
+                          {sampleCount > 0 && (
+                            <Btn
+                              full
+                              variant="danger"
+                              onClick={() => {
+                                if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Withings Messwerte löschen?`)) {
+                                  deleteSourceSamplesMutation.mutate(src.id);
+                                }
+                              }}
+                              disabled={deleteSourceSamplesMutation.isPending}
+                            >
+                              Importierte Daten löschen ({sampleCount} Werte)
+                            </Btn>
+                          )}
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du Withings trennen und alle synchronisierten Daten löschen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen'}
+                          </Btn>
+                        </>
+                      )}
+                    </>
+                  ) : info.isError && src?.id ? (
                     <>
                       <Btn
                         full
-                        variant={isEnabled ? 'secondary' : 'primary'}
-                        onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
-                        disabled={toggleSourceMutation.isPending}
+                        onClick={() => handleSyncSource('withings', 'Withings')}
+                        disabled={isSyncing}
                       >
-                        {isEnabled ? 'Daten deaktivieren (pausieren)' : 'Daten aktivieren'}
+                        {isSyncing ? 'Synchronisiere...' : 'Jetzt erneut synchronisieren'}
                       </Btn>
                       <Btn
                         full
-                        variant="danger"
-                        onClick={() => {
-                          if (window.confirm('Möchtest du Withings trennen und alle zugehörigen Daten löschen?')) {
-                            disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
-                          }
-                        }}
-                        disabled={disconnectMutation.isPending}
+                        variant="secondary"
+                        onClick={() => withConsent(() => handleOAuthConnect('withings'), 'Withings')}
                       >
-                        {disconnectingId === src.id ? 'Wird getrennt...' : 'Verbindung trennen & Daten löschen'}
+                        Withings erneut verbinden
                       </Btn>
+                      {sampleCount > 0 && (
+                        <Btn
+                          full
+                          variant="danger"
+                          onClick={() => {
+                            if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Withings Messwerte löschen?`)) {
+                              deleteSourceSamplesMutation.mutate(src.id);
+                            }
+                          }}
+                          disabled={deleteSourceSamplesMutation.isPending}
+                        >
+                          Importierte Daten löschen ({sampleCount} Werte)
+                        </Btn>
+                      )}
                     </>
                   ) : (
-                    <Btn
-                      full
-                      disabled
-                      onClick={() => withConsent(() => handleOAuthConnect('withings'), 'Withings')}
-                      title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
-                    >
-                      Withings verbinden (Bald verfügbar)
-                    </Btn>
+                    <>
+                      <Btn
+                        full
+                        onClick={() => withConsent(() => handleOAuthConnect('withings'), 'Withings')}
+                      >
+                        {sampleCount > 0 || info.isTokenExpired ? 'Withings erneut verbinden' : 'Withings verbinden'}
+                      </Btn>
+                      {sampleCount > 0 && src?.id && (
+                        <>
+                          <Btn
+                            full
+                            variant="secondary"
+                            onClick={() => toggleSourceMutation.mutate({ sourceId: src.id, enabled: !isEnabled })}
+                            disabled={toggleSourceMutation.isPending}
+                          >
+                            {isEnabled ? 'Importierte Daten deaktivieren (pausieren)' : 'Importierte Daten wieder aktivieren'}
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Withings Messwerte löschen?`)) {
+                                deleteSourceSamplesMutation.mutate(src.id);
+                              }
+                            }}
+                            disabled={deleteSourceSamplesMutation.isPending}
+                          >
+                            Importierte Daten löschen ({sampleCount} Werte)
+                          </Btn>
+                          <Btn
+                            full
+                            variant="danger"
+                            onClick={() => {
+                              if (window.confirm('Möchtest du diese Quelle und alle zugehörigen Daten endgültig entfernen?')) {
+                                disconnectMutation.mutate({ sourceId: src.id, deleteData: true });
+                              }
+                            }}
+                            disabled={disconnectMutation.isPending}
+                          >
+                            {disconnectingId === src.id ? 'Wird entfernt...' : 'Quelle & Daten entfernen'}
+                          </Btn>
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               </Card>
@@ -1297,9 +1838,9 @@ export function Component() {
           {(() => {
             const src = sources.find((s) => s.kind === 'google_fit');
             const sampleCount = src?.sampleCount ?? 0;
-            const isConnected = !!src && (src.connected ?? (src.adapter === 'mock' || false));
-            const hasSource = !!src && (src.enabled || sampleCount > 0 || !!src.lastSyncAt);
+            const info = getSourceSyncStatusInfo(src, 'Bereit');
             const isEnabled = !!src?.enabled;
+            const isSyncing = syncingGoogle;
 
             return (
               <Card style={{
@@ -1307,13 +1848,13 @@ export function Component() {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 gap: 24,
-                borderTop: `3px solid ${isConnected ? (isEnabled ? '#1d9e75' : '#a8a89c') : (sampleCount > 0 ? '#ef9a9a' : 'rgba(0,0,0,0.08)')}`,
+                borderTop: `3px solid ${info.isError ? '#ef5350' : (info.isTokenExpired ? '#f59e0b' : (info.isConnected ? (isEnabled ? '#1d9e75' : '#a8a89c') : (sampleCount > 0 ? '#ef9a9a' : 'rgba(0,0,0,0.08)')))}`,
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <Bot size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      {hasSource && src?.id && (
+                      {info.isConnected && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 11, color: isEnabled ? '#0f6e56' : '#888780' }}>
                             {isEnabled ? 'Aktiv' : 'Pausiert'}
@@ -1324,10 +1865,11 @@ export function Component() {
                           />
                         </div>
                       )}
-                      <Chip color={isConnected ? (isEnabled ? 'teal' : 'neutral') : (sampleCount > 0 ? 'amber' : 'neutral')}>
-                        {isConnected
-                          ? (isEnabled ? `Verbunden${sampleCount > 0 ? ` (${sampleCount})` : ''}` : `Deaktiviert${sampleCount > 0 ? ` (${sampleCount} pausiert)` : ''}`)
-                          : (sampleCount > 0 ? `Nicht verknüpft (${sampleCount} gespeichert)` : 'Bereit')}
+                      <Chip color={info.badgeColor}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {(info.isTokenExpired || info.isError) && <AlertTriangle size={12} />}
+                          {info.badgeLabel}
+                        </span>
                       </Chip>
                     </div>
                   </div>
@@ -1335,33 +1877,42 @@ export function Component() {
                   <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
                     Schritte, Ruhepuls, Schlafdauer und aktive Minuten direkt aus Google Health (Health Connect Cloud) und Google Fit.
                   </div>
-                  {!isConnected && sampleCount > 0 && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,108,0,0.08)', border: '1px solid rgba(239,108,0,0.25)', fontSize: 12, color: '#b26a00', marginBottom: 12 }}>
-                      ⚠️ Google Health ist aktuell nicht verknüpft (oder die Autorisierung ist abgelaufen). Deine {sampleCount} bereits importierten Werte bleiben erhalten. Um neue Daten abzurufen, verbinde Google Health erneut.
+                  {info.isTokenExpired && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(239,108,0,0.08)', border: '1px solid rgba(239,108,0,0.25)', fontSize: 12, color: '#b26a00', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <AlertTriangle size={15} color="#b26a00" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        Google Health ist aktuell nicht verknüpft oder die Autorisierung ist abgelaufen.{sampleCount > 0 ? ` Deine ${sampleCount} bereits importierten Werte bleiben erhalten.` : ''} Um neue Daten abzurufen, verbinde Google Health erneut.
+                      </div>
                     </div>
                   )}
-                  {isConnected && !isEnabled && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                        <PauseCircle size={14} /> Google Health Daten sind deaktiviert. Die synchronisierten Messwerte fließen aktuell nicht in deinen Score ein.
-                      </span>
+                  {info.isError && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(163,45,45,0.08)', border: '1px solid rgba(163,45,45,0.25)', fontSize: 12, color: '#a32d2d', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <AlertTriangle size={15} color="#a32d2d" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        Synchronisation fehlgeschlagen: {src?.syncError || 'Ein unerwarteter Fehler ist aufgetreten.'}
+                      </div>
+                    </div>
+                  )}
+                  {info.isConnected && !isEnabled && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <PauseCircle size={14} /> Google Health Daten sind deaktiviert. Die synchronisierten Messwerte fließen aktuell nicht in deinen Score ein.
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
-                    Letzter Sync: <strong style={{ color: isConnected && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
+                    Letzter Sync: <strong style={{ color: info.isConnected && isEnabled ? '#0f6e56' : '#22221f', fontWeight: 500 }}>{formatDate(src?.lastSyncAt)}</strong>
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {isConnected && src?.id ? (
+                  {info.isConnected && src?.id && !info.isError ? (
                     <>
                       {isEnabled ? (
                         <>
                           <Btn
                             full
                             onClick={handleSyncGoogle}
-                            disabled={syncingGoogle}
+                            disabled={isSyncing}
                           >
-                            {syncingGoogle ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                            {isSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
                           </Btn>
                           <Btn
                             full
@@ -1404,9 +1955,9 @@ export function Component() {
                             full
                             variant="secondary"
                             onClick={handleSyncGoogle}
-                            disabled={syncingGoogle}
+                            disabled={isSyncing}
                           >
-                            {syncingGoogle ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
+                            {isSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}
                           </Btn>
                           {sampleCount > 0 && (
                             <Btn
@@ -1437,13 +1988,60 @@ export function Component() {
                         </>
                       )}
                     </>
+                  ) : info.isError && src?.id ? (
+                    <>
+                      <Btn
+                        full
+                        onClick={handleSyncGoogle}
+                        disabled={isSyncing}
+                      >
+                        {isSyncing ? 'Synchronisiere...' : 'Jetzt erneut synchronisieren'}
+                      </Btn>
+                      <Btn
+                        full
+                        variant="secondary"
+                        onClick={() => withConsent(() => handleOAuthConnect('google-fit'), 'Google Health')}
+                      >
+                        Google Health erneut verbinden
+                      </Btn>
+                      <button
+                        type="button"
+                        onClick={() => withConsent(() => handleOpenGoogleCodelabMode(), 'Google Health Codelab')}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#0f6e56',
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                          padding: 4,
+                          textAlign: 'center',
+                        }}
+                      >
+                        Codelab-Modus (Code manuell eingeben)
+                      </button>
+                      {sampleCount > 0 && (
+                        <Btn
+                          full
+                          variant="danger"
+                          onClick={() => {
+                            if (window.confirm(`Möchtest du wirklich alle ${sampleCount} importierten Google Health Messwerte löschen?`)) {
+                              deleteSourceSamplesMutation.mutate(src.id);
+                            }
+                          }}
+                          disabled={deleteSourceSamplesMutation.isPending}
+                        >
+                          Importierte Daten löschen ({sampleCount} Werte)
+                        </Btn>
+                      )}
+                    </>
                   ) : (
                     <>
                       <Btn
                         full
                         onClick={() => withConsent(() => handleOAuthConnect('google-fit'), 'Google Health')}
                       >
-                        {sampleCount > 0 ? 'Google Health erneut verbinden' : 'Google Health verbinden'}
+                        {sampleCount > 0 || info.isTokenExpired ? 'Google Health erneut verbinden' : 'Google Health verbinden'}
                       </Btn>
                       <button
                         type="button"
