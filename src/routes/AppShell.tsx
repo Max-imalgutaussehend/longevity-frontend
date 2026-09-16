@@ -35,14 +35,21 @@ export function Component() {
     }
   }, [isUserLoading, user, navigate]);
 
-  // Auto-launch tutorial on first visit if not yet completed
+  // Auto-launch tutorial on first visit if not yet completed, and listen for manual trigger
   useEffect(() => {
+    const handleOpenTutorial = () => setShowTutorial(true);
+    window.addEventListener('open-tutorial', handleOpenTutorial);
+
     const hasCompleted = localStorage.getItem('longevity_tutorial_completed');
     if (!hasCompleted) {
       // Small timeout for smooth initial render
       const timer = setTimeout(() => setShowTutorial(true), 400);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('open-tutorial', handleOpenTutorial);
+      };
     }
+    return () => window.removeEventListener('open-tutorial', handleOpenTutorial);
   }, []);
 
   // Close profile menu when clicking outside

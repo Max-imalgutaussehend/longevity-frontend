@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiClient } from '../api/client.js';
 import { Card, Skeleton } from '../components/ui.js';
+import { OnboardingCard } from '../components/OnboardingCard.js';
 import type { ScoreResult } from '../api/types.js';
 
 interface HistoryPoint { date: string; score: number; coverage: number; }
@@ -35,6 +36,9 @@ export function Component() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+      {/* ── Guided Onboarding ── */}
+      <OnboardingCard />
 
       {/* ── Score Hero ── */}
       <Card className="score-hero-card">

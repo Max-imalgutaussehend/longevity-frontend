@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Check } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, Btn } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
@@ -49,12 +49,24 @@ export function Component() {
                 <div style={{ fontSize: 11, color: '#888780', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 20 }}>
                   E-Mail bestätigt
                 </div>
-                <div data-testid="verify-email-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '14px 32px', borderRadius: 999, background: 'rgba(29,158,117,0.10)', color: '#0f6e56', fontSize: 20, fontWeight: 500, border: '1px solid rgba(29,158,117,0.22)', marginBottom: 24 }}>
-                  <Check size={22} color="#0f6e56" />
+                <div data-testid="verify-email-success" style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '14px 32px', borderRadius: 999, background: 'rgba(29,158,117,0.10)', color: '#0f6e56', fontSize: 18, fontWeight: 500, border: '1px solid rgba(29,158,117,0.22)', marginBottom: 20 }}>
+                  <Check size={20} color="#0f6e56" />
                   <span>Deine E-Mail-Adresse wurde bestätigt.</span>
                 </div>
-                <div>
-                  <Link to="/dashboard"><Btn>Zum Dashboard</Btn></Link>
+                <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.6, marginBottom: 24 }}>
+                  Nächster Schritt: Verbinde deine erste Datenquelle (Wearable oder Labor), um deinen individuellen Vitalitätsscore und maßgeschneiderte Hebel zu berechnen.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <Link to="/daten" style={{ textDecoration: 'none' }}>
+                    <Btn full testId="verify-connect-source" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      Erste Datenquelle verbinden <ArrowRight size={14} />
+                    </Btn>
+                  </Link>
+                  <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+                    <Btn full variant="secondary" testId="verify-go-dashboard">
+                      Direkt zum Dashboard
+                    </Btn>
+                  </Link>
                 </div>
               </>
             )}
