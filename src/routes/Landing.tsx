@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import heroVideo from '../assets/hero-video.mp4';
 import { Card, Btn } from '../components/ui.js';
-import { BrandLogosRibbon, BrandEcosystemSection } from '../components/BrandLogos.js';
+import { BrandLogosRibbon } from '../components/BrandLogos.js';
 
 function useScrollReveal() {
   useEffect(() => {
@@ -448,8 +448,6 @@ export function Component() {
             </Card>
           </div>
 
-          {/* Ecosystem Sources Showcase with Logos */}
-          <BrandEcosystemSection />
 
           {/* 3 Core Trust Badges */}
           <div
