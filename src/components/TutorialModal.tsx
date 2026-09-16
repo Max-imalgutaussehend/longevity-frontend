@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConsentModal } from './ConsentModal.js';
 import {
   Activity,
   Sparkles,
@@ -151,6 +152,16 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
   // ── Step 2 State: Mock Data Ingest ────────────────────────────────
   const [mockSuccess, setMockSuccess] = useState(false);
   const [activeSourceHighlight, setActiveSourceHighlight] = useState<string | null>(null);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+
+  interface ConsentStatus {
+    hasConsented: boolean;
+  }
+
+  const { data: consentData } = useQuery<ConsentStatus>({
+    queryKey: ['account', 'consent'],
+    queryFn: () => apiClient<ConsentStatus>('/account/consent'),
+  });
 
   const generateMockMutation = useMutation({
     mutationFn: async () => {
@@ -164,6 +175,14 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
       setMockSuccess(true);
     },
   });
+
+  function handleTriggerMock() {
+    if (consentData?.hasConsented) {
+      generateMockMutation.mutate();
+    } else {
+      setShowConsentModal(true);
+    }
+  }
 
   // ── Step 3 State: Interactive Simulator ───────────────────────────
   const [stepsHabit, setStepsHabit] = useState(8500);
@@ -675,7 +694,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       small
                       variant={mockSuccess ? 'ghost' : 'secondary'}
                       disabled={generateMockMutation.isPending || mockSuccess}
-                      onClick={() => generateMockMutation.mutate()}
+                      onClick={handleTriggerMock}
                       style={{ marginTop: 4 }}
                     >
                       {generateMockMutation.isPending ? (
@@ -1096,6 +1115,13 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
           </div>
         </div>
       </div>
+
+      <ConsentModal
+        isOpen={showConsentModal}
+        onClose={() => setShowConsentModal(false)}
+        sourceLabel="90 Tage Testdaten (Mock)"
+        onConsented={() => generateMockMutation.mutate()}
+      />
     </>
   );
 }
