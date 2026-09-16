@@ -1,5 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Check } from 'lucide-react';
+import { apiClient } from '../api/client.js';
 
 interface LogoProps {
   size?: number;
@@ -18,7 +21,7 @@ export function AppleLogo({ size = 20, className, color }: LogoProps) {
       style={{ display: 'inline-block', flexShrink: 0 }}
       aria-label="Apple Health Logo"
     >
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 7.17c.65-.79 1.1-1.9 0.98-3.01-.95.04-2.12.63-2.8 1.42-.59.69-1.12 1.8-0.97 2.89 1.07.08 2.15-.52 2.79-1.3" />
+      <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701z" />
     </svg>
   );
 }
@@ -358,6 +361,144 @@ export function BrandLogosRibbon() {
                 {b.name}
               </span>
             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Interactive Brand Logos Card shown directly on the user Dashboard
+ */
+export function BrandLogosDashboardCard() {
+  const navigate = useNavigate();
+  const { data: sources = [] } = useQuery<{ id: string; kind: string; enabled: boolean; sampleCount?: number; lastSyncAt?: string | null }[]>({
+    queryKey: ['sources'],
+    queryFn: () => apiClient('/sources'),
+  });
+
+  const isBrandConnected = (brandId: string) => {
+    return sources.some((s) => {
+      if (!s.enabled) return false;
+      const hasData = (s.sampleCount ?? 0) > 0 || !!s.lastSyncAt;
+      if (brandId === 'apple') return (s.kind === 'apple_health' || s.kind === 'health_auto_export') && hasData;
+      if (brandId === 'google') return (s.kind === 'google_fit' || s.kind === 'google_health') && hasData;
+      if (brandId === 'oura') return s.kind === 'oura' && hasData;
+      return s.kind === brandId && hasData;
+    });
+  };
+
+  const connectedCount = SUPPORTED_BRANDS.filter((b) => isBrandConnected(b.id)).length;
+
+  return (
+    <div
+      data-testid="dashboard-brand-logos"
+      style={{
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(248,252,250,0.88) 100%)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: 18,
+        border: '1px solid rgba(29, 158, 117, 0.18)',
+        padding: '18px 22px',
+        boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.04)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#22221f' }}>
+            Kompatible Tracker & Gesundheits-Apps
+          </span>
+          <span
+            style={{
+              fontSize: 11,
+              color: connectedCount > 0 ? '#0f6e56' : '#71716b',
+              background: connectedCount > 0 ? 'rgba(29, 158, 117, 0.1)' : 'rgba(0,0,0,0.05)',
+              padding: '2px 8px',
+              borderRadius: 999,
+              fontWeight: 500,
+            }}
+          >
+            {connectedCount > 0 ? `${connectedCount} aktiv verbunden` : `${SUPPORTED_BRANDS.length} Plattformen unterstützt`}
+          </span>
+        </div>
+        <button
+          type="button"
+          data-testid="dashboard-manage-sources-btn"
+          onClick={() => navigate('/daten')}
+          style={{
+            fontSize: 12,
+            color: '#0f6e56',
+            fontWeight: 600,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: 0,
+          }}
+        >
+          Tracker & Quellen verwalten →
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 12px', alignItems: 'center' }}>
+        {SUPPORTED_BRANDS.map((b) => {
+          const Logo = b.Logo;
+          const connected = isBrandConnected(b.id);
+          return (
+            <button
+              key={b.id}
+              type="button"
+              data-testid={`dashboard-brand-${b.id}`}
+              onClick={() => navigate('/daten')}
+              title={`${b.name} (${b.category}) – ${connected ? 'Aktiv verbunden' : 'Jetzt in Daten verknüpfen'}`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '6px 13px',
+                borderRadius: 999,
+                background: connected ? 'rgba(29, 158, 117, 0.09)' : 'rgba(255, 255, 255, 0.85)',
+                border: connected ? '1.5px solid rgba(29, 158, 117, 0.35)' : '1px solid rgba(0, 0, 0, 0.07)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px -2px rgba(0,0,0,0.08)';
+                e.currentTarget.style.borderColor = 'rgba(29, 158, 117, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = connected ? 'rgba(29, 158, 117, 0.35)' : 'rgba(0, 0, 0, 0.07)';
+              }}
+            >
+              <Logo size={15} color={b.id === 'google' ? undefined : b.accentColor} />
+              <span style={{ fontSize: 12, fontWeight: 500, color: connected ? '#0f6e56' : '#22221f' }}>
+                {b.name}
+              </span>
+              {connected && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    background: '#0f6e56',
+                    color: '#fff',
+                  }}
+                >
+                  <Check size={9} strokeWidth={3} />
+                </span>
+              )}
+            </button>
           );
         })}
       </div>

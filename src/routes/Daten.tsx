@@ -18,7 +18,6 @@ import {
   Wine,
   Microscope,
   Bot,
-  Apple,
   CircleDot,
   Activity,
   Scale,
@@ -38,6 +37,7 @@ import {
 } from 'lucide-react';
 import { ConsentModal } from '../components/ConsentModal.js';
 import { apiClient } from '../api/client.js';
+import { AppleLogo } from '../components/BrandLogos.js';
 import {
   Card,
   PageTitle,
@@ -79,7 +79,7 @@ export function renderMetricIcon(metric: string, size = 18): React.ReactNode {
 export function renderSourceIcon(sourceKind: string, size = 16): React.ReactNode {
   switch (sourceKind) {
     case 'google_fit': return <Bot size={size} />;
-    case 'apple_health': return <Apple size={size} />;
+    case 'apple_health': return <AppleLogo size={size} color="#0f6e56" />;
     case 'oura': return <CircleDot size={size} />;
     case 'strava': return <Activity size={size} />;
     case 'withings': return <Scale size={size} />;
@@ -831,7 +831,7 @@ export function Component() {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <Apple size={28} color="#0f6e56" />
+                    <AppleLogo size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {hasSource && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
