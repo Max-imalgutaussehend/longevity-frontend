@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
+import { Check } from 'lucide-react';
 import { Card, PageTitle, Btn, StatTile, SectionLabel, Skeleton } from '../components/ui.js';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
@@ -113,7 +114,11 @@ export function Component() {
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Btn onClick={() => sendMut.mutate()}>
-          {sendMut.isPending ? 'Wird gesendet…' : sendMut.isSuccess ? 'E-Mail gesendet ✓' : 'Als E-Mail senden'}
+          {sendMut.isPending ? 'Wird gesendet…' : sendMut.isSuccess ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              E-Mail gesendet <Check size={16} />
+            </span>
+          ) : 'Als E-Mail senden'}
         </Btn>
       </div>
     </div>

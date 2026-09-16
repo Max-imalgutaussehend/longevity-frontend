@@ -1,6 +1,35 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConsentModal } from './ConsentModal.js';
+import {
+  Activity,
+  Sparkles,
+  Briefcase,
+  X,
+  Heart,
+  Moon,
+  Zap,
+  Shield,
+  Bot,
+  Apple,
+  FlaskConical,
+  Dices,
+  Check,
+  Footprints,
+  Lock,
+  ShieldCheck,
+  Gift,
+  Building2,
+  Dumbbell,
+  Watch,
+  BarChart3,
+  Sliders,
+  Radio,
+  ArrowLeft,
+  ArrowRight,
+  Lightbulb,
+} from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Btn, Chip } from './ui.js';
 import brandIcon from '../assets/brand-icon.png';
@@ -16,7 +45,7 @@ type Archetype = 'athletic' | 'balanced' | 'starter';
 interface ArchetypeProfile {
   id: Archetype;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   desc: string;
   targetScore: number;
   domains: { cardio: number; regen: number; activity: number; risk: number };
@@ -26,7 +55,7 @@ const ARCHETYPES: ArchetypeProfile[] = [
   {
     id: 'athletic',
     label: 'Sportlich & Aktiv',
-    icon: '🏃‍♂️',
+    icon: <Activity size={24} color="#0f6e56" />,
     desc: '10.000 Schritte, 2x Zone-2 & 8h Schlaf',
     targetScore: 84,
     domains: { cardio: 88, regen: 82, activity: 92, risk: 85 },
@@ -34,7 +63,7 @@ const ARCHETYPES: ArchetypeProfile[] = [
   {
     id: 'balanced',
     label: 'Ausgeglichen',
-    icon: '🧘',
+    icon: <Sparkles size={24} color="#0f6e56" />,
     desc: '7.500 Schritte, moderate Bewegung, 7h Schlaf',
     targetScore: 71,
     domains: { cardio: 72, regen: 70, activity: 74, risk: 75 },
@@ -42,7 +71,7 @@ const ARCHETYPES: ArchetypeProfile[] = [
   {
     id: 'starter',
     label: 'Startphase / Büro',
-    icon: '💼',
+    icon: <Briefcase size={24} color="#0f6e56" />,
     desc: 'Viel Sitzen, unregelmäßiger Schlaf, Neubeginn',
     targetScore: 54,
     domains: { cardio: 55, regen: 50, activity: 48, risk: 62 },
@@ -123,6 +152,16 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
   // ── Step 2 State: Mock Data Ingest ────────────────────────────────
   const [mockSuccess, setMockSuccess] = useState(false);
   const [activeSourceHighlight, setActiveSourceHighlight] = useState<string | null>(null);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+
+  interface ConsentStatus {
+    hasConsented: boolean;
+  }
+
+  const { data: consentData } = useQuery<ConsentStatus>({
+    queryKey: ['account', 'consent'],
+    queryFn: () => apiClient<ConsentStatus>('/account/consent'),
+  });
 
   const generateMockMutation = useMutation({
     mutationFn: async () => {
@@ -136,6 +175,14 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
       setMockSuccess(true);
     },
   });
+
+  function handleTriggerMock() {
+    if (consentData?.hasConsented) {
+      generateMockMutation.mutate();
+    } else {
+      setShowConsentModal(true);
+    }
+  }
 
   // ── Step 3 State: Interactive Simulator ───────────────────────────
   const [stepsHabit, setStepsHabit] = useState(8500);
@@ -331,11 +378,10 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                 justifyContent: 'center',
                 cursor: 'pointer',
                 color: '#55544f',
-                fontSize: 14,
                 transition: 'background 0.15s',
               }}
             >
-              ✕
+              <X size={18} />
             </button>
           </div>
 
@@ -366,7 +412,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                 {/* Interactive Archetype Cards */}
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, textAlign: 'center' }}>
-                    👇 Klicke auf ein Profil zum Ausprobieren:
+                    Klicke auf ein Profil zum Ausprobieren:
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                     {ARCHETYPES.map((arch) => {
@@ -387,7 +433,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                             boxShadow: isSelected ? '0 4px 16px rgba(15,110,86,0.18)' : 'none',
                           }}
                         >
-                          <div style={{ fontSize: 24, marginBottom: 4 }}>{arch.icon}</div>
+                          <div style={{ marginBottom: 4, display: 'flex', justifyContent: 'center' }}>{arch.icon}</div>
                           <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? '#0f6e56' : '#22221f' }}>
                             {arch.label}
                           </div>
@@ -494,14 +540,14 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       4 Säulen der Langlebigkeit:
                     </div>
                     {[
-                      { label: '🫀 Kardiometabolik', val: activeProfile.domains.cardio },
-                      { label: '😴 Regeneration', val: activeProfile.domains.regen },
-                      { label: '⚡ Aktivität', val: activeProfile.domains.activity },
-                      { label: '🛡️ Risiko-Faktoren', val: activeProfile.domains.risk },
+                      { label: 'Kardiometabolik', icon: <Heart size={12} color="#0f6e56" />, val: activeProfile.domains.cardio },
+                      { label: 'Regeneration', icon: <Moon size={12} color="#0f6e56" />, val: activeProfile.domains.regen },
+                      { label: 'Aktivität', icon: <Zap size={12} color="#0f6e56" />, val: activeProfile.domains.activity },
+                      { label: 'Risiko-Faktoren', icon: <Shield size={12} color="#0f6e56" />, val: activeProfile.domains.risk },
                     ].map((d) => (
                       <div key={d.label}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#55544f', marginBottom: 2 }}>
-                          <span>{d.label}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, color: '#55544f', marginBottom: 2 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>{d.icon} {d.label}</span>
                           <strong style={{ color: '#0f6e56' }}>{d.val}%</strong>
                         </div>
                         <div style={{ height: 4, borderRadius: 99, background: 'rgba(0,0,0,0.08)', overflow: 'hidden' }}>
@@ -573,7 +619,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 22 }}>🤖</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Bot size={22} /></span>
                       <strong style={{ fontSize: 13, color: '#22221f' }}>Google Health & Fit</strong>
                     </div>
                     <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>
@@ -594,7 +640,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 22 }}>🍎</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Apple size={22} /></span>
                       <strong style={{ fontSize: 13, color: '#22221f' }}>Apple Health</strong>
                     </div>
                     <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>
@@ -615,7 +661,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 22 }}>🧪</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><FlaskConical size={22} /></span>
                       <strong style={{ fontSize: 13, color: '#22221f' }}>Laborwerte & Lifestyle</strong>
                     </div>
                     <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>
@@ -636,7 +682,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                   }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: 22 }}>🎲</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Dices size={22} /></span>
                         <strong style={{ fontSize: 13, color: '#0f6e56' }}>90 Tage Sofort-Testdaten</strong>
                       </div>
                       <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>
@@ -648,14 +694,20 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       small
                       variant={mockSuccess ? 'ghost' : 'secondary'}
                       disabled={generateMockMutation.isPending || mockSuccess}
-                      onClick={() => generateMockMutation.mutate()}
+                      onClick={handleTriggerMock}
                       style={{ marginTop: 4 }}
                     >
-                      {generateMockMutation.isPending
-                        ? 'Wird generiert...'
-                        : mockSuccess
-                        ? '✓ 90 Tage Daten aktiv!'
-                        : '⚡ Testdaten jetzt laden'}
+                      {generateMockMutation.isPending ? (
+                        'Wird generiert...'
+                      ) : mockSuccess ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <Check size={14} /> 90 Tage Daten aktiv!
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <Zap size={14} /> Testdaten jetzt laden
+                        </span>
+                      )}
                     </Btn>
                   </div>
                 </div>
@@ -720,7 +772,9 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                   {/* Schritte */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                      <span style={{ fontWeight: 500, color: '#22221f' }}>🚶‍♂️ Tägliche Schritte</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 500, color: '#22221f' }}>
+                        <Footprints size={15} color="#0f6e56" /> Tägliche Schritte
+                      </span>
                       <strong style={{ color: '#0f6e56' }}>{stepsHabit.toLocaleString('de-DE')} Schritte</strong>
                     </div>
                     <input
@@ -737,7 +791,9 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                   {/* Zone 2 */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                      <span style={{ fontWeight: 500, color: '#22221f' }}>🫀 Zone-2 Cardio (Ausdauer)</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 500, color: '#22221f' }}>
+                        <Heart size={15} color="#0f6e56" /> Zone-2 Cardio (Ausdauer)
+                      </span>
                       <strong style={{ color: '#0f6e56' }}>{zone2Habit} Min. / Woche</strong>
                     </div>
                     <input
@@ -754,7 +810,9 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                   {/* Schlaf */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                      <span style={{ fontWeight: 500, color: '#22221f' }}>😴 Schlafdauer</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 500, color: '#22221f' }}>
+                        <Moon size={15} color="#0f6e56" /> Schlafdauer
+                      </span>
                       <strong style={{ color: '#0f6e56' }}>{sleepHabit} Stunden</strong>
                     </div>
                     <input
@@ -779,8 +837,12 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     color: '#0f6e56',
                     textAlign: 'center',
                     fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
                   }}>
-                    🌟 Fantastisch! Ab Score 80 erreichst du die höchste Stufe für Partner-Rabatte.
+                    <Sparkles size={15} color="#0f6e56" /> Fantastisch! Ab Score 80 erreichst du die höchste Stufe für Partner-Rabatte.
                   </div>
                 )}
               </div>
@@ -812,7 +874,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     gap: 10,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>🔐</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Lock size={20} /></span>
                       <strong style={{ fontSize: 13, color: '#0f6e56' }}>Kryptografischer Nachweis</strong>
                     </div>
 
@@ -829,7 +891,13 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     }}>
                       <div>Freigabe: <strong>Band 70–79</strong></div>
                       <div style={{ fontSize: 11, color: '#888780' }}>
-                        Signatur: {hasSignedToken ? 'Ed25519 (Gültig ✓)' : 'Nicht signiert'}
+                        Signatur: {hasSignedToken ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <Check size={13} color="#0f6e56" /> Ed25519 (Gültig)
+                          </span>
+                        ) : (
+                          'Nicht signiert'
+                        )}
                       </div>
                       <div style={{ fontSize: 10, color: '#a3a29c', wordBreak: 'break-all', fontFamily: 'monospace' }}>
                         {hasSignedToken
@@ -844,11 +912,20 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       disabled={isSigningToken}
                       onClick={handleSimulateSign}
                     >
-                      {isSigningToken ? 'Signiere...' : hasSignedToken ? '✓ Signatur erfolgreich!' : 'Signatur jetzt testen'}
+                      {isSigningToken ? (
+                        'Signiere...'
+                      ) : hasSignedToken ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <Check size={14} /> Signatur erfolgreich!
+                        </span>
+                      ) : (
+                        'Signatur jetzt testen'
+                      )}
                     </Btn>
 
-                    <div style={{ fontSize: 11, color: '#55544f', lineHeight: 1.35 }}>
-                      🛡️ <strong>Zero Raw-Data:</strong> Dein Puls, deine Schritte oder Schlafdauer verlassen niemals dein Gerät!
+                    <div style={{ fontSize: 11, color: '#55544f', lineHeight: 1.35, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <ShieldCheck size={16} color="#0f6e56" style={{ flexShrink: 0 }} />
+                      <span><strong>Zero Raw-Data:</strong> Dein Puls, deine Schritte oder Schlafdauer verlassen niemals dein Gerät!</span>
                     </div>
                   </div>
 
@@ -863,19 +940,22 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     gap: 10,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>🎁</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Gift size={20} /></span>
                       <strong style={{ fontSize: 13, color: '#22221f' }}>Freischaltbare Vorteile</strong>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
                       <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(29,158,117,0.08)', color: '#0f6e56' }}>
-                        🏥 <strong>Bis zu 15% Rabatt</strong> auf private Krankenversicherungen
+                        <Building2 size={15} style={{ verticalAlign: 'middle', marginRight: 6, color: '#0f6e56' }} />
+                        <strong>Bis zu 15% Rabatt</strong> auf private Krankenversicherungen
                       </div>
                       <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(29,158,117,0.08)', color: '#0f6e56' }}>
-                        🏋️ <strong>40 € monatlich</strong> Zuschuss für Fitness & Wellness
+                        <Dumbbell size={15} style={{ verticalAlign: 'middle', marginRight: 6, color: '#0f6e56' }} />
+                        <strong>40 € monatlich</strong> Zuschuss für Fitness & Wellness
                       </div>
                       <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(29,158,117,0.08)', color: '#0f6e56' }}>
-                        ⌚ <strong>Wearable-Boni</strong> auf Oura, Garmin & Whoop
+                        <Watch size={15} style={{ verticalAlign: 'middle', marginRight: 6, color: '#0f6e56' }} />
+                        <strong>Wearable-Boni</strong> auf Oura, Garmin & Whoop
                       </div>
                     </div>
                   </div>
@@ -887,7 +967,11 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
             {step === 5 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ textAlign: 'center' }}>
-                  <Chip color="green">Schritt 5 von 5 · Bereit zum Start ✨</Chip>
+                  <Chip color="green">
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      Schritt 5 von 5 · Bereit zum Start <Sparkles size={12} />
+                    </span>
+                  </Chip>
                   <h2 style={{ fontSize: 22, fontWeight: 600, color: '#22221f', margin: '10px 0 4px', letterSpacing: '-0.02em' }}>
                     Dein persönliches Cockpit ist startklar!
                   </h2>
@@ -911,7 +995,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       cursor: 'pointer',
                     }}
                   >
-                    <div style={{ fontSize: 18, marginBottom: 2 }}>📊</div>
+                    <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', color: '#0f6e56' }}><BarChart3 size={20} /></div>
                     <strong style={{ fontSize: 12, color: '#22221f', display: 'block' }}>Dashboard & Score</strong>
                     <span style={{ fontSize: 11, color: '#55544f', lineHeight: 1.3 }}>
                       90-Tage Trendlinie & 4 Domänen im Überblick.
@@ -931,7 +1015,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       cursor: 'pointer',
                     }}
                   >
-                    <div style={{ fontSize: 18, marginBottom: 2 }}>⚙️</div>
+                    <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', color: '#0f6e56' }}><Sliders size={20} /></div>
                     <strong style={{ fontSize: 12, color: '#22221f', display: 'block' }}>Hebel-Simulator</strong>
                     <span style={{ fontSize: 11, color: '#55544f', lineHeight: 1.3 }}>
                       Finde deine wirkungsvollsten Gewohnheiten.
@@ -951,7 +1035,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       cursor: 'pointer',
                     }}
                   >
-                    <div style={{ fontSize: 18, marginBottom: 2 }}>📡</div>
+                    <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', color: '#0f6e56' }}><Radio size={20} /></div>
                     <strong style={{ fontSize: 12, color: '#22221f', display: 'block' }}>Daten & Wearables</strong>
                     <span style={{ fontSize: 11, color: '#55544f', lineHeight: 1.3 }}>
                       Google Health, Apple Health & Laborwerte.
@@ -971,7 +1055,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       cursor: 'pointer',
                     }}
                   >
-                    <div style={{ fontSize: 18, marginBottom: 2 }}>🛡️</div>
+                    <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', color: '#0f6e56' }}><Shield size={20} /></div>
                     <strong style={{ fontSize: 12, color: '#22221f', display: 'block' }}>Freigabe & Vorteile</strong>
                     <span style={{ fontSize: 11, color: '#55544f', lineHeight: 1.3 }}>
                       Verifizierbare Links erstellen & Partner-Boni.
@@ -1007,28 +1091,37 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
           }}>
             <div>
               {step > 1 ? (
-                <Btn variant="ghost" small onClick={() => setStep((s) => s - 1)}>
-                  ← Zurück
+                <Btn variant="ghost" small onClick={() => setStep((s) => s - 1)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <ArrowLeft size={14} /> Zurück
                 </Btn>
               ) : (
-                <span style={{ fontSize: 12, color: '#888780' }}>💡 Tipp: Navigation auch mit Pfeiltasten</span>
+                <span style={{ fontSize: 12, color: '#888780', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Lightbulb size={13} color="#f59e0b" /> Tipp: Navigation auch mit Pfeiltasten
+                </span>
               )}
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
               {step < 5 ? (
-                <Btn onClick={() => setStep((s) => s + 1)}>
-                  Weiter →
+                <Btn onClick={() => setStep((s) => s + 1)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  Weiter <ArrowRight size={14} />
                 </Btn>
               ) : (
-                <Btn onClick={handleClose} className="anim-shimmer" style={{ color: '#fff', border: 'none' }}>
-                  Jetzt Dashboard entdecken ✨
+                <Btn onClick={handleClose} className="anim-shimmer" style={{ color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  Jetzt Dashboard entdecken <Sparkles size={14} />
                 </Btn>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      <ConsentModal
+        isOpen={showConsentModal}
+        onClose={() => setShowConsentModal(false)}
+        sourceLabel="90 Tage Testdaten (Mock)"
+        onConsented={() => generateMockMutation.mutate()}
+      />
     </>
   );
 }

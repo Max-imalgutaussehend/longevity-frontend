@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Check } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
@@ -47,8 +48,9 @@ export function Component() {
               <div style={{ color: '#a3a29c', fontSize: 14 }}>Signatur wird geprüft…</div>
             ) : data?.valid ? (
               <>
-                <div style={{ fontSize: 11, color: '#888780', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 28 }}>
-                  Score-Nachweis · Signatur geprüft ✓
+                <div style={{ fontSize: 11, color: '#888780', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                  <span>Score-Nachweis · Signatur geprüft</span>
+                  <Check size={14} color="#0f6e56" />
                 </div>
                 <div data-testid="verify-band" style={{ display: 'inline-flex', padding: '14px 32px', borderRadius: 999, background: 'rgba(29,158,117,0.10)', color: '#0f6e56', fontSize: 32, fontWeight: 500, border: '1px solid rgba(29,158,117,0.22)', marginBottom: 28 }}>
                   Band {data.band.low} – {data.band.high}

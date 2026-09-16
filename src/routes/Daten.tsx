@@ -1,6 +1,42 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import {
+  Footprints,
+  Heart,
+  Moon,
+  Clock,
+  TrendingUp,
+  Zap,
+  Wind,
+  Stethoscope,
+  FlaskConical,
+  Droplet,
+  Ruler,
+  Dumbbell,
+  CigaretteOff,
+  Wine,
+  Microscope,
+  Bot,
+  Apple,
+  CircleDot,
+  Activity,
+  Scale,
+  Smartphone,
+  Pencil,
+  FileText,
+  MapPin,
+  Sliders,
+  BarChart3,
+  Dices,
+  PauseCircle,
+  X,
+  Check,
+  ExternalLink,
+  Shield,
+  ShieldCheck,
+} from 'lucide-react';
+import { ConsentModal } from '../components/ConsentModal.js';
 import { apiClient } from '../api/client.js';
 import {
   Card,
@@ -18,35 +54,53 @@ import {
 } from '../components/ui.js';
 import type { Source, ScoreResult, SamplesSummaryResponse, MetricSummary } from '../api/types.js';
 
-const METRIC_ICONS: Record<string, string> = {
-  steps: '👟',
-  resting_hr: '❤️',
-  sleep_duration: '🌙',
-  sleep_consistency: '⏱️',
-  hrv_rmssd: '📈',
-  zone2_minutes: '⚡',
-  vo2max: '🫁',
-  systolic_bp: '🩺',
-  ldl: '🧪',
-  hdl: '🧪',
-  hba1c: '🩸',
-  waist: '📏',
-  strength_sessions: '🏋️',
-  smoking: '🚬',
-  alcohol_units: '🍷',
-  hscrp: '🔬',
-};
+export function renderMetricIcon(metric: string, size = 18): React.ReactNode {
+  switch (metric) {
+    case 'steps': return <Footprints size={size} color="#0f6e56" />;
+    case 'resting_hr': return <Heart size={size} color="#a32d2d" />;
+    case 'sleep_duration': return <Moon size={size} color="#3b82f6" />;
+    case 'sleep_consistency': return <Clock size={size} color="#3b82f6" />;
+    case 'hrv_rmssd': return <TrendingUp size={size} color="#1d9e75" />;
+    case 'zone2_minutes': return <Zap size={size} color="#f59e0b" />;
+    case 'vo2max': return <Wind size={size} color="#0f6e56" />;
+    case 'systolic_bp': return <Stethoscope size={size} color="#a32d2d" />;
+    case 'ldl':
+    case 'hdl': return <FlaskConical size={size} color="#8b5cf6" />;
+    case 'hba1c': return <Droplet size={size} color="#a32d2d" />;
+    case 'waist': return <Ruler size={size} color="#854f0b" />;
+    case 'strength_sessions': return <Dumbbell size={size} color="#0f6e56" />;
+    case 'smoking': return <CigaretteOff size={size} color="#55544f" />;
+    case 'alcohol_units': return <Wine size={size} color="#854f0b" />;
+    case 'hscrp': return <Microscope size={size} color="#8b5cf6" />;
+    default: return <BarChart3 size={size} color="#55544f" />;
+  }
+}
 
-const SOURCE_BADGES: Record<string, { label: string; icon: string }> = {
-  google_fit: { label: 'Google Health', icon: '🤖' },
-  apple_health: { label: 'Apple Health', icon: '🍎' },
-  oura: { label: 'Oura Ring', icon: '💍' },
-  strava: { label: 'Strava', icon: '🏃' },
-  withings: { label: 'Withings', icon: '⚖️' },
-  health_auto_export: { label: 'Health Auto Export', icon: '📲' },
-  lab: { label: 'Laborwert', icon: '🩸' },
-  manual: { label: 'Manuell', icon: '✏️' },
-  questionnaire: { label: 'Fragebogen', icon: '📝' },
+export function renderSourceIcon(sourceKind: string, size = 16): React.ReactNode {
+  switch (sourceKind) {
+    case 'google_fit': return <Bot size={size} />;
+    case 'apple_health': return <Apple size={size} />;
+    case 'oura': return <CircleDot size={size} />;
+    case 'strava': return <Activity size={size} />;
+    case 'withings': return <Scale size={size} />;
+    case 'health_auto_export': return <Smartphone size={size} />;
+    case 'lab': return <FlaskConical size={size} />;
+    case 'manual': return <Pencil size={size} />;
+    case 'questionnaire': return <FileText size={size} />;
+    default: return <MapPin size={size} />;
+  }
+}
+
+const SOURCE_BADGES: Record<string, { label: string }> = {
+  google_fit: { label: 'Google Health' },
+  apple_health: { label: 'Apple Health' },
+  oura: { label: 'Oura Ring' },
+  strava: { label: 'Strava' },
+  withings: { label: 'Withings' },
+  health_auto_export: { label: 'Health Auto Export' },
+  lab: { label: 'Laborwert' },
+  manual: { label: 'Manuell' },
+  questionnaire: { label: 'Fragebogen' },
 };
 
 function formatMetricVal(metric: string, val: number): string {
@@ -187,6 +241,40 @@ export function Component() {
 
   const haeWebhookUrl =
     'https://longevity.maxrommel.de/api/sources/health-auto-export/webhook';
+
+  interface ConsentStatus {
+    hasConsented: boolean;
+    consentAt: string | null;
+    version: string | null;
+    latestVersion: string;
+    consentText: string;
+  }
+
+  const { data: consentData } = useQuery<ConsentStatus>({
+    queryKey: ['account', 'consent'],
+    queryFn: () => apiClient<ConsentStatus>('/account/consent'),
+  });
+
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [pendingConsentAction, setPendingConsentAction] = useState<{ action: () => void; label?: string } | null>(null);
+
+  function withConsent(action: () => void, label?: string) {
+    if (consentData?.hasConsented) {
+      action();
+    } else {
+      setPendingConsentAction({ action, label });
+      setShowConsentModal(true);
+    }
+  }
+
+  const revokeConsentMutation = useMutation({
+    mutationFn: () => apiClient('/account/consent/revoke', { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['account', 'consent'] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
+      queryClient.invalidateQueries({ queryKey: ['sources'] });
+    },
+  });
 
   const {
     data: sources = [],
@@ -561,9 +649,13 @@ export function Component() {
             background: activeTab === 'sources' ? 'rgba(29,158,117,0.12)' : 'transparent',
             color: activeTab === 'sources' ? '#0f6e56' : '#55544f',
             transition: 'all 0.15s ease',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
           }}
         >
-          ⚙️ Quellen & Wearables
+          <Sliders size={15} />
+          <span>Quellen & Wearables</span>
         </button>
         <button
           type="button"
@@ -583,7 +675,8 @@ export function Component() {
             gap: 8,
           }}
         >
-          📊 Synchronisierte Vitaldaten
+          <BarChart3 size={15} />
+          <span>Synchronisierte Vitaldaten</span>
           {(summaryData?.totalCount ?? 0) > 0 && (
             <span style={{
               background: activeTab === 'metrics' ? '#0f6e56' : 'rgba(0,0,0,0.08)',
@@ -627,6 +720,69 @@ export function Component() {
 
       {activeTab === 'sources' && (
         <>
+          {/* DSGVO Art. 9 Einwilligung Status / Aufforderung */}
+          {consentData && (
+            <div style={{
+              background: consentData.hasConsented ? 'rgba(29,158,117,0.06)' : 'rgba(245,158,11,0.08)',
+              border: consentData.hasConsented ? '1px solid rgba(29,158,117,0.2)' : '1px solid rgba(245,158,11,0.3)',
+              borderRadius: 16,
+              padding: '14px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {consentData.hasConsented ? (
+                  <ShieldCheck size={20} color="#0f6e56" style={{ flexShrink: 0 }} />
+                ) : (
+                  <Shield size={20} color="#d97706" style={{ flexShrink: 0 }} />
+                )}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: consentData.hasConsented ? '#0f6e56' : '#92400e' }}>
+                    {consentData.hasConsented
+                      ? `DSGVO Art. 9 Einwilligung aktiv (${consentData.version ?? '2026-09-v1'})`
+                      : 'DSGVO-Einwilligung erforderlich (Art. 9 DSGVO)'}
+                  </div>
+                  <div style={{ fontSize: 11, color: consentData.hasConsented ? '#55544f' : '#78350f' }}>
+                    {consentData.hasConsented
+                      ? `Erteilt am ${consentData.consentAt ? new Date(consentData.consentAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'heute'} · Verarbeitung besonderer Kategorien personenbezogener Daten`
+                      : 'Vor dem Verbinden von Wearables oder Gesundheitsdaten ist deine ausdrückliche Einwilligung gesetzlich vorgeschrieben.'}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <a
+                  href="/datenschutz"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: 12, color: '#0f6e56', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 500 }}
+                >
+                  Datenschutz <ExternalLink size={12} />
+                </a>
+                {consentData.hasConsented ? (
+                  <Btn
+                    small
+                    variant="ghost"
+                    onClick={() => {
+                      if (window.confirm('Möchtest du deine DSGVO-Einwilligung zur Verarbeitung von Gesundheitsdaten (Art. 9 DSGVO) wirklich widerrufen?')) {
+                        revokeConsentMutation.mutate();
+                      }
+                    }}
+                    disabled={revokeConsentMutation.isPending}
+                  >
+                    {revokeConsentMutation.isPending ? 'Wird widerrufen...' : 'Widerrufen'}
+                  </Btn>
+                ) : (
+                  <Btn small onClick={() => setShowConsentModal(true)}>
+                    Einwilligung einsehen & erteilen
+                  </Btn>
+                )}
+              </div>
+            </div>
+          )}
+
           {(summaryData?.totalCount ?? 0) > 0 && (
             <div
               onClick={() => setActiveTab('metrics')}
@@ -642,7 +798,7 @@ export function Component() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#0f6e56' }}>
-                <span>📈</span>
+                <TrendingUp size={16} color="#0f6e56" />
                 <span><strong>{summaryData?.totalCount} Messwerte</strong> synchronisiert ({summaryData?.metrics.length} Vitalparameter).</span>
               </div>
               <span style={{ fontSize: 12, fontWeight: 500, color: '#0f6e56', textDecoration: 'underline' }}>
@@ -675,7 +831,7 @@ export function Component() {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: 28 }}>🍎</span>
+                    <Apple size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {hasSource && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -704,8 +860,8 @@ export function Component() {
                       : 'Exportiere Daten aus der Apple Health App (export.xml oder ZIP) und lade sie hier hoch.'}
                   </div>
                   {hasSource && !isEnabled && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      ⏸️ Apple Health Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <PauseCircle size={14} /> Apple Health Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
@@ -734,7 +890,7 @@ export function Component() {
                       <Btn
                         full
                         variant="secondary"
-                        onClick={() => generateMockMutation.mutate()}
+                        onClick={() => withConsent(() => generateMockMutation.mutate(), 'Apple Health Testdaten')}
                         disabled={generateMockMutation.isPending}
                       >
                         {generateMockMutation.isPending ? 'Wird generiert...' : 'Testdaten neu generieren'}
@@ -769,13 +925,17 @@ export function Component() {
                     <Btn
                       full
                       variant="secondary"
-                      onClick={() => generateMockMutation.mutate()}
+                      onClick={() => withConsent(() => generateMockMutation.mutate(), 'Apple Health Testdaten')}
                       disabled={generateMockMutation.isPending}
                     >
-                      {generateMockMutation.isPending ? 'Wird generiert...' : '🎲 90 Tage Testdaten (Mock) generieren'}
+                      {generateMockMutation.isPending ? 'Wird generiert...' : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <Dices size={16} /> 90 Tage Testdaten (Mock) generieren
+                        </span>
+                      )}
                     </Btn>
                   )}
-                  <Btn full onClick={() => fileInputRef.current?.click()} disabled={uploadMutation.isPending}>
+                  <Btn full onClick={() => withConsent(() => fileInputRef.current?.click(), 'Apple Health Export')} disabled={uploadMutation.isPending}>
                     {uploadMutation.isPending ? 'Wird verarbeitet...' : 'Echten Export hochladen (.xml / .zip)'}
                   </Btn>
                 </div>
@@ -800,7 +960,7 @@ export function Component() {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: 28 }}>📲</span>
+                    <Smartphone size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {hasSource && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -824,7 +984,9 @@ export function Component() {
                   </div>
                   {hasSource && !isEnabled && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      ⏸️ Webhook-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <PauseCircle size={14} /> Webhook-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                      </span>
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
@@ -832,7 +994,7 @@ export function Component() {
                   </div>
                 </div>
                 <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <Btn full variant="secondary" onClick={() => setShowHaeModal(true)}>
+                  <Btn full variant="secondary" onClick={() => withConsent(() => setShowHaeModal(true), 'Health Auto Export Webhook')}>
                     Anleitung & Webhook URL
                   </Btn>
                   {hasSource && src?.id && (
@@ -881,7 +1043,7 @@ export function Component() {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: 28 }}>💍</span>
+                    <CircleDot size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {hasSource && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -905,7 +1067,9 @@ export function Component() {
                   </div>
                   {hasSource && !isEnabled && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      ⏸️ Oura-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <PauseCircle size={14} /> Oura-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                      </span>
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
@@ -940,7 +1104,7 @@ export function Component() {
                     <Btn
                       full
                       disabled
-                      onClick={() => handleOAuthConnect('oura')}
+                      onClick={() => withConsent(() => handleOAuthConnect('oura'), 'Oura Ring')}
                       title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
                       Oura verbinden (Bald verfügbar)
@@ -968,7 +1132,7 @@ export function Component() {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: 28 }}>🏃</span>
+                    <Activity size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {hasSource && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -992,7 +1156,9 @@ export function Component() {
                   </div>
                   {hasSource && !isEnabled && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      ⏸️ Strava-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <PauseCircle size={14} /> Strava-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                      </span>
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
@@ -1027,7 +1193,7 @@ export function Component() {
                     <Btn
                       full
                       disabled
-                      onClick={() => handleOAuthConnect('strava')}
+                      onClick={() => withConsent(() => handleOAuthConnect('strava'), 'Strava')}
                       title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
                       Strava verbinden (Bald verfügbar)
@@ -1055,7 +1221,7 @@ export function Component() {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: 28 }}>⚖️</span>
+                    <Scale size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {hasSource && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1079,7 +1245,9 @@ export function Component() {
                   </div>
                   {hasSource && !isEnabled && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      ⏸️ Withings-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <PauseCircle size={14} /> Withings-Daten sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                      </span>
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
@@ -1114,7 +1282,7 @@ export function Component() {
                     <Btn
                       full
                       disabled
-                      onClick={() => handleOAuthConnect('withings')}
+                      onClick={() => withConsent(() => handleOAuthConnect('withings'), 'Withings')}
                       title="Cloud-Anbindung wird nach Bereitstellung der OAuth-App-Credentials freigeschaltet"
                     >
                       Withings verbinden (Bald verfügbar)
@@ -1143,7 +1311,7 @@ export function Component() {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: 28 }}>🤖</span>
+                    <Bot size={28} color="#0f6e56" />
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {hasSource && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1174,7 +1342,9 @@ export function Component() {
                   )}
                   {isConnected && !isEnabled && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      ⏸️ Google Health Daten sind deaktiviert. Die synchronisierten Messwerte fließen aktuell nicht in deinen Score ein.
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <PauseCircle size={14} /> Google Health Daten sind deaktiviert. Die synchronisierten Messwerte fließen aktuell nicht in deinen Score ein.
+                      </span>
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
@@ -1271,13 +1441,13 @@ export function Component() {
                     <>
                       <Btn
                         full
-                        onClick={() => handleOAuthConnect('google-fit')}
+                        onClick={() => withConsent(() => handleOAuthConnect('google-fit'), 'Google Health')}
                       >
                         {sampleCount > 0 ? 'Google Health erneut verbinden' : 'Google Health verbinden'}
                       </Btn>
                       <button
                         type="button"
-                        onClick={handleOpenGoogleCodelabMode}
+                        onClick={() => withConsent(() => handleOpenGoogleCodelabMode(), 'Google Health Codelab')}
                         style={{
                           background: 'none',
                           border: 'none',
@@ -1351,7 +1521,7 @@ export function Component() {
               }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: 28 }}>🩸</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><FlaskConical size={26} /></span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       {hasSource && src?.id && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1374,8 +1544,8 @@ export function Component() {
                     Laborwerte wie ApoB, HbA1c oder manuelle Blutdruckerfassungen.
                   </div>
                   {hasSource && !isEnabled && (
-                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12 }}>
-                      ⏸️ Laborwerte sind deaktiviert und fließen aktuell nicht in deinen Score ein.
+                    <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(168,168,156,0.12)', border: '1px solid rgba(168,168,156,0.25)', fontSize: 12, color: '#55544f', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <PauseCircle size={14} /> Laborwerte sind deaktiviert und fließen aktuell nicht in deinen Score ein.
                     </div>
                   )}
                   <div style={{ fontSize: 12, color: '#55544f' }}>
@@ -1395,7 +1565,7 @@ export function Component() {
                       {isEnabled ? 'Laborwerte deaktivieren (pausieren)' : 'Laborwerte aktivieren'}
                     </Btn>
                   )}
-                  <Btn full variant="secondary" onClick={() => fhirFileInputRef.current?.click()} disabled={fhirUploadMutation.isPending}>
+                  <Btn full variant="secondary" onClick={() => withConsent(() => fhirFileInputRef.current?.click(), 'FHIR Laborbefund')} disabled={fhirUploadMutation.isPending}>
                     {fhirUploadMutation.isPending ? 'Wird verarbeitet...' : 'FHIR-Laborbefund (.json) importieren'}
                   </Btn>
                   <Btn full variant="secondary" onClick={() => navigate('/dashboard')}>
@@ -1465,7 +1635,7 @@ export function Component() {
           <div style={{ fontSize: 12, color: '#a32d2d', marginTop: 16 }}>{lifestyleError}</div>
         )}
         <div style={{ marginTop: 24 }}>
-          <Btn testId="save-lifestyle-values" onClick={submitLifestyle} disabled={labsMut.isPending}>
+          <Btn testId="save-lifestyle-values" onClick={() => withConsent(() => submitLifestyle(), 'Lebensstil-Angaben')} disabled={labsMut.isPending}>
             {labsMut.isPending ? 'Wird gespeichert...' : 'Lebensstil speichern'}
           </Btn>
         </div>
@@ -1546,10 +1716,10 @@ export function Component() {
               <GlassSelect
                 options={[
                   { value: 'all', label: 'Alle Quellen' },
-                  { value: 'google_fit', label: '🤖 Google Health' },
-                  { value: 'apple_health', label: '🍎 Apple Health' },
-                  { value: 'lab', label: '🩸 Labor' },
-                  { value: 'manual', label: '✏️ Manuell' },
+                  { value: 'google_fit', label: 'Google Health' },
+                  { value: 'apple_health', label: 'Apple Health' },
+                  { value: 'lab', label: 'Labor' },
+                  { value: 'manual', label: 'Manuell' },
                 ]}
                 value={selectedSource}
                 onChange={setSelectedSource}
@@ -1564,7 +1734,7 @@ export function Component() {
             </div>
           ) : !filteredMetrics || filteredMetrics.length === 0 ? (
             <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📊</div>
+              <BarChart3 size={40} color="#888780" style={{ margin: '0 auto 12px', display: 'block' }} />
               <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>
                 Keine Messwerte für diese Auswahl vorhanden
               </div>
@@ -1576,20 +1746,24 @@ export function Component() {
           ) : (
             <div className="responsive-grid-2">
               {filteredMetrics.map((m) => {
-                const badge = SOURCE_BADGES[m.sourceKind] ?? { label: m.sourceKind, icon: '📍' };
-                const icon = METRIC_ICONS[m.metric] ?? '📊';
+                const badge = SOURCE_BADGES[m.sourceKind] ?? { label: m.sourceKind };
                 return (
                   <Card key={m.metric} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 20 }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 24 }}>{icon}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center' }}>{renderMetricIcon(m.metric, 24)}</span>
                           <div>
                             <div style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{m.label}</div>
                             <div style={{ fontSize: 11, color: '#a3a29c' }}>{m.domainLabel}</div>
                           </div>
                         </div>
-                        <Chip color="teal">{badge.icon} {badge.label}</Chip>
+                        <Chip color="teal">
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                            {renderSourceIcon(m.sourceKind, 13)}
+                            <span>{badge.label}</span>
+                          </span>
+                        </Chip>
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '14px 0 6px' }}>
@@ -1702,8 +1876,7 @@ export function Component() {
                   </thead>
                   <tbody>
                     {filteredRecentSamples.slice(0, recentLimit).map((s, idx) => {
-                      const badge = SOURCE_BADGES[s.sourceKind] ?? { label: s.sourceKind, icon: '📍' };
-                      const icon = METRIC_ICONS[s.metric] ?? '📊';
+                      const badge = SOURCE_BADGES[s.sourceKind] ?? { label: s.sourceKind };
                       return (
                         <tr
                           key={s.id ?? idx}
@@ -1716,14 +1889,14 @@ export function Component() {
                             {formatDate(s.measuredAt)}
                           </td>
                           <td style={{ padding: '10px 12px', color: '#22221f', fontWeight: 500 }}>
-                            <span style={{ marginRight: 6 }}>{icon}</span> {s.label}
+                            <span style={{ marginRight: 6, display: 'inline-flex', verticalAlign: 'middle' }}>{renderMetricIcon(s.metric, 16)}</span> {s.label}
                           </td>
                           <td style={{ padding: '10px 12px', color: '#0f6e56', fontWeight: 600 }}>
                             {formatMetricVal(s.metric, s.value)} <span style={{ fontWeight: 400, color: '#55544f', fontSize: 12 }}>{s.unit}</span>
                           </td>
                           <td style={{ padding: '10px 12px' }}>
-                            <span style={{ fontSize: 12, padding: '3px 8px', borderRadius: 999, background: 'rgba(29,158,117,0.08)', color: '#0f6e56', border: '1px solid rgba(29,158,117,0.18)' }}>
-                              {badge.icon} {badge.label}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, padding: '3px 8px', borderRadius: 999, background: 'rgba(29,158,117,0.08)', color: '#0f6e56', border: '1px solid rgba(29,158,117,0.18)' }}>
+                              {renderSourceIcon(s.sourceKind, 13)} {badge.label}
                             </span>
                           </td>
                         </tr>
@@ -1742,7 +1915,7 @@ export function Component() {
         <Modal onClose={() => setExpandedMetric(null)}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 24 }}>{METRIC_ICONS[expandedMetric.metric] ?? '📊'}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}>{renderMetricIcon(expandedMetric.metric, 24)}</span>
               <div>
                 <div style={{ fontSize: 18, fontWeight: 600, color: '#22221f' }}>{expandedMetric.label} – Gesamthistorie</div>
                 <div style={{ fontSize: 12, color: '#a3a29c' }}>{expandedMetric.domainLabel}</div>
@@ -1751,9 +1924,10 @@ export function Component() {
             <button
               type="button"
               onClick={() => setExpandedMetric(null)}
-              style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#a3a29c' }}
+              aria-label="Schließen"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a3a29c', display: 'flex', alignItems: 'center', padding: 4 }}
             >
-              ✕
+              <X size={20} />
             </button>
           </div>
 
@@ -1791,7 +1965,7 @@ export function Component() {
                   </thead>
                   <tbody>
                     {filteredHistory.map((h, i) => {
-                      const b = SOURCE_BADGES[h.sourceKind] ?? { label: h.sourceKind, icon: '📍' };
+                      const b = SOURCE_BADGES[h.sourceKind] ?? { label: h.sourceKind };
                       return (
                         <tr key={h.id ?? i} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)', background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)' }}>
                           <td style={{ padding: '8px 10px', color: '#55544f', whiteSpace: 'nowrap' }}>
@@ -1801,7 +1975,9 @@ export function Component() {
                             {formatMetricVal(expandedMetric.metric, h.value)} <span style={{ fontWeight: 400, color: '#55544f', fontSize: 11 }}>{expandedMetric.unit}</span>
                           </td>
                           <td style={{ padding: '8px 10px', fontSize: 12, color: '#55544f' }}>
-                            {b.icon} {b.label}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                              {renderSourceIcon(h.sourceKind, 12)} {b.label}
+                            </span>
                           </td>
                         </tr>
                       );
@@ -1832,7 +2008,13 @@ export function Component() {
               {haeWebhookUrl}
             </code>
             <Btn small variant="secondary" onClick={() => copyToClipboard(haeWebhookUrl)}>
-              {copiedHaeUrl ? 'Kopiert ✓' : 'Kopieren'}
+              {copiedHaeUrl ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Check size={14} /> Kopiert
+                </span>
+              ) : (
+                'Kopieren'
+              )}
             </Btn>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -1858,9 +2040,9 @@ export function Component() {
                   href={googleAuthCodelabUrl}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ color: '#0f6e56', fontWeight: 500 }}
+                  style={{ color: '#0f6e56', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4 }}
                 >
-                  Google Autorisierung öffnen ↗
+                  Google Autorisierung öffnen <ExternalLink size={14} />
                 </a>
               ) : (
                 <span style={{ color: '#888780' }}>Wird geladen...</span>
@@ -1896,6 +2078,21 @@ export function Component() {
           </div>
         </Modal>
       )}
+
+      {/* DSGVO Art. 9 Consent Modal */}
+      <ConsentModal
+        isOpen={showConsentModal}
+        onClose={() => {
+          setShowConsentModal(false);
+          setPendingConsentAction(null);
+        }}
+        sourceLabel={pendingConsentAction?.label}
+        onConsented={() => {
+          const pending = pendingConsentAction;
+          setPendingConsentAction(null);
+          pending?.action();
+        }}
+      />
     </div>
   );
 }

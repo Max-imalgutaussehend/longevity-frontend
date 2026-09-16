@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Chip, Skeleton } from '../components/ui.js';
 import type { ScoreResult } from '../api/types.js';
@@ -42,7 +43,7 @@ export function Component() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                       <span style={{ fontSize: 14, fontWeight: 500, color: '#22221f' }}>{offer.title}</span>
                       {offer.qualified
-                        ? <Chip color="green">✓ Erfüllt</Chip>
+                        ? <Chip color="green"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={12} /> Erfüllt</span></Chip>
                         : gap !== null && <Chip color="neutral">Band {offer.minBand}+ · noch {gap} Pkt.</Chip>}
                     </div>
                     <div style={{ fontSize: 13, color: '#55544f' }}>{offer.description}</div>

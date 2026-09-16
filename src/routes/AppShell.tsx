@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
+import { Sparkles, Scale, Shield, LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
@@ -34,14 +35,21 @@ export function Component() {
     }
   }, [isUserLoading, user, navigate]);
 
-  // Auto-launch tutorial on first visit if not yet completed
+  // Auto-launch tutorial on first visit if not yet completed, and listen for manual trigger
   useEffect(() => {
+    const handleOpenTutorial = () => setShowTutorial(true);
+    window.addEventListener('open-tutorial', handleOpenTutorial);
+
     const hasCompleted = localStorage.getItem('longevity_tutorial_completed');
     if (!hasCompleted) {
       // Small timeout for smooth initial render
       const timer = setTimeout(() => setShowTutorial(true), 400);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('open-tutorial', handleOpenTutorial);
+      };
     }
+    return () => window.removeEventListener('open-tutorial', handleOpenTutorial);
   }, []);
 
   // Close profile menu when clicking outside
@@ -189,7 +197,7 @@ export function Component() {
                       transition: 'background 0.15s',
                     }}
                   >
-                    <span>✨</span>
+                    <Sparkles size={14} />
                     <span>Interaktives Tutorial</span>
                   </button>
 
@@ -198,16 +206,18 @@ export function Component() {
                     <Link
                       to="/impressum"
                       onClick={() => setShowProfileMenu(false)}
-                      style={{ color: '#55544f', textDecoration: 'none', padding: '4px 6px', borderRadius: 6 }}
+                      style={{ color: '#55544f', textDecoration: 'none', padding: '4px 6px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 8 }}
                     >
-                      ⚖️ Impressum & Disclaimer
+                      <Scale size={14} />
+                      <span>Impressum & Disclaimer</span>
                     </Link>
                     <Link
                       to="/datenschutz"
                       onClick={() => setShowProfileMenu(false)}
-                      style={{ color: '#55544f', textDecoration: 'none', padding: '4px 6px', borderRadius: 6 }}
+                      style={{ color: '#55544f', textDecoration: 'none', padding: '4px 6px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 8 }}
                     >
-                      🛡️ Datenschutzerklärung
+                      <Shield size={14} />
+                      <span>Datenschutzerklärung</span>
                     </Link>
                   </div>
 
@@ -226,9 +236,13 @@ export function Component() {
                         width: '100%',
                         textAlign: 'left',
                         fontFamily: 'inherit',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
                       }}
                     >
-                      🚪 Abmelden
+                      <LogOut size={14} />
+                      <span>Abmelden</span>
                     </button>
                   </div>
                 </div>
@@ -276,7 +290,9 @@ export function Component() {
                     fontFamily: 'inherit',
                   }}
                 >
-                  ✨ Tutorial ansehen
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Sparkles size={13} /> Tutorial ansehen
+                  </span>
                 </button>
                 <span>·</span>
                 <Link to="/impressum" style={{ color: '#55544f', textDecoration: 'none' }}>Impressum</Link>

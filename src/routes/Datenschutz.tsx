@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
 import { Card, PageTitle, Chip } from '../components/ui.js';
 
 export function Component() {
@@ -30,7 +31,7 @@ export function Component() {
           padding: '16px 20px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 18 }}>🛡️</span>
+            <ShieldCheck size={20} color="#0f6e56" />
             <strong style={{ color: '#0f6e56', fontSize: 14 }}>Kernprinzip: Privacy by Design & Zero Raw-Data Sharing</strong>
           </div>
           <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
