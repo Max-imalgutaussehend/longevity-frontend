@@ -12,7 +12,6 @@ import {
   Zap,
   Shield,
   Bot,
-  Apple,
   FlaskConical,
   Dices,
   Check,
@@ -30,6 +29,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
+import { AppleLogo } from './BrandLogos.js';
 import { Btn, Chip } from './ui.js';
 import brandIcon from '../assets/brand-icon.png';
 
@@ -655,7 +655,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Apple size={22} /></span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><AppleLogo size={22} color="#0f6e56" /></span>
                       <strong style={{ fontSize: 13, color: '#22221f' }}>Apple Health</strong>
                     </div>
                     <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>

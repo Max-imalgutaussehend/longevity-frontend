@@ -12,6 +12,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { apiClient } from '../api/client.js';
+import { AppleLogo, GoogleLogo, FitbitLogo, GarminLogo, OuraLogo } from './BrandLogos.js';
 import { Card, Btn, Chip } from './ui.js';
 import { ConsentModal } from './ConsentModal.js';
 import type { ScoreResult, User } from '../api/types.js';
@@ -309,6 +310,14 @@ export function OnboardingCard() {
                       ? 'Deine Gesundheitsdaten fließen ein. Du kannst jederzeit weitere Quellen oder Wearables ergänzen.'
                       : 'Verbinde Apple Health, Google Fit, Oura oder teste das Cockpit sofort mit 90 Tagen Beispieldaten.'}
                   </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 8 }}>
+                    <span title="Apple Health" style={{ display: 'inline-flex', alignItems: 'center' }}><AppleLogo size={14} color="#1d1d1f" /></span>
+                    <span title="Google Health & Fit" style={{ display: 'inline-flex', alignItems: 'center' }}><GoogleLogo size={14} /></span>
+                    <span title="Fitbit" style={{ display: 'inline-flex', alignItems: 'center' }}><FitbitLogo size={14} color="#00B0B9" /></span>
+                    <span title="Garmin" style={{ display: 'inline-flex', alignItems: 'center' }}><GarminLogo size={14} color="#007CC3" /></span>
+                    <span title="Oura Ring" style={{ display: 'inline-flex', alignItems: 'center' }}><OuraLogo size={14} color="#22221f" /></span>
+                    <span style={{ fontSize: 10, color: '#888780', marginLeft: 2 }}>+ weitere</span>
+                  </div>
                 </div>
 
                 <div>
