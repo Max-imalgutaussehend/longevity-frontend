@@ -4,6 +4,7 @@ import { Check, X } from 'lucide-react';
 import heroVideo from '../assets/hero-video.mp4';
 import { Card, Btn } from '../components/ui.js';
 import { BrandLogosRibbon } from '../components/BrandLogos.js';
+import { apiClient } from '../api/client.js';
 
 function useScrollReveal() {
   useEffect(() => {
@@ -119,6 +120,7 @@ export function Component() {
   // Contact form state (#10)
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
   const [contactForm, setContactForm] = useState({
     company: '',
     name: '',
@@ -129,10 +131,18 @@ export function Component() {
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setContactLoading(true);
-    setTimeout(() => {
-      setContactLoading(false);
+    setContactError(null);
+    try {
+      await apiClient('/contact/insurer', {
+        method: 'POST',
+        body: JSON.stringify(contactForm),
+      });
       setContactSubmitted(true);
-    }, 600);
+    } catch (err) {
+      setContactError((err as Error).message ?? 'Anfrage konnte nicht gesendet werden.');
+    } finally {
+      setContactLoading(false);
+    }
   };
 
   const scrollTo = (id: string) => {
@@ -1012,6 +1022,10 @@ export function Component() {
                           style={{ ...inputStyle, resize: 'vertical' }}
                         />
                       </div>
+
+                      {contactError && (
+                        <p style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{contactError}</p>
+                      )}
 
                       <Btn type="submit" full disabled={contactLoading} style={{ marginTop: 6 }}>
                         {contactLoading ? 'Wird übermittelt…' : 'Erstkontakt anfordern →'}

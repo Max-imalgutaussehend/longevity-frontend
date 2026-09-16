@@ -38,6 +38,14 @@ export const routes: RouteObject[] = [
     path: '/insurer-invite/:token',
     lazy: () => import('./routes/InsurerInvite.js'),
   },
+  {
+    path: '/admin',
+    lazy: () => import('./routes/AdminShell.js'),
+    children: [
+      { index: true, lazy: () => import('./routes/AdminInsurerRequests.js') },
+      { path: 'insurer-requests', lazy: () => import('./routes/AdminInsurerRequests.js') },
+    ],
+  },
   // Public layer
   {
     path: '/',
