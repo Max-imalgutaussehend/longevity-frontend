@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
@@ -13,12 +13,14 @@ const NAV_ITEMS = [
 
 export function Component() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const { data: user, isLoading } = useQuery<User & { role: string }>({
     queryKey: ['me'],
     queryFn: () => apiClient('/me'),
+    retry: false,
   });
 
   useEffect(() => {
@@ -44,7 +46,19 @@ export function Component() {
     window.location.href = '/login';
   }
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div className="bg-canvas" style={{ minHeight: '100vh' }}>
+        <div className="bg-orb" />
+        <div className="bg-orb" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    const returnTo = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
+  }
 
   return (
     <>

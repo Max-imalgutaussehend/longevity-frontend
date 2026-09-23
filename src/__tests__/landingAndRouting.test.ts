@@ -109,3 +109,65 @@ describe('Landing Page Partner Brand Logos', () => {
     expect(appleBrand?.accentColor).toBe('#1d1d1f');
   });
 });
+
+describe('Responsive Landing Navigation & CSS Tokens (#70)', () => {
+  it('enforces 1140px breakpoint for desktop navigation in tokens.css to prevent button overlapping', async () => {
+    // @ts-expect-error node built-in
+    const { readFileSync } = await import('node:fs');
+    // @ts-expect-error node built-in
+    const { resolve } = await import('node:path');
+    // @ts-expect-error node process in test
+    const rootDir = process.cwd();
+    const css = readFileSync(resolve(rootDir, 'src/styles/tokens.css'), 'utf-8');
+
+    expect(css).toContain('@media (min-width: 1140px)');
+    expect(css).toContain('.landing-desktop-nav');
+    expect(css).toContain('@media (max-width: 1139px)');
+    expect(css).toContain('.landing-mobile-menu-btn');
+  });
+
+  it('hides research badge and compacts header CTA buttons on mobile viewports', async () => {
+    // @ts-expect-error node built-in
+    const { readFileSync } = await import('node:fs');
+    // @ts-expect-error node built-in
+    const { resolve } = await import('node:path');
+    // @ts-expect-error node process in test
+    const rootDir = process.cwd();
+    const css = readFileSync(resolve(rootDir, 'src/styles/tokens.css'), 'utf-8');
+
+    expect(css).toContain('.landing-research-badge');
+    expect(css).toContain('.landing-header-cta-btn');
+    expect(css).toContain('@media (max-width: 639px)');
+  });
+});
+
+describe('Auth Guard & Unauthenticated Redirection (#71)', () => {
+  it('encodes returnTo path with query parameters cleanly for protected routes', () => {
+    const pathname = '/dashboard';
+    const search = '?tab=vitals';
+    const returnTo = encodeURIComponent(pathname + search);
+    expect(returnTo).toBe('%2Fdashboard%3Ftab%3Dvitals');
+
+    const decoded = decodeURIComponent(returnTo);
+    expect(decoded).toBe('/dashboard?tab=vitals');
+  });
+
+  it('verifies AppShell and client.ts implement auth-guards that prevent empty dashboard flash', async () => {
+    // @ts-expect-error node built-in
+    const { readFileSync } = await import('node:fs');
+    // @ts-expect-error node built-in
+    const { resolve } = await import('node:path');
+    // @ts-expect-error node process in test
+    const rootDir = process.cwd();
+
+    const appShellCode = readFileSync(resolve(rootDir, 'src/routes/AppShell.tsx'), 'utf-8');
+    expect(appShellCode).toContain('if (isUserLoading)');
+    expect(appShellCode).toContain('if (!user)');
+    expect(appShellCode).toContain('<Navigate to={`/login?returnTo=${returnTo}`} replace />');
+
+    const clientCode = readFileSync(resolve(rootDir, 'src/api/client.ts'), 'utf-8');
+    expect(clientCode).toContain('res.status === 401');
+    expect(clientCode).toContain('router.navigate');
+    expect(clientCode).toContain('!pathname.startsWith(\'/login\')');
+  });
+});

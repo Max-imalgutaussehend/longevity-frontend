@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Sparkles, Scale, Shield, LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
 
 export function Component() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -29,6 +30,7 @@ export function Component() {
   const { data: user, isLoading: isUserLoading } = useQuery<User & { role?: string; emailVerifiedAt: string | null }>({
     queryKey: ['me'],
     queryFn: () => apiClient('/me'),
+    retry: false,
   });
 
   useEffect(() => {
@@ -87,6 +89,22 @@ export function Component() {
   async function handleLogout() {
     await apiClient('/auth/logout', { method: 'POST' }).catch(() => {});
     window.location.href = '/login';
+  }
+
+  // Auth Guard: While checking session, show a neutral background canvas without Outlet or navigation
+  if (isUserLoading) {
+    return (
+      <div className="bg-canvas" style={{ minHeight: '100vh' }}>
+        <div className="bg-orb" />
+        <div className="bg-orb" />
+      </div>
+    );
+  }
+
+  // Auth Guard: If unauthenticated, redirect immediately to login with returnTo param
+  if (!user) {
+    const returnTo = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?returnTo=${returnTo}`} replace />;
   }
 
   return (

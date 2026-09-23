@@ -16,8 +16,23 @@ export async function apiClient<T>(
   });
 
   if (res.status === 401) {
-    const returnTo = encodeURIComponent(window.location.pathname);
-    window.location.href = `/login?returnTo=${returnTo}`;
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const search = window.location.search;
+      if (!pathname.startsWith('/login') && !pathname.startsWith('/register')) {
+        const returnTo = encodeURIComponent(pathname + (search || ''));
+        try {
+          const { router } = await import('../router.js');
+          if (router && typeof router.navigate === 'function') {
+            router.navigate(`/login?returnTo=${returnTo}`, { replace: true });
+          } else {
+            window.location.href = `/login?returnTo=${returnTo}`;
+          }
+        } catch {
+          window.location.href = `/login?returnTo=${returnTo}`;
+        }
+      }
+    }
     throw new Error('Unauthorized');
   }
 
