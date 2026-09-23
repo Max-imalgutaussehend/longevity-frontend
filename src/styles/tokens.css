@@ -435,6 +435,9 @@ input[type="range"]::-moz-range-thumb {
   .landing-mobile-menu-btn {
     display: inline-flex !important;
   }
+  .landing-header-login-btn {
+    display: none !important;
+  }
 }
 
 @media (max-width: 859px) {

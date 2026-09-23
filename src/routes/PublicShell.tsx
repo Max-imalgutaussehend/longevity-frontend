@@ -129,7 +129,7 @@ export function Component() {
       boxShadow: isActive ? '0 0 0 1px rgba(29, 158, 117, 0.28) inset' : 'none',
       fontWeight: isActive ? 500 : 400,
       borderRadius: 999,
-      padding: '7px 14px',
+      padding: '6px 10px',
       border: 'none',
       fontFamily: 'inherit',
       fontSize: 13,
@@ -173,7 +173,7 @@ export function Component() {
           right: 0,
           zIndex: 100,
           padding: '0 20px',
-          maxWidth: 1140,
+          maxWidth: 1200,
           width: '100%',
           margin: '0 auto',
         }}
@@ -182,7 +182,7 @@ export function Component() {
           className="glass-deep"
           style={{
             borderRadius: 999,
-            padding: '7px 16px 7px 14px',
+            padding: '6px 20px 6px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -242,7 +242,7 @@ export function Component() {
             style={{
               display: 'none',
               alignItems: 'center',
-              gap: 6,
+              gap: 4,
             }}
             className="landing-desktop-nav"
           >
@@ -274,7 +274,7 @@ export function Component() {
               onClick={() => scrollTo('kassen')}
               style={getNavLinkStyle('kassen')}
             >
-              Für Krankenkassen
+              Krankenkassen
             </button>
             <button
               onClick={() => scrollTo('ueber-uns')}
@@ -296,7 +296,7 @@ export function Component() {
               <>
                 <Link
                   to="/login"
-                  className="landing-header-cta-btn"
+                  className="landing-header-cta-btn landing-header-login-btn"
                   style={{ textDecoration: 'none' }}
                 >
                   <Btn small variant="secondary">
@@ -305,7 +305,7 @@ export function Component() {
                 </Link>
                 <Link
                   to="/register"
-                  className="landing-header-cta-btn"
+                  className="landing-header-cta-btn landing-header-register-btn"
                   style={{ textDecoration: 'none' }}
                 >
                   <Btn variant="primary" small>
@@ -402,7 +402,7 @@ export function Component() {
               onClick={() => scrollTo('kassen')}
               style={{ ...getNavLinkStyle('kassen'), textAlign: 'left' }}
             >
-              Für Krankenkassen
+              Krankenkassen
             </button>
             <button
               onClick={() => scrollTo('ueber-uns')}
