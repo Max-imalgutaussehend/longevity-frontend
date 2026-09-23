@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Btn, Skeleton } from '../components/ui.js';
@@ -26,6 +27,7 @@ const STATUS_COLOR: Record<InsurerRequest['status'], string> = {
 
 export function Component() {
   const qc = useQueryClient();
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: requests, isLoading } = useQuery<InsurerRequest[]>({
     queryKey: ['admin-insurer-requests'],
@@ -40,6 +42,19 @@ export function Component() {
   const rejectMut = useMutation({
     mutationFn: (id: string) => apiClient(`/admin/insurer-requests/${id}/reject`, { method: 'POST' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-insurer-requests'] }),
+  });
+
+  const resendMut = useMutation({
+    mutationFn: (id: string) => apiClient(`/admin/insurer-requests/${id}/resend-invite`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-insurer-requests'] }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => apiClient(`/admin/insurer-requests/${id}`, { method: 'DELETE' }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['admin-insurer-requests'] });
+      setOpenId((current) => (current === id ? null : current));
+    },
   });
 
   const pending = (requests ?? []).filter((r) => r.status === 'pending');
@@ -114,17 +129,67 @@ export function Component() {
                 Bearbeitet ({decided.length})
               </div>
               <div style={{ display: 'grid', gap: 8 }}>
-                {decided.map((r) => (
-                  <Card key={r.id} style={{ padding: '14px 20px' }} data-testid={`insurer-request-${r.id}`}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
-                      <div>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: '#22221f' }}>{r.company}</span>
-                        <span style={{ fontSize: 12, color: '#888780', marginLeft: 8 }}>{r.contactEmail}</span>
+                {decided.map((r) => {
+                  const isOpen = openId === r.id;
+                  return (
+                    <Card key={r.id} style={{ padding: '14px 20px' }} data-testid={`insurer-request-${r.id}`}>
+                      <div
+                        style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', cursor: 'pointer' }}
+                        onClick={() => setOpenId(isOpen ? null : r.id)}
+                      >
+                        <div>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: '#22221f' }}>{r.company}</span>
+                          <span style={{ fontSize: 12, color: '#888780', marginLeft: 8 }}>{r.contactEmail}</span>
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: STATUS_COLOR[r.status] }}>{STATUS_LABEL[r.status]}</span>
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: STATUS_COLOR[r.status] }}>{STATUS_LABEL[r.status]}</span>
-                    </div>
-                  </Card>
-                ))}
+
+                      {isOpen && (
+                        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(168,168,156,0.2)' }}>
+                          <div style={{ display: 'grid', gap: 6, fontSize: 12, color: '#55544f' }}>
+                            <div>Kontakt: {r.contactName}</div>
+                            {r.message && <div>Nachricht: {r.message}</div>}
+                            <div>
+                              Erstellt: {new Date(r.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                            {r.status === 'approved' && (
+                              <Btn
+                                small
+                                variant="secondary"
+                                onClick={() => resendMut.mutate(r.id)}
+                                disabled={resendMut.isPending}
+                                testId={`insurer-request-resend-${r.id}`}
+                              >
+                                E-Mail erneut senden
+                              </Btn>
+                            )}
+                            <Btn
+                              small
+                              variant="danger"
+                              onClick={() => deleteMut.mutate(r.id)}
+                              disabled={deleteMut.isPending}
+                              testId={`insurer-request-delete-${r.id}`}
+                            >
+                              Aus Verlauf löschen
+                            </Btn>
+                          </div>
+
+                          {resendMut.isError && resendMut.variables === r.id && (
+                            <p style={{ color: '#a32d2d', fontSize: 12, margin: '12px 0 0' }}>
+                              {(resendMut.error as Error).message ?? 'Senden fehlgeschlagen.'}
+                            </p>
+                          )}
+                          {resendMut.isSuccess && resendMut.variables === r.id && (
+                            <p style={{ color: '#0f6e56', fontSize: 12, margin: '12px 0 0' }}>E-Mail wurde erneut gesendet.</p>
+                          )}
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
