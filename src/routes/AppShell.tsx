@@ -35,6 +35,9 @@ export function Component() {
     if (!isUserLoading && user && (user.role === 'insurer_admin' || user.role === 'insurer_staff')) {
       navigate('/insurer/overview', { replace: true });
     }
+    if (!isUserLoading && user && user.role === 'platform_admin') {
+      navigate('/admin', { replace: true });
+    }
   }, [isUserLoading, user, navigate]);
 
   // Listen for manual tutorial trigger from anywhere in the app
