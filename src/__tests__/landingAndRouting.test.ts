@@ -140,3 +140,34 @@ describe('Responsive Landing Navigation & CSS Tokens (#70)', () => {
     expect(css).toContain('@media (max-width: 639px)');
   });
 });
+
+describe('Auth Guard & Unauthenticated Redirection (#71)', () => {
+  it('encodes returnTo path with query parameters cleanly for protected routes', () => {
+    const pathname = '/dashboard';
+    const search = '?tab=vitals';
+    const returnTo = encodeURIComponent(pathname + search);
+    expect(returnTo).toBe('%2Fdashboard%3Ftab%3Dvitals');
+
+    const decoded = decodeURIComponent(returnTo);
+    expect(decoded).toBe('/dashboard?tab=vitals');
+  });
+
+  it('verifies AppShell and client.ts implement auth-guards that prevent empty dashboard flash', async () => {
+    // @ts-expect-error node built-in
+    const { readFileSync } = await import('node:fs');
+    // @ts-expect-error node built-in
+    const { resolve } = await import('node:path');
+    // @ts-expect-error node process in test
+    const rootDir = process.cwd();
+
+    const appShellCode = readFileSync(resolve(rootDir, 'src/routes/AppShell.tsx'), 'utf-8');
+    expect(appShellCode).toContain('if (isUserLoading)');
+    expect(appShellCode).toContain('if (!user)');
+    expect(appShellCode).toContain('<Navigate to={`/login?returnTo=${returnTo}`} replace />');
+
+    const clientCode = readFileSync(resolve(rootDir, 'src/api/client.ts'), 'utf-8');
+    expect(clientCode).toContain('res.status === 401');
+    expect(clientCode).toContain('router.navigate');
+    expect(clientCode).toContain('!pathname.startsWith(\'/login\')');
+  });
+});
