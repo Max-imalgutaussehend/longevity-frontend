@@ -300,23 +300,28 @@ export function BrandLogosRibbon() {
         style={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: 12,
           marginBottom: 16,
+          maxWidth: '100%',
+          padding: '0 8px',
         }}
       >
-        <div style={{ height: 1, width: 32, background: 'rgba(0,0,0,0.1)' }} />
+        <div style={{ height: 1, width: 32, background: 'rgba(0,0,0,0.1)', flexShrink: 1, minWidth: 8 }} />
         <span
           style={{
             fontSize: 11,
             fontWeight: 600,
             textTransform: 'uppercase',
-            letterSpacing: '0.1em',
+            letterSpacing: '0.06em',
             color: '#71716b',
+            textAlign: 'center',
+            lineHeight: 1.4,
           }}
         >
           Nahtlose Verbindung zu deinen Lieblingsgeräten
         </span>
-        <div style={{ height: 1, width: 32, background: 'rgba(0,0,0,0.1)' }} />
+        <div style={{ height: 1, width: 32, background: 'rgba(0,0,0,0.1)', flexShrink: 1, minWidth: 8 }} />
       </div>
 
       <div
@@ -326,7 +331,7 @@ export function BrandLogosRibbon() {
           flexWrap: 'wrap',
           justifyContent: 'center',
           alignItems: 'center',
-          gap: '16px 28px',
+          gap: '12px 20px',
           maxWidth: 1040,
         }}
       >

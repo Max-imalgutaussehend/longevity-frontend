@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { Check, X } from 'lucide-react';
 import heroVideo from '../assets/hero-video.mp4';
 import { Card, Btn } from '../components/ui.js';
@@ -69,6 +69,7 @@ function CursorSpotlight() {
 
 export function Component() {
   useScrollReveal();
+  const { user } = useOutletContext<{ user?: { id: string } | null }>() ?? {};
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Interactive Live Simulator State
@@ -234,7 +235,7 @@ export function Component() {
         >
           <h1
             style={{
-              fontSize: 'clamp(60px, 12vw, 120px)',
+              fontSize: 'clamp(36px, 10vw, 120px)',
               fontWeight: 500,
               color: '#ffffff',
               letterSpacing: '0.04em',
@@ -247,7 +248,10 @@ export function Component() {
           </h1>
 
           {/* Action CTA: Zum Dashboard */}
-          <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+          <Link
+            to={user ? '/dashboard' : '/login?returnTo=%2Fdashboard'}
+            style={{ textDecoration: 'none' }}
+          >
             <Btn
               style={{
                 padding: '16px 42px',
@@ -365,13 +369,13 @@ export function Component() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: 24,
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+              gap: 20,
               marginBottom: 56,
             }}
           >
             {/* Card 1: Herz & Erholung */}
-            <Card className="card-interactive" style={{ padding: '28px 30px' }}>
+            <Card className="card-interactive" style={{ padding: 'clamp(20px, 3vw, 28px) clamp(16px, 3vw, 30px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span
@@ -398,7 +402,7 @@ export function Component() {
             </Card>
 
             {/* Card 2: Biologisches Vitalitätsalter */}
-            <Card className="card-interactive" style={{ padding: '28px 30px' }}>
+            <Card className="card-interactive" style={{ padding: 'clamp(20px, 3vw, 28px) clamp(16px, 3vw, 30px)' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
                 Biologisches Alter
               </div>
@@ -426,7 +430,7 @@ export function Component() {
             </Card>
 
             {/* Card 3: LONGEVITY Score & Band */}
-            <Card className="card-interactive" style={{ padding: '28px 30px' }}>
+            <Card className="card-interactive" style={{ padding: 'clamp(20px, 3vw, 28px) clamp(16px, 3vw, 30px)' }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
                 LONGEVITY Score
               </div>
@@ -625,7 +629,7 @@ export function Component() {
             className="glass-deep"
             style={{
               borderRadius: 24,
-              padding: '44px 40px',
+              padding: 'clamp(20px, 4vw, 44px) clamp(16px, 4vw, 40px)',
               boxShadow: '0 16px 50px rgba(15, 40, 28, 0.08), 0 1px 0 rgba(255, 255, 255, 1) inset',
             }}
           >
@@ -656,8 +660,8 @@ export function Component() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: 40,
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+                gap: 'clamp(24px, 4vw, 40px)',
                 alignItems: 'center',
               }}
             >
@@ -676,9 +680,9 @@ export function Component() {
                     value={restingHr}
                     onChange={(e) => setRestingHr(Number(e.target.value))}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4 }}>
-                    <span>45 (Ausdauerathlet)</span>
-                    <span>65 (Durchschnitt)</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
+                    <span>45 (Athlet)</span>
+                    <span>65 (Schnitt)</span>
                     <span>85 bpm</span>
                   </div>
                 </div>
@@ -697,8 +701,8 @@ export function Component() {
                     value={sleepHours}
                     onChange={(e) => setSleepHours(Number(e.target.value))}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4 }}>
-                    <span>5,0 h (Schlafmangel)</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
+                    <span>5,0 h (Mangel)</span>
                     <span>7,5–8,0 h (Optimum)</span>
                     <span>9,5 h</span>
                   </div>
@@ -717,10 +721,10 @@ export function Component() {
                     value={vo2max}
                     onChange={(e) => setVo2max(Number(e.target.value))}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
                     <span>26 (Niedrig)</span>
                     <span>42 (Gut)</span>
-                    <span>58 (Spitzenbereich)</span>
+                    <span>58 (Spitze)</span>
                   </div>
                 </div>
 
@@ -738,9 +742,9 @@ export function Component() {
                     value={zone2Min}
                     onChange={(e) => setZone2Min(Number(e.target.value))}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
                     <span>0 Min</span>
-                    <span>150 Min (WHO-Ziel)</span>
+                    <span>150 Min (WHO)</span>
                     <span>300 Min</span>
                   </div>
                 </div>
@@ -751,7 +755,7 @@ export function Component() {
                 className="glass card-interactive"
                 style={{
                   borderRadius: 20,
-                  padding: '36px 32px',
+                  padding: 'clamp(24px, 3.5vw, 36px) clamp(16px, 3.5vw, 32px)',
                   textAlign: 'center',
                   border: '1px solid rgba(255, 255, 255, 0.95)',
                   background: 'rgba(255, 255, 255, 0.78)',
@@ -848,12 +852,12 @@ export function Component() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: 24,
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+              gap: 20,
             }}
           >
             {/* Left: What traditional apps do */}
-            <Card className="card-interactive" style={{ padding: '36px 32px', background: 'rgba(255, 240, 240, 0.45)', border: '1px solid rgba(163, 45, 45, 0.2)' }}>
+            <Card className="card-interactive" style={{ padding: 'clamp(24px, 3.5vw, 36px) clamp(16px, 3.5vw, 32px)', background: 'rgba(255, 240, 240, 0.45)', border: '1px solid rgba(163, 45, 45, 0.2)' }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#a32d2d', textTransform: 'uppercase', marginBottom: 12 }}>
                 Herkömmliche Gesundheits-Apps
               </div>
@@ -877,7 +881,7 @@ export function Component() {
             </Card>
 
             {/* Right: What LONGEVITY does */}
-            <Card className="card-interactive" style={{ padding: '36px 32px', background: 'rgba(225, 245, 238, 0.55)', border: '1px solid rgba(29, 158, 117, 0.35)' }}>
+            <Card className="card-interactive" style={{ padding: 'clamp(24px, 3.5vw, 36px) clamp(16px, 3.5vw, 32px)', background: 'rgba(225, 245, 238, 0.55)', border: '1px solid rgba(29, 158, 117, 0.35)' }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#0f6e56', textTransform: 'uppercase', marginBottom: 12 }}>
                 Der LONGEVITY-Ansatz
               </div>
@@ -908,15 +912,15 @@ export function Component() {
             className="glass-deep"
             style={{
               borderRadius: 24,
-              padding: '48px 40px',
+              padding: 'clamp(24px, 4vw, 48px) clamp(16px, 4vw, 40px)',
               boxShadow: '0 16px 50px rgba(15, 40, 28, 0.08)',
             }}
           >
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                gap: 48,
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
+                gap: 'clamp(24px, 4vw, 48px)',
                 alignItems: 'center',
               }}
             >
@@ -949,7 +953,7 @@ export function Component() {
               </div>
 
               {/* Contact Form (#10) */}
-              <Card className="card-interactive" style={{ padding: '32px 28px', background: 'rgba(255, 255, 255, 0.85)' }}>
+              <Card className="card-interactive" style={{ padding: 'clamp(24px, 3vw, 32px) clamp(16px, 3vw, 28px)', background: 'rgba(255, 255, 255, 0.85)' }}>
                 {contactSubmitted ? (
                   <div style={{ textAlign: 'center', padding: '24px 8px' }}>
                     <Check size={40} color="#0f6e56" style={{ margin: '0 auto 12px', display: 'block' }} />

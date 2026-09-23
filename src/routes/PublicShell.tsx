@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import brandIcon from '../assets/brand-icon.png';
@@ -15,6 +15,39 @@ export function Component() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Click outside and Escape key to close mobile menu
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [mobileMenuOpen]);
 
   // Check authentication safely without triggering 401 redirect
   useEffect(() => {
@@ -114,8 +147,25 @@ export function Component() {
         <div className="bg-orb" />
       </div>
 
+      {/* Mobile Menu Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.25)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
+            zIndex: 95,
+          }}
+        />
+      )}
+
       {/* Floating Fixed Public Header */}
       <header
+        ref={headerRef}
         style={{
           position: 'fixed',
           top: 16,
@@ -151,6 +201,7 @@ export function Component() {
               gap: 10,
               textDecoration: 'none',
               color: '#22221f',
+              flexShrink: 0,
             }}
           >
             <img
@@ -169,6 +220,7 @@ export function Component() {
               LONGEVITY
             </span>
             <span
+              className="landing-research-badge"
               style={{
                 fontSize: 10,
                 fontWeight: 500,
@@ -233,25 +285,41 @@ export function Component() {
           </nav>
 
           {/* Action CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Link to="/dashboard" style={{ textDecoration: 'none' }}>
-              <Btn small variant={user ? 'primary' : 'secondary'}>
-                Zum Dashboard →
-              </Btn>
-            </Link>
-            {!user && (
-              <Link to="/register" style={{ textDecoration: 'none' }}>
-                <Btn variant="primary" small>
-                  Registrieren
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {user ? (
+              <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+                <Btn small variant="primary">
+                  Zum Dashboard →
                 </Btn>
               </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="landing-header-cta-btn"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <Btn small variant="secondary">
+                    Anmelden
+                  </Btn>
+                </Link>
+                <Link
+                  to="/register"
+                  className="landing-header-cta-btn"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <Btn variant="primary" small>
+                    Registrieren
+                  </Btn>
+                </Link>
+              </>
             )}
 
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="landing-mobile-menu-btn"
-              aria-label="Menü öffnen"
+              aria-label={mobileMenuOpen ? 'Menü schließen' : 'Menü öffnen'}
               style={{
                 display: 'none',
                 background: 'transparent',
@@ -279,8 +347,33 @@ export function Component() {
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
+              boxShadow: '0 12px 36px rgba(15, 40, 28, 0.15)',
             }}
           >
+            {/* Primary Mobile Auth CTAs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 10, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+              {user ? (
+                <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
+                  <Btn full variant="primary">
+                    Zum Dashboard →
+                  </Btn>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/register" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
+                    <Btn full variant="primary">
+                      Kostenlos registrieren
+                    </Btn>
+                  </Link>
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)} style={{ textDecoration: 'none' }}>
+                    <Btn full variant="secondary">
+                      Anmelden
+                    </Btn>
+                  </Link>
+                </>
+              )}
+            </div>
+
             <button
               onClick={() => scrollTo('produkt')}
               style={{ ...getNavLinkStyle('produkt'), textAlign: 'left' }}
@@ -323,7 +416,7 @@ export function Component() {
 
       {/* Main Page Body */}
       <main style={{ flex: 1, position: 'relative', zIndex: 1, paddingTop: isHome ? 0 : 96 }}>
-        <Outlet />
+        <Outlet context={{ user }} />
       </main>
 
       {/* Footer */}

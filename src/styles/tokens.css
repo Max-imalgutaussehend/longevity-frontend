@@ -420,7 +420,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ── Landing Page Navigation Styles ────────────────────────────── */
-@media (min-width: 860px) {
+@media (min-width: 1140px) {
   .landing-desktop-nav {
     display: flex !important;
   }
@@ -428,12 +428,24 @@ input[type="range"]::-moz-range-thumb {
     display: none !important;
   }
 }
-@media (max-width: 859px) {
+@media (max-width: 1139px) {
   .landing-desktop-nav {
     display: none !important;
   }
   .landing-mobile-menu-btn {
-    display: block !important;
+    display: inline-flex !important;
+  }
+}
+
+@media (max-width: 859px) {
+  .landing-research-badge {
+    display: none !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .landing-header-cta-btn {
+    display: none !important;
   }
 }
 
