@@ -21,13 +21,16 @@ interface Token {
 
 const SOURCE_LABELS: Record<string, string> = {
   apple_health: 'Apple Health',
+  'apple-health': 'Apple Health',
   oura: 'Oura Ring',
   lab: 'Laborwerte',
   questionnaire: 'Fragebogen',
   withings: 'Withings',
   strava: 'Strava',
   google_fit: 'Google Fit',
+  'google-fit': 'Google Fit',
   google_health: 'Google Health',
+  'google-health': 'Google Health',
   fhir: 'FHIR Labor',
 };
 

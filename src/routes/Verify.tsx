@@ -32,9 +32,14 @@ const SOURCE_LABELS: Record<string, string> = {
   withings: 'Withings',
   strava: 'Strava',
   google_fit: 'Google Fit',
+  'google-fit': 'Google Fit',
   google_health: 'Google Health',
+  'google-health': 'Google Health',
   fhir: 'FHIR Labor',
   apple_health: 'Apple Health',
+  'apple-health': 'Apple Health',
+  lab: 'Laborwerte',
+  questionnaire: 'Fragebogen',
 };
 
 export function Component() {

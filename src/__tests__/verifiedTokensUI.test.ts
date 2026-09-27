@@ -3,13 +3,16 @@ import { describe, it, expect } from 'vitest';
 describe('Verified Health Insurance Tokens UI (#88)', () => {
   const SOURCE_LABELS: Record<string, string> = {
     apple_health: 'Apple Health',
+    'apple-health': 'Apple Health',
     oura: 'Oura Ring',
     lab: 'Laborwerte',
     questionnaire: 'Fragebogen',
     withings: 'Withings',
     strava: 'Strava',
     google_fit: 'Google Fit',
+    'google-fit': 'Google Fit',
     google_health: 'Google Health',
+    'google-health': 'Google Health',
     fhir: 'FHIR Labor',
   };
 
@@ -18,7 +21,9 @@ describe('Verified Health Insurance Tokens UI (#88)', () => {
     expect(SOURCE_LABELS.withings).toBe('Withings');
     expect(SOURCE_LABELS.strava).toBe('Strava');
     expect(SOURCE_LABELS.google_fit).toBe('Google Fit');
+    expect(SOURCE_LABELS['google-fit']).toBe('Google Fit');
     expect(SOURCE_LABELS.google_health).toBe('Google Health');
+    expect(SOURCE_LABELS['google-health']).toBe('Google Health');
     expect(SOURCE_LABELS.fhir).toBe('FHIR Labor');
   });
 
