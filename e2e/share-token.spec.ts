@@ -1,9 +1,9 @@
 import { test, expect, Browser } from '@playwright/test';
-import { uniqueEmail, loginAs, registerAndLogin, grantHealthDataConsent, dismissTutorialIfOpen } from './helpers.js';
+import { uniqueEmail, loginAs, registerAndLogin, grantHealthDataConsent, dismissTutorialIfOpen, TEST_PASSWORD } from './helpers.js';
 
 // Issue #19: create share token and verify in a second browser context (no session)
 test.describe('share token flow', () => {
-  const PASSWORD = 'longevity-test-2026';
+  const PASSWORD = TEST_PASSWORD;
 
   test('creates a token and verifies it in a fresh context', async ({ browser }) => {
     const email = uniqueEmail();

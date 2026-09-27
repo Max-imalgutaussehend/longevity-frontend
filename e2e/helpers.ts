@@ -4,6 +4,10 @@ export function uniqueEmail() {
   return `e2e+${Date.now()}@longevity-test.invalid`;
 }
 
+// Must satisfy passwordSchema (backend/src/lib/password.ts): 10+ chars,
+// upper + lower case, and a digit or special char.
+export const TEST_PASSWORD = 'Longevity-Test-2026';
+
 export async function loginAs(page: Page, email: string, password: string) {
   await page.addInitScript(() => {
     localStorage.setItem('longevity_tutorial_completed', 'true');

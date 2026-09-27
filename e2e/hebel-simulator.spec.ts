@@ -1,12 +1,12 @@
 import { test, expect, Browser } from '@playwright/test';
-import { uniqueEmail, registerAndLogin, loginAs, grantHealthDataConsent } from './helpers.js';
+import { uniqueEmail, registerAndLogin, loginAs, grantHealthDataConsent, TEST_PASSWORD } from './helpers.js';
 
 // Issue: simulator slider — keyboard interaction updates score within 500 ms,
 // tabular-nums prevents layout shift on the score number.
 // Issue #50 E2E-Test 2 — Regler bewegen, simulierter Score aktualisiert sich
 // ohne Sprung auf Minimalwerte (kein Absturz auf 0 / Sockelwert bei jedem Schritt).
 test.describe('Hebel simulator', () => {
-  const PASSWORD = 'longevity-test-2026';
+  const PASSWORD = TEST_PASSWORD;
 
   test('arrow key on slider updates score within 500 ms without layout shift', async ({ page }) => {
     const email = uniqueEmail();

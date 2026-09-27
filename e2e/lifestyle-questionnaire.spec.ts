@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { uniqueEmail, registerAndLogin, grantHealthDataConsent } from './helpers.js';
+import { uniqueEmail, registerAndLogin, grantHealthDataConsent, TEST_PASSWORD } from './helpers.js';
 
 // Issue #31 — Lifestyle-Fragebogen UI in /daten
 // Issue #50 E2E-Test 1 — manuelle Laborwert-Eingabe (Lebensstil-Werte) erhöht den Score.
 test.describe('lifestyle questionnaire', () => {
   test('fills lifestyle fields and saves via POST /api/labs, score increases', async ({ page }) => {
     const email = uniqueEmail();
-    const password = 'longevity-test-2026';
+    const password = TEST_PASSWORD;
     await registerAndLogin(page, email, password);
     await grantHealthDataConsent(page);
 
@@ -40,7 +40,7 @@ test.describe('lifestyle questionnaire', () => {
 
   test('rejects strength_sessions above 4 without submitting', async ({ page }) => {
     const email = uniqueEmail();
-    const password = 'longevity-test-2026';
+    const password = TEST_PASSWORD;
     await registerAndLogin(page, email, password);
     await grantHealthDataConsent(page);
 

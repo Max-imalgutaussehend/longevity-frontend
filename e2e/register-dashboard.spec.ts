@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { uniqueEmail, registerAndLogin } from './helpers.js';
+import { uniqueEmail, registerAndLogin, TEST_PASSWORD } from './helpers.js';
 
 // Spec §6 / CLAUDE.md — Flow 1: Register → auto-login → /dashboard
 // A brand-new account has no samples, so the score legitimately starts at
@@ -7,7 +7,7 @@ import { uniqueEmail, registerAndLogin } from './helpers.js';
 test.describe('register → dashboard', () => {
   test('registers, lands on dashboard, shows real score and bioAge', async ({ page }) => {
     const email = uniqueEmail();
-    const password = 'longevity-test-2026';
+    const password = TEST_PASSWORD;
 
     await registerAndLogin(page, email, password);
 
