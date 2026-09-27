@@ -8,6 +8,7 @@ interface Offer {
   title: string;
   description: string;
   minBand: number;
+  minMonths?: number | null;
   valueLabel: string;
   validFrom: string | null;
   validUntil: string | null;
@@ -17,18 +18,21 @@ interface OfferFormState {
   title: string;
   description: string;
   minBand: string;
+  minMonths: string;
   valueLabel: string;
   validFrom: string;
   validUntil: string;
 }
 
-const EMPTY_FORM: OfferFormState = { title: '', description: '', minBand: '', valueLabel: '', validFrom: '', validUntil: '' };
+const EMPTY_FORM: OfferFormState = { title: '', description: '', minBand: '', minMonths: '', valueLabel: '', validFrom: '', validUntil: '' };
 
 function toOfferBody(form: OfferFormState) {
+  const minMonthsNum = form.minMonths.trim() !== '' ? Number(form.minMonths) : null;
   return {
     title: form.title,
     description: form.description,
     minBand: Number(form.minBand),
+    minMonths: minMonthsNum,
     valueLabel: form.valueLabel,
     validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : null,
     validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : null,
@@ -77,6 +81,7 @@ export function Component() {
       title: offer.title,
       description: offer.description,
       minBand: String(offer.minBand),
+      minMonths: offer.minMonths !== null && offer.minMonths !== undefined ? String(offer.minMonths) : '',
       valueLabel: offer.valueLabel,
       validFrom: offer.validFrom ? offer.validFrom.slice(0, 10) : '',
       validUntil: offer.validUntil ? offer.validUntil.slice(0, 10) : '',
@@ -102,6 +107,13 @@ export function Component() {
     if (minBandNum < 0 || minBandNum > 100) {
       setError('Mindest-Score-Band muss zwischen 0 und 100 liegen.');
       return;
+    }
+    if (form.minMonths.trim() !== '') {
+      const m = Number(form.minMonths);
+      if (Number.isNaN(m) || !Number.isInteger(m) || m < 0 || m > 36) {
+        setError('Mindesthaltedauer muss eine ganze Zahl zwischen 0 und 36 Monaten sein.');
+        return;
+      }
     }
     if (editingId) updateMut.mutate();
     else createMut.mutate();
@@ -136,7 +148,8 @@ export function Component() {
                   </div>
                   <div style={{ fontSize: 13, color: '#55544f', marginTop: 4 }}>{offer.description}</div>
                   <div style={{ fontSize: 12, color: '#888780', marginTop: 8 }}>
-                    Ab Score-Band {offer.minBand} · {offer.valueLabel}
+                    Ab Score-Band {offer.minBand}
+                    {offer.minMonths && offer.minMonths > 0 ? ` (mind. ${offer.minMonths} Monate gehalten)` : ''} · {offer.valueLabel}
                     {offer.validUntil && ` · gültig bis ${new Date(offer.validUntil).toLocaleDateString('de-DE')}`}
                   </div>
                 </div>
@@ -172,6 +185,17 @@ export function Component() {
               <div>
                 <FieldLabel>Mindest-Score-Band (0–100)</FieldLabel>
                 <GlassInput type="text" value={form.minBand} onChange={(v) => setForm((f) => ({ ...f, minBand: v.replace(/[^0-9]/g, '') }))} testId="offer-min-band" name="minBand" />
+              </div>
+              <div>
+                <FieldLabel>Mindesthaltedauer (Monate, optional)</FieldLabel>
+                <GlassInput
+                  type="text"
+                  value={form.minMonths}
+                  onChange={(v) => setForm((f) => ({ ...f, minMonths: v.replace(/[^0-9]/g, '') }))}
+                  placeholder="z.B. 3 (leer = keine Mindestdauer)"
+                  testId="offer-min-months"
+                  name="minMonths"
+                />
               </div>
               <div>
                 <FieldLabel>Vorteil (z.B. "15% Rabatt")</FieldLabel>
