@@ -542,8 +542,59 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Health Auto Export JSON webhook */
+        /** Health Auto Export JSON webhook (cookie or query/header secret authenticated) */
         post: operations["healthAutoExportWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/health-auto-export/webhook/{secret}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Health Auto Export background webhook authenticated via URL secret (no session cookie required) */
+        post: operations["healthAutoExportWebhookWithSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/health-auto-export/secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get current Health Auto Export webhook secret and full URL */
+        get: operations["getHealthAutoExportSecret"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sources/health-auto-export/secret/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Regenerate and rotate Health Auto Export webhook secret */
+        post: operations["rotateHealthAutoExportSecret"];
         delete?: never;
         options?: never;
         head?: never;
@@ -731,6 +782,40 @@ export interface paths {
         put?: never;
         /** Pull latest activities since last sync — strength_sessions + zone2_minutes */
         post: operations["syncStrava"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/questionnaire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Self-reported lifestyle/questionnaire values stored under questionnaire source */
+        post: operations["postQuestionnaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/lifestyle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Alias for /questionnaire */
+        post: operations["postLifestyle"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1038,12 +1123,9 @@ export interface components {
             title: string;
             description: string;
             minBand: number;
-            minMonths?: number | null;
             valueLabel: string;
             isDemo: boolean;
             qualified: boolean;
-            daysHeld?: number;
-            daysRemaining?: number;
         };
         User: {
             /** Format: uuid */
@@ -1606,7 +1688,6 @@ export interface operations {
                     title: string;
                     description: string;
                     minBand: number;
-                    minMonths?: number | null;
                     valueLabel: string;
                     /** Format: date-time */
                     validFrom?: string;
@@ -1709,7 +1790,6 @@ export interface operations {
                     title?: string;
                     description?: string;
                     minBand?: number;
-                    minMonths?: number | null;
                     valueLabel?: string;
                     /** Format: date-time */
                     validFrom?: string | null;
@@ -2250,6 +2330,97 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Invalid secret or unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    healthAutoExportWebhookWithSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                secret: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Inserted count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid webhook secret */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getHealthAutoExportSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Secret and webhook URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        webhookSecret: string;
+                        webhookUrl: string;
+                    };
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    rotateHealthAutoExportSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New secret and webhook URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        webhookSecret: string;
+                        webhookUrl: string;
+                    };
+                };
+            };
             /** @description Unauthenticated */
             401: {
                 headers: {
@@ -2636,6 +2807,80 @@ export interface operations {
             };
             /** @description Not connected */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    postQuestionnaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    values: {
+                        metric: string;
+                        value: number;
+                        unit: string;
+                        /** Format: date-time */
+                        measuredAt?: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Inserted metrics */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    postLifestyle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    values: {
+                        metric: string;
+                        value: number;
+                        unit: string;
+                        /** Format: date-time */
+                        measuredAt?: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Inserted metrics */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
