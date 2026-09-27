@@ -227,6 +227,32 @@ export function InsurerSelectModal({ isOpen, onClose, onSuccess }: InsurerSelect
                   <div style={{ fontSize: 11, color: '#888780', marginTop: 4 }}>
                     Code aus dem Versichertenmagazin oder Kundenportal deiner Kasse.
                   </div>
+
+                  {joinCode && validateKvnr(joinCode).valid && (
+                    <div style={{
+                      marginTop: 8, padding: '10px 12px', borderRadius: 10,
+                      background: 'rgba(217,119,6,0.1)', border: '1px solid rgba(217,119,6,0.3)',
+                      fontSize: 12, color: '#92400e',
+                    }}>
+                      <div>💡 <strong>Hinweis:</strong> Dies ist eine Krankenversichertennummer (KVNR), kein Aktionscode.</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setKvnr(joinCode);
+                          setUseJoinCode(false);
+                          setError(null);
+                        }}
+                        style={{
+                          marginTop: 6, background: '#d97706', color: '#fff', border: 'none',
+                          borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 500,
+                          cursor: 'pointer', fontFamily: 'inherit',
+                        }}
+                        data-testid="switch-to-kvnr-btn"
+                      >
+                        Als KVNR übernehmen & zur Kassen-Auswahl wechseln →
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
