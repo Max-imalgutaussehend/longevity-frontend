@@ -1,9 +1,9 @@
 import { test, expect, Browser } from '@playwright/test';
-import { uniqueEmail, registerAndLogin } from './helpers.js';
+import { uniqueEmail, registerAndLogin, TEST_PASSWORD } from './helpers.js';
 
 // Issue: responsive layout — 375px viewport, no horizontal overflow, nav accessible
 test.describe('responsive layout at 375px', () => {
-  const PASSWORD = 'longevity-test-2026';
+  const PASSWORD = TEST_PASSWORD;
 
   test.use({ viewport: { width: 375, height: 812 } });
 

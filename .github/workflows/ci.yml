@@ -33,3 +33,116 @@ jobs:
             --field "client_payload[repo]=frontend"
         env:
           GH_TOKEN: ${{ secrets.GH_SUBMODULE_TOKEN }}
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: longevity_test
+          POSTGRES_USER: longevity
+          POSTGRES_PASSWORD: longevity_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+    env:
+      DATABASE_URL: postgres://longevity:longevity_test@localhost:5432/longevity_test
+      SESSION_SECRET: test-session-secret-32-bytes-long!
+      SIGNING_KEY_PRIVATE: ${{ secrets.SIGNING_KEY_PRIVATE || 'ci-test-placeholder-private' }}
+      SIGNING_KEY_PUBLIC: ${{ secrets.SIGNING_KEY_PUBLIC || 'ci-test-placeholder-public' }}
+      PUBLIC_BASE_URL: http://localhost:5173
+      SMTP_URL: smtp://localhost:1025
+      NODE_ENV: development
+      COMMIT_SHA: ${{ github.sha }}
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          path: frontend
+
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          repository: Max-imalgutaussehend/longevity-backend
+          ref: dev
+          path: backend
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: |
+            frontend/pnpm-lock.yaml
+            backend/pnpm-lock.yaml
+
+      - name: Install backend deps
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate database
+        working-directory: backend
+        run: pnpm db:migrate
+
+      - name: Build backend
+        working-directory: backend
+        run: pnpm build
+
+      - name: Start backend
+        working-directory: backend
+        run: nohup node dist/index.js > /tmp/backend.log 2>&1 &
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start frontend dev server
+        working-directory: frontend
+        run: nohup pnpm dev --port 5173 > /tmp/frontend.log 2>&1 &
+
+      - name: Wait for backend and frontend
+        run: |
+          npx wait-on http://localhost:3000/api/healthz http://localhost:5173 --timeout 60000
+          curl -fsS http://localhost:3000/api/healthz
+          curl -fsS http://localhost:5173 | grep -qi '<div id="root">' || (echo "frontend did not return the app shell" && cat /tmp/frontend.log && exit 1)
+
+      - name: Run Playwright tests
+        working-directory: frontend
+        run: pnpm exec playwright test --timeout=30000 --global-timeout=600000
+        env:
+          BASE_URL: http://localhost:5173
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+      - name: Upload server logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            /tmp/backend.log
+            /tmp/frontend.log
+          retention-days: 7

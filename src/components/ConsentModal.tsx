@@ -238,6 +238,7 @@ export function ConsentModal({ isOpen, onClose, onConsented, sourceLabel }: Cons
         >
           <input
             type="checkbox"
+            data-testid="consent-checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
             style={{
@@ -265,6 +266,7 @@ export function ConsentModal({ isOpen, onClose, onConsented, sourceLabel }: Cons
             Abbrechen
           </Btn>
           <Btn
+            testId="consent-confirm"
             onClick={() => consentMutation.mutate()}
             disabled={!agreed || consentMutation.isPending}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
