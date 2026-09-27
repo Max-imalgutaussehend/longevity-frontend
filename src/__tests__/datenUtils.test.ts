@@ -5,6 +5,8 @@ import {
   formatDate,
   renderMetricIcon,
   renderSourceIcon,
+  getSourceSyncStatusInfo,
+  timeAgo,
 } from '../routes/daten/datenUtils.js';
 
 describe('datenUtils', () => {
@@ -57,6 +59,109 @@ describe('datenUtils', () => {
       const res = formatDate('2026-09-20T10:00:00Z');
       expect(res).not.toBe('Noch nie');
       expect(res).toContain('2026');
+    });
+  });
+
+  describe('getSourceSyncStatusInfo', () => {
+    it('returns ready status for undefined source', () => {
+      const info = getSourceSyncStatusInfo(undefined, 'Bereit');
+      expect(info.status).toBe('ready');
+      expect(info.badgeLabel).toBe('Bereit');
+      expect(info.badgeColor).toBe('neutral');
+      expect(info.isConnected).toBe(false);
+    });
+
+    it('returns token_expired when syncStatus is token_expired', () => {
+      const info = getSourceSyncStatusInfo({
+        id: 's1',
+        kind: 'withings',
+        adapter: 'withings',
+        enabled: true,
+        syncStatus: 'token_expired',
+        lastSyncAt: null,
+        sampleCount: 10,
+      });
+      expect(info.status).toBe('token_expired');
+      expect(info.isTokenExpired).toBe(true);
+      expect(info.badgeColor).toBe('amber');
+    });
+
+    it('returns error status when syncStatus is error', () => {
+      const info = getSourceSyncStatusInfo({
+        id: 's1',
+        kind: 'oura',
+        adapter: 'oura',
+        enabled: true,
+        connected: true,
+        syncStatus: 'error',
+        lastSyncAt: null,
+        sampleCount: 5,
+      });
+      expect(info.status).toBe('error');
+      expect(info.isError).toBe(true);
+      expect(info.badgeColor).toBe('red');
+    });
+
+    it('returns paused status when source is connected but disabled', () => {
+      const info = getSourceSyncStatusInfo({
+        id: 's1',
+        kind: 'apple_health',
+        adapter: 'mock',
+        enabled: false,
+        connected: true,
+        lastSyncAt: null,
+        sampleCount: 42,
+      });
+      expect(info.status).toBe('paused');
+      expect(info.badgeLabel).toBe('Deaktiviert (42 pausiert)');
+      expect(info.badgeColor).toBe('neutral');
+    });
+
+    it('returns ok status with sample count for active mock source', () => {
+      const info = getSourceSyncStatusInfo({
+        id: 's1',
+        kind: 'apple_health',
+        adapter: 'mock',
+        enabled: true,
+        connected: true,
+        lastSyncAt: null,
+        sampleCount: 150,
+      });
+      expect(info.status).toBe('ok');
+      expect(info.badgeLabel).toBe('Mock-Daten aktiv (150)');
+      expect(info.badgeColor).toBe('amber');
+    });
+
+    it('returns ok status with teal color for active real source', () => {
+      const info = getSourceSyncStatusInfo({
+        id: 's1',
+        kind: 'strava',
+        adapter: 'strava',
+        enabled: true,
+        connected: true,
+        lastSyncAt: '2026-09-20T10:00:00Z',
+        sampleCount: 20,
+      });
+      expect(info.status).toBe('ok');
+      expect(info.badgeLabel).toBe('Verbunden (20)');
+      expect(info.badgeColor).toBe('teal');
+    });
+  });
+
+  describe('timeAgo', () => {
+    it('returns "Heute" for recent timestamps within 1 minute', () => {
+      const nowIso = new Date().toISOString();
+      expect(timeAgo(nowIso)).toBe('Heute');
+    });
+
+    it('returns minutes ago for timestamps under 1 hour', () => {
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      expect(timeAgo(fiveMinAgo)).toBe('Vor 5 Min.');
+    });
+
+    it('returns days ago for dates within a week', () => {
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      expect(timeAgo(threeDaysAgo)).toBe('Vor 3 Tagen');
     });
   });
 
