@@ -136,6 +136,14 @@ export function Component() {
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888780' }}>Mock- & Entwicklungsdaten</span>
+                      <span style={{ fontWeight: 500, color: '#0f6e56' }}>✓ 100% Ausgeschlossen (0 Werte)</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#888780' }}>Manuelle Eingaben & Uploads</span>
+                      <span style={{ fontWeight: 500, color: '#0f6e56' }}>✓ Ausgeschlossen</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: '#888780' }}>Aussteller</span>
                       <span style={{ fontSize: 11, color: '#55544f' }}>{data.issuer ?? 'LONGEVITY Health Intermediary'}</span>
                     </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Chip, MockBadge, Skeleton } from '../components/ui.js';
+import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Chip, Skeleton } from '../components/ui.js';
 
 import type { Source } from '../api/types.js';
 interface Token {
@@ -105,18 +105,26 @@ export function Component() {
         <SectionLabel>Was gespeichert ist</SectionLabel>
         {srcLoading ? <Skeleton height={120} /> : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {sources?.filter((s) => s.enabled || s.sampleCount > 0).map((s, i) => (
-              <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: i === 0 ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 13, color: '#22221f' }}>{SOURCE_LABELS[s.kind] ?? s.kind}</span>
-                  {s.adapter === 'mock' && s.enabled && <MockBadge />}
-                  {!s.enabled && <Chip color="neutral">Deaktiviert</Chip>}
+            {sources?.filter((s) => s.enabled || s.sampleCount > 0).map((s, i) => {
+              const isMock = s.adapter === 'mock';
+              const isUnverified = ['upload', 'manual', 'questionnaire'].includes(s.adapter);
+              const isVerified = ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled;
+
+              return (
+                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: i === 0 ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, color: '#22221f', fontWeight: 500 }}>{SOURCE_LABELS[s.kind] ?? s.kind}</span>
+                    {isMock && <Chip color="amber">Mock · Für Kassenrabatte ausgeschlossen</Chip>}
+                    {isUnverified && <Chip color="neutral">Manuell · Nicht kassenfähig</Chip>}
+                    {isVerified && <Chip color="teal">✓ Kassen-verifiziert</Chip>}
+                    {!s.enabled && !isMock && <Chip color="neutral">Deaktiviert</Chip>}
+                  </div>
+                  <span style={{ fontSize: 12, color: '#888780' }}>
+                    {s.sampleCount.toLocaleString('de-DE')} Werte · {s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleDateString('de-DE') : 'Noch nie'}
+                  </span>
                 </div>
-                <span style={{ fontSize: 12, color: '#888780' }}>
-                  {s.sampleCount.toLocaleString('de-DE')} Werte · {s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleDateString('de-DE') : 'Noch nie'}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
@@ -227,6 +235,53 @@ export function Component() {
                 </div>
               </div>
             </label>
+
+            {verifiedOnly && (
+              <div style={{
+                marginTop: 12,
+                padding: '10px 12px',
+                background: 'rgba(255,255,255,0.65)',
+                borderRadius: 8,
+                fontSize: 12,
+                border: '1px solid rgba(0,0,0,0.06)',
+                lineHeight: 1.5,
+              }}>
+                <div style={{ fontWeight: 600, color: '#22221f', marginBottom: 4 }}>
+                  Quellen-Prüfung für Kassenrabatt:
+                </div>
+                {sources?.some((s) => s.adapter === 'mock' && s.sampleCount > 0) && (
+                  <div style={{ color: '#854f0b', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                    <span>❌</span>
+                    <span>
+                      <strong>Mock-Daten:</strong> {sources.find((s) => s.adapter === 'mock')?.sampleCount.toLocaleString('de-DE')} generierte Werte werden <u>vollständig ausgeschlossen</u>.
+                    </span>
+                  </div>
+                )}
+                {sources?.some((s) => ['upload', 'manual', 'questionnaire'].includes(s.adapter) && s.sampleCount > 0) && (
+                  <div style={{ color: '#55544f', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                    <span>❌</span>
+                    <span>
+                      <strong>Manuelle Uploads / Labor:</strong> Nicht-verifizierte Werte werden ausgeschlossen.
+                    </span>
+                  </div>
+                )}
+                {sources?.some((s) => ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled && s.sampleCount > 0) ? (
+                  <div style={{ color: '#0f6e56', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                    <span>✅</span>
+                    <span>
+                      <strong>Verifizierte Cloud-Quellen:</strong> {sources.filter((s) => ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled && s.sampleCount > 0).map((s) => SOURCE_LABELS[s.kind] ?? s.kind).join(', ')} (fließen in den Score ein).
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ color: '#a32d2d', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontWeight: 500 }}>
+                    <span>⚠️</span>
+                    <span>
+                      <strong>Keine verifizierte Quelle vorhanden:</strong> Erstellung wird abgelehnt, bis ein echter Tracker verbunden ist.
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: 20 }}>
