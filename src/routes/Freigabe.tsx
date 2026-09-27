@@ -4,10 +4,30 @@ import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Chip, MockBadge, Skeleton } from '../components/ui.js';
 
 import type { Source } from '../api/types.js';
-interface Token { id: string; bandLow: number; bandHigh: number; issuedAt: string; expiresAt: string; revokedAt: string | null; }
+interface Token {
+  id: string;
+  bandLow: number;
+  bandHigh: number;
+  issuedAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  partnerRef?: string | null;
+  verifiedOnly?: boolean;
+  trustLevel?: 'unverified' | 'cloud_verified' | 'certified_medical';
+  verifiedSources?: string[];
+  certificateType?: string;
+}
 
 const SOURCE_LABELS: Record<string, string> = {
-  apple_health: 'Apple Health', oura: 'Oura Ring', lab: 'Laborwerte', questionnaire: 'Fragebogen',
+  apple_health: 'Apple Health',
+  oura: 'Oura Ring',
+  lab: 'Laborwerte',
+  questionnaire: 'Fragebogen',
+  withings: 'Withings',
+  strava: 'Strava',
+  google_fit: 'Google Fit',
+  google_health: 'Google Health',
+  fhir: 'FHIR Labor',
 };
 
 export function Component() {
@@ -15,6 +35,8 @@ export function Component() {
   const [showCreate, setShowCreate] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [validDays, setValidDays] = useState<30 | 90 | 180>(90);
+  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [deletePassword, setDeletePassword] = useState('');
 
   const { data: sources, isLoading: srcLoading } = useQuery<Source[]>({
@@ -27,8 +49,19 @@ export function Component() {
   });
 
   const createMut = useMutation({
-    mutationFn: () => apiClient('/share-tokens', { method: 'POST', body: JSON.stringify({ validDays }) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['share-tokens'] }); setShowCreate(false); },
+    mutationFn: () => apiClient('/share-tokens', {
+      method: 'POST',
+      body: JSON.stringify({ days: validDays, verifiedOnly }),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['share-tokens'] });
+      setShowCreate(false);
+      setCreateError(null);
+    },
+    onError: (err: unknown) => {
+      const e = err as { detail?: string; title?: string; message?: string };
+      setCreateError(e?.detail ?? e?.title ?? e?.message ?? 'Fehler beim Erstellen des Nachweises.');
+    },
   });
 
   const revokeMut = useMutation({
@@ -125,12 +158,20 @@ export function Component() {
                         }}>
                           Band {token.bandLow}–{token.bandHigh}
                         </span>
+                        {token.verifiedOnly && (
+                          <Chip color="teal">GKV / PKV Verifiziert</Chip>
+                        )}
                         {revoked && <Chip color="red">Widerrufen</Chip>}
                         {!revoked && expired && <Chip color="amber">Abgelaufen</Chip>}
                       </div>
                       <div style={{ fontSize: 12, color: '#888780', marginBottom: 4 }}>
                         Ausgestellt {new Date(token.issuedAt).toLocaleDateString('de-DE')} · Gültig bis {new Date(token.expiresAt).toLocaleDateString('de-DE')}
                       </div>
+                      {token.verifiedSources && token.verifiedSources.length > 0 && (
+                        <div style={{ fontSize: 11, color: '#0f6e56', marginBottom: 4 }}>
+                          Verifizierte Quellen: {token.verifiedSources.map((s) => SOURCE_LABELS[s] ?? s).join(', ')}
+                        </div>
+                      )}
                       <code data-testid="token-verify-url" style={{ fontSize: 11, color: '#a3a29c' }}>{window.location.origin}/verify/{token.id}</code>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -155,10 +196,40 @@ export function Component() {
       {showCreate && (
         <Modal onClose={() => setShowCreate(false)}>
           <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Neuen Nachweis erstellen</div>
-          <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 16 }}>
             Der Nachweis zeigt ausschließlich dein Score-Band. Kein exakter Score, keine Einzelwerte.
           </p>
-          <div style={{ marginBottom: 24 }}>
+
+          <div style={{
+            marginBottom: 20,
+            padding: '14px 16px',
+            borderRadius: 12,
+            background: verifiedOnly ? 'rgba(29,158,117,0.08)' : 'rgba(0,0,0,0.03)',
+            border: `1px solid ${verifiedOnly ? 'rgba(29,158,117,0.25)' : 'rgba(0,0,0,0.08)'}`,
+          }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={verifiedOnly}
+                onChange={(e) => {
+                  setVerifiedOnly(e.target.checked);
+                  setCreateError(null);
+                }}
+                style={{ marginTop: 3, accentColor: '#1d9e75' }}
+                data-testid="verified-only-checkbox"
+              />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: verifiedOnly ? '#0f6e56' : '#22221f' }}>
+                  Offizieller Krankenkassen-Nachweis (GKV / PKV Prämienrabatt)
+                </div>
+                <div style={{ fontSize: 12, color: '#55544f', marginTop: 3, lineHeight: 1.5 }}>
+                  Verwendet ausschließlich verifizierte Cloud-Quellen (Withings, Oura, Strava, Google Fit) und medizinische Labore. Mock- und manuelle Daten werden automatisch ausgeschlossen.
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
             <FieldLabel>Gültigkeit</FieldLabel>
             <div style={{ display: 'flex', gap: 8 }}>
               {([30, 90, 180] as const).map((d) => (
@@ -174,9 +245,27 @@ export function Component() {
               ))}
             </div>
           </div>
+
+          {createError && (
+            <div style={{
+              fontSize: 12,
+              color: '#a32d2d',
+              marginBottom: 16,
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: 'rgba(163,45,45,0.08)',
+              border: '1px solid rgba(163,45,45,0.2)',
+              lineHeight: 1.5,
+            }}>
+              {createError}
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <Btn variant="ghost" onClick={() => setShowCreate(false)}>Abbrechen</Btn>
-            <Btn onClick={() => createMut.mutate()} testId="confirm-create-token">Erstellen</Btn>
+            <Btn onClick={() => createMut.mutate()} testId="confirm-create-token" disabled={createMut.isPending}>
+              {createMut.isPending ? 'Erstelle…' : 'Erstellen'}
+            </Btn>
           </div>
         </Modal>
       )}
