@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Check, AlertTriangle, XCircle } from 'lucide-react';
+import { ShieldCheck, Check, AlertTriangle, XCircle, Info } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Chip, Skeleton } from '../components/ui.js';
 
-import type { Source } from '../api/types.js';
+import type { Source, ScoreResult } from '../api/types.js';
 interface Token {
   id: string;
   bandLow: number;
@@ -51,6 +51,32 @@ export function Component() {
     queryKey: ['share-tokens'],
     queryFn: () => apiClient<Token[]>('/share-tokens'),
   });
+  const { data: score } = useQuery<ScoreResult>({
+    queryKey: ['score', 'current'],
+    queryFn: () => apiClient<ScoreResult>('/score/current'),
+  });
+
+  // Compute a preview Kassen-Score from sources data (mirrors backend Bayesian shrinkage)
+  // finalScore = 50 + coverage * (rawScore - 50) where coverage = verifiedSampleCount / totalSampleCount
+  const kassenScore = (() => {
+    if (!score || !sources) return null;
+    const verifiedAdapters = ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'];
+    const totalSamples = sources.reduce((s, src) => s + src.sampleCount, 0);
+    const verifiedSamples = sources
+      .filter((s) => verifiedAdapters.includes(s.adapter) && s.enabled)
+      .reduce((s, src) => s + src.sampleCount, 0);
+    if (totalSamples === 0) return null;
+    const verifiedCoverage = verifiedSamples / totalSamples;
+    const rawScore = score.score;
+    const shrunk = 50 + verifiedCoverage * (rawScore - 50);
+    const bandLow = Math.floor(shrunk / 10) * 10;
+    return { score: shrunk, bandLow, bandHigh: bandLow + 9, coverage: verifiedCoverage };
+  })();
+
+  // Sources excluded from Kassen-Score for the explanation line
+  const excludedSources = sources
+    ? sources.filter((s) => ['upload', 'manual', 'questionnaire', 'mock'].includes(s.adapter) && s.sampleCount > 0)
+    : [];
 
   const createMut = useMutation({
     mutationFn: () => apiClient('/share-tokens', {
@@ -295,8 +321,60 @@ export function Component() {
             )}
           </div>
 
+          {/* Score preview: Gesamt vs. Kassen */}
+          {verifiedOnly && score && kassenScore && (
+            <div style={{
+              marginBottom: 20,
+              padding: '14px 16px',
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.70)',
+              border: '1px solid rgba(0,0,0,0.08)',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#22221f', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Info size={14} color="#55544f" />
+                Score-Vorschau für diesen Nachweis
+              </div>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {/* Gesamt-Score */}
+                <div style={{ flex: 1, minWidth: 120, padding: '10px 14px', borderRadius: 10, background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.07)' }}>
+                  <div style={{ fontSize: 10, color: '#a3a29c', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dein Gesamt-Score</div>
+                  <div style={{ fontSize: 22, fontWeight: 500, color: '#22221f', letterSpacing: '-0.02em' }}>{score.score.toFixed(1)}</div>
+                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 2 }}>Band {score.band.low}–{score.band.high}</div>
+                </div>
+                {/* Arrow */}
+                <div style={{ display: 'flex', alignItems: 'center', color: '#a3a29c', fontSize: 18, flexShrink: 0 }}>→</div>
+                {/* Kassen-Score */}
+                <div style={{
+                  flex: 1, minWidth: 120, padding: '10px 14px', borderRadius: 10,
+                  background: kassenScore.bandLow < score.band.low ? 'rgba(238,108,43,0.07)' : 'rgba(29,158,117,0.07)',
+                  border: kassenScore.bandLow < score.band.low ? '1px solid rgba(238,108,43,0.25)' : '1px solid rgba(29,158,117,0.25)',
+                }}>
+                  <div style={{ fontSize: 10, color: '#a3a29c', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <ShieldCheck size={11} color="#0f6e56" />
+                    Kassen-Nachweis
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em', color: kassenScore.bandLow < score.band.low ? '#c2410c' : '#0f6e56' }}>
+                    {kassenScore.score.toFixed(1)}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 2 }}>Band {kassenScore.bandLow}–{kassenScore.bandHigh}</div>
+                </div>
+              </div>
+              {excludedSources.length > 0 && (
+                <div style={{ marginTop: 10, fontSize: 11, color: '#55544f', lineHeight: 1.5 }}>
+                  <span style={{ color: '#888780' }}>ℹ️ </span>
+                  <strong>{excludedSources.length} {excludedSources.length === 1 ? 'Quelle ist' : 'Quellen sind'} nicht kassenfähig</strong>{' '}
+                  (z. B. {excludedSources.map((s) => SOURCE_LABELS[s.kind] ?? s.kind).join(', ')}) und fließen nicht in das offizielle Zertifikat ein.
+                  {kassenScore.bandLow < score.band.low && (
+                    <span> Durch die geringere Datenabdeckung zieht der Score in Richtung Kohortenmittelwert (50 Pkt.).</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={{ marginBottom: 20 }}>
             <FieldLabel>Gültigkeit</FieldLabel>
+
             <div style={{ display: 'flex', gap: 8 }}>
               {([30, 90, 180] as const).map((d) => (
                 <button key={d} onClick={() => setValidDays(d)} style={{
