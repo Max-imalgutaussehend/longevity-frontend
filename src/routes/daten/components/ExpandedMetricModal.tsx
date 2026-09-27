@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { Modal, Btn } from '../../../components/ui.js';
 import type { MetricSummary } from '../../../api/types.js';
 import { SOURCE_BADGES } from '../datenTypes.js';
+import { getSourceLabel } from '../../../lib/formatters.js';
 import { renderMetricIcon, renderSourceIcon, formatMetricVal } from '../datenUtils.js';
 
 interface ExpandedMetricModalProps {
@@ -68,7 +69,7 @@ export function ExpandedMetricModal({
             {selectedSource === 'all'
               ? `${metric.count} Einträge`
               : `${metric.history.filter((h) => h.sourceKind === selectedSource).length} Einträge (${
-                  SOURCE_BADGES[selectedSource]?.label ?? selectedSource
+                  SOURCE_BADGES[selectedSource]?.label ?? getSourceLabel(selectedSource)
                 })`}
           </div>
         </div>
@@ -85,7 +86,7 @@ export function ExpandedMetricModal({
           </thead>
           <tbody>
             {filteredHistory.map((h, i) => {
-              const b = SOURCE_BADGES[h.sourceKind] ?? { label: h.sourceKind };
+              const b = SOURCE_BADGES[h.sourceKind] ?? { label: getSourceLabel(h.sourceKind) };
               return (
                 <tr
                   key={h.id ?? i}

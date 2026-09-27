@@ -11,13 +11,7 @@ interface WeeklyReport {
 
 interface HistoryPoint { date: string; score: number; coverage: number; }
 
-const METRIC_LABELS: Record<string, string> = {
-  vo2max: 'VO₂max', resting_hr: 'Ruhepuls', systolic_bp: 'Blutdruck',
-  ldl: 'LDL', hdl: 'HDL', hba1c: 'HbA1c', waist: 'Taillenumfang',
-  sleep_duration: 'Schlafdauer', sleep_consistency: 'Schlafkonsistenz', hrv_rmssd: 'HRV',
-  zone2_minutes: 'Zone-2-Minuten', steps: 'Schritte', strength_sessions: 'Krafteinheiten',
-  smoking: 'Rauchen', alcohol_units: 'Alkohol', hscrp: 'hsCRP',
-};
+import { getMetricLabel } from '../lib/formatters.js';
 
 export function Component() {
   const { data: report, isLoading } = useQuery<WeeklyReport>({
@@ -77,7 +71,7 @@ export function Component() {
                 <span style={{ fontSize: 22, opacity: 0.7 }}>↑</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 500, color: '#0f6e56' }}>
-                    {METRIC_LABELS[report.bestMetric] ?? report.bestMetric}
+                    {getMetricLabel(report.bestMetric)}
                   </div>
                 </div>
               </div>
@@ -88,7 +82,7 @@ export function Component() {
                 <span style={{ fontSize: 22, opacity: 0.7 }}>↓</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 500, color: '#854f0b' }}>
-                    {METRIC_LABELS[report.worstMetric] ?? report.worstMetric}
+                    {getMetricLabel(report.worstMetric)}
                   </div>
                 </div>
               </div>

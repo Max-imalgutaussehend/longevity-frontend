@@ -7,15 +7,8 @@ import type { ScoreResult } from '../api/types.js';
 export interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
 export interface SimResult { base: ScoreResult; simulated: ScoreResult; perMetric: { metric: string; delta: number }[]; }
 
-export const METRIC_LABELS: Record<string, string> = {
-  vo2max: 'VO₂max', resting_hr: 'Ruhepuls', sleep_duration: 'Schlafdauer',
-  zone2_minutes: 'Zone-2-Minuten', hrv_rmssd: 'HRV (RMSSD)', steps: 'Schritte',
-  strength_sessions: 'Krafteinheiten',
-};
-export const METRIC_UNITS: Record<string, string> = {
-  vo2max: 'ml/kg/min', resting_hr: 'bpm', sleep_duration: 'h',
-  zone2_minutes: 'min/Wo.', hrv_rmssd: 'ms', steps: '/Tag', strength_sessions: '/Woche',
-};
+import { getMetricLabel, getMetricUnit } from '../lib/formatters.js';
+
 export const METRIC_RANGE: Record<string, [number, number, number]> = {
   vo2max: [25, 65, 0.5], resting_hr: [40, 100, 1], sleep_duration: [4, 10, 0.1],
   zone2_minutes: [0, 300, 5], hrv_rmssd: [15, 120, 1], steps: [1000, 20000, 500],
@@ -128,12 +121,12 @@ export function Component() {
           levers?.slice(0, 3).map((lever, i) => (
             <Card key={lever.metric} style={{ borderTop: `3px solid ${i === 0 ? '#1d9e75' : 'rgba(0,0,0,0.08)'}` }}>
               <div style={{ fontSize: 10, color: '#a3a29c', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Hebel {i + 1}</div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: '#22221f', marginBottom: 20 }}>{METRIC_LABELS[lever.metric] ?? lever.metric}</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: '#22221f', marginBottom: 20 }}>{getMetricLabel(lever.metric)}</div>
               <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                 <span style={{ fontSize: 26, fontWeight: 500, color: '#0f6e56', letterSpacing: '-0.01em' }}>+{lever.delta.toFixed(1)}</span>
                 <span style={{ fontSize: 12, color: '#888780', marginLeft: 6 }}>Punkte · {lever.horizonWeeks} Wochen</span>
                 <div style={{ fontSize: 12, color: '#a3a29c', marginTop: 4 }}>
-                  {lever.currentValue?.toFixed(1) ?? '?'} → {lever.targetValue.toFixed(1)} {METRIC_UNITS[lever.metric] ?? ''}
+                  {lever.currentValue?.toFixed(1) ?? '?'} → {lever.targetValue.toFixed(1)} {getMetricUnit(lever.metric)}
                 </div>
               </div>
             </Card>
@@ -162,16 +155,16 @@ export function Component() {
               return (
                 <div key={metric}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, color: '#22221f' }}>{METRIC_LABELS[metric] ?? metric}</span>
+                    <span style={{ fontSize: 13, color: '#22221f' }}>{getMetricLabel(metric)}</span>
                     <span style={{ fontSize: 13, fontWeight: 500, color: changed ? '#0f6e56' : '#22221f' }}>
-                      {v} <span style={{ color: '#888780', fontWeight: 400 }}>{METRIC_UNITS[metric] ?? ''}</span>
+                      {v} <span style={{ color: '#888780', fontWeight: 400 }}>{getMetricUnit(metric)}</span>
                     </span>
                   </div>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="range" min={min} max={max} step={step} value={v}
                       onChange={(e) => handleSlider(metric, Number(e.target.value))}
-                      aria-label={METRIC_LABELS[metric] ?? metric}
+                      aria-label={getMetricLabel(metric)}
                     />
                     <div
                       data-testid={`marker-${metric}`}
