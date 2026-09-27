@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Chip, SectionLabel, Skeleton } from '../components/ui.js';
@@ -98,7 +98,15 @@ export function Component() {
     }, 120);
   }
 
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   function reset() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    simulateMut.reset();
     setVals({});
     setSimResult(null);
   }
