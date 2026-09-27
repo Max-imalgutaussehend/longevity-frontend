@@ -7,7 +7,8 @@ import type { ScoreResult } from '../api/types.js';
 
 interface PartnerOffer {
   id: string; partnerName: string; title: string; description: string;
-  minBand: number; valueLabel: string; isDemo: boolean; qualified: boolean;
+  minBand: number; minMonths?: number | null; valueLabel: string; isDemo: boolean;
+  qualified: boolean; daysHeld?: number; daysRemaining?: number;
 }
 
 export function Component() {
@@ -36,18 +37,30 @@ export function Component() {
         {isLoading ? [1, 2, 3].map((i) => <Card key={i}><Skeleton height={80} /></Card>) :
           offers?.sort((a, b) => a.minBand - b.minBand).map((offer) => {
             const gap = score ? offer.minBand - score.band.low : null;
+            const needsMorePoints = gap !== null && gap > 0;
+            const needsHoldingTime = !offer.qualified && !needsMorePoints && (offer.daysRemaining ?? 0) > 0;
+
             return (
               <Card key={offer.id} style={{ opacity: offer.qualified ? 1 : 0.68 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
                       <span style={{ fontSize: 14, fontWeight: 500, color: '#22221f' }}>{offer.title}</span>
-                      {offer.qualified
-                        ? <Chip color="green"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={12} /> Erfüllt</span></Chip>
-                        : gap !== null && <Chip color="neutral">Band {offer.minBand}+ · noch {gap} Pkt.</Chip>}
+                      {offer.qualified ? (
+                        <Chip color="green"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={12} /> Erfüllt</span></Chip>
+                      ) : needsMorePoints ? (
+                        <Chip color="neutral">Band {offer.minBand}+ · noch {gap} Pkt.</Chip>
+                      ) : needsHoldingTime ? (
+                        <Chip color="amber">Band {offer.minBand}+ · noch {offer.daysRemaining} Tage halten</Chip>
+                      ) : (
+                        gap !== null && <Chip color="neutral">Band {offer.minBand}+</Chip>
+                      )}
                     </div>
                     <div style={{ fontSize: 13, color: '#55544f' }}>{offer.description}</div>
-                    <div style={{ fontSize: 11, color: '#a3a29c', marginTop: 3 }}>{offer.partnerName}</div>
+                    <div style={{ fontSize: 11, color: '#a3a29c', marginTop: 3 }}>
+                      {offer.partnerName}
+                      {offer.minMonths && offer.minMonths > 0 ? ` · Mindesthaltedauer: ${offer.minMonths} Monate` : ''}
+                    </div>
                   </div>
                   <div style={{ textAlign: 'right', marginLeft: 24, flexShrink: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: offer.qualified ? '#0f6e56' : '#888780' }}>{offer.valueLabel}</div>

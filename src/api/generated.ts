@@ -1038,9 +1038,12 @@ export interface components {
             title: string;
             description: string;
             minBand: number;
+            minMonths?: number | null;
             valueLabel: string;
             isDemo: boolean;
             qualified: boolean;
+            daysHeld?: number;
+            daysRemaining?: number;
         };
         User: {
             /** Format: uuid */
@@ -1603,6 +1606,7 @@ export interface operations {
                     title: string;
                     description: string;
                     minBand: number;
+                    minMonths?: number | null;
                     valueLabel: string;
                     /** Format: date-time */
                     validFrom?: string;
@@ -1705,6 +1709,7 @@ export interface operations {
                     title?: string;
                     description?: string;
                     minBand?: number;
+                    minMonths?: number | null;
                     valueLabel?: string;
                     /** Format: date-time */
                     validFrom?: string | null;
