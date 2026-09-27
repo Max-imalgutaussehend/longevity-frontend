@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, PauseCircle } from 'lucide-react';
+import { AlertTriangle, PauseCircle, ShieldCheck } from 'lucide-react';
 import { Card, Btn, Chip, Toggle } from '../../../components/ui.js';
 import type { Source } from '../../../api/types.js';
 import { getSourceSyncStatusInfo, formatDate } from '../datenUtils.js';
@@ -94,7 +94,24 @@ export function OAuthSourceCard({
           </div>
         </div>
 
-        <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>{title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+          <span style={{ fontSize: 16, fontWeight: 500, color: '#22221f' }}>{title}</span>
+          <span style={{
+            fontSize: 11,
+            padding: '2px 8px',
+            borderRadius: 999,
+            background: 'rgba(29,158,117,0.10)',
+            color: '#0f6e56',
+            border: '1px solid rgba(29,158,117,0.22)',
+            fontWeight: 500,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            <ShieldCheck size={12} color="#0f6e56" />
+            Kassen-verifiziert
+          </span>
+        </div>
         <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: noteBanner ? 12 : 16 }}>
           {description}
         </div>

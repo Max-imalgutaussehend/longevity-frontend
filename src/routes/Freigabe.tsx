@@ -1,13 +1,37 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ShieldCheck, Check, AlertTriangle, XCircle } from 'lucide-react';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Chip, MockBadge, Skeleton } from '../components/ui.js';
+import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Chip, Skeleton } from '../components/ui.js';
 
 import type { Source } from '../api/types.js';
-interface Token { id: string; bandLow: number; bandHigh: number; issuedAt: string; expiresAt: string; revokedAt: string | null; }
+interface Token {
+  id: string;
+  bandLow: number;
+  bandHigh: number;
+  issuedAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  partnerRef?: string | null;
+  verifiedOnly?: boolean;
+  trustLevel?: 'unverified' | 'cloud_verified' | 'certified_medical';
+  verifiedSources?: string[];
+  certificateType?: string;
+}
 
 const SOURCE_LABELS: Record<string, string> = {
-  apple_health: 'Apple Health', oura: 'Oura Ring', lab: 'Laborwerte', questionnaire: 'Fragebogen',
+  apple_health: 'Apple Health',
+  'apple-health': 'Apple Health',
+  oura: 'Oura Ring',
+  lab: 'Laborwerte',
+  questionnaire: 'Fragebogen',
+  withings: 'Withings',
+  strava: 'Strava',
+  google_fit: 'Google Fit',
+  'google-fit': 'Google Fit',
+  google_health: 'Google Health',
+  'google-health': 'Google Health',
+  fhir: 'FHIR Labor',
 };
 
 export function Component() {
@@ -15,6 +39,8 @@ export function Component() {
   const [showCreate, setShowCreate] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [validDays, setValidDays] = useState<30 | 90 | 180>(90);
+  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [deletePassword, setDeletePassword] = useState('');
 
   const { data: sources, isLoading: srcLoading } = useQuery<Source[]>({
@@ -27,8 +53,19 @@ export function Component() {
   });
 
   const createMut = useMutation({
-    mutationFn: () => apiClient('/share-tokens', { method: 'POST', body: JSON.stringify({ validDays }) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['share-tokens'] }); setShowCreate(false); },
+    mutationFn: () => apiClient('/share-tokens', {
+      method: 'POST',
+      body: JSON.stringify({ days: validDays, verifiedOnly }),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['share-tokens'] });
+      setShowCreate(false);
+      setCreateError(null);
+    },
+    onError: (err: unknown) => {
+      const e = err as { detail?: string; title?: string; message?: string };
+      setCreateError(e?.detail ?? e?.title ?? e?.message ?? 'Fehler beim Erstellen des Nachweises.');
+    },
   });
 
   const revokeMut = useMutation({
@@ -72,18 +109,33 @@ export function Component() {
         <SectionLabel>Was gespeichert ist</SectionLabel>
         {srcLoading ? <Skeleton height={120} /> : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {sources?.filter((s) => s.enabled || s.sampleCount > 0).map((s, i) => (
-              <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: i === 0 ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 13, color: '#22221f' }}>{SOURCE_LABELS[s.kind] ?? s.kind}</span>
-                  {s.adapter === 'mock' && s.enabled && <MockBadge />}
-                  {!s.enabled && <Chip color="neutral">Deaktiviert</Chip>}
+            {sources?.filter((s) => s.enabled || s.sampleCount > 0).map((s, i) => {
+              const isMock = s.adapter === 'mock';
+              const isUnverified = ['upload', 'manual', 'questionnaire'].includes(s.adapter);
+              const isVerified = ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled;
+
+              return (
+                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: i === 0 ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, color: '#22221f', fontWeight: 500 }}>{SOURCE_LABELS[s.kind] ?? s.kind}</span>
+                    {isMock && <Chip color="amber">Mock · Für Kassenrabatte ausgeschlossen</Chip>}
+                    {isUnverified && <Chip color="neutral">Manuell · Nicht kassenfähig</Chip>}
+                    {isVerified && (
+                      <Chip color="teal">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <ShieldCheck size={12} />
+                          Kassen-verifiziert
+                        </span>
+                      </Chip>
+                    )}
+                    {!s.enabled && !isMock && <Chip color="neutral">Deaktiviert</Chip>}
+                  </div>
+                  <span style={{ fontSize: 12, color: '#888780' }}>
+                    {s.sampleCount.toLocaleString('de-DE')} Werte · {s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleDateString('de-DE') : 'Noch nie'}
+                  </span>
                 </div>
-                <span style={{ fontSize: 12, color: '#888780' }}>
-                  {s.sampleCount.toLocaleString('de-DE')} Werte · {s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleDateString('de-DE') : 'Noch nie'}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
@@ -125,12 +177,20 @@ export function Component() {
                         }}>
                           Band {token.bandLow}–{token.bandHigh}
                         </span>
+                        {token.verifiedOnly && (
+                          <Chip color="teal">GKV / PKV Verifiziert</Chip>
+                        )}
                         {revoked && <Chip color="red">Widerrufen</Chip>}
                         {!revoked && expired && <Chip color="amber">Abgelaufen</Chip>}
                       </div>
                       <div style={{ fontSize: 12, color: '#888780', marginBottom: 4 }}>
                         Ausgestellt {new Date(token.issuedAt).toLocaleDateString('de-DE')} · Gültig bis {new Date(token.expiresAt).toLocaleDateString('de-DE')}
                       </div>
+                      {token.verifiedSources && token.verifiedSources.length > 0 && (
+                        <div style={{ fontSize: 11, color: '#0f6e56', marginBottom: 4 }}>
+                          Verifizierte Quellen: {token.verifiedSources.map((s) => SOURCE_LABELS[s] ?? s).join(', ')}
+                        </div>
+                      )}
                       <code data-testid="token-verify-url" style={{ fontSize: 11, color: '#a3a29c' }}>{window.location.origin}/verify/{token.id}</code>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -155,10 +215,87 @@ export function Component() {
       {showCreate && (
         <Modal onClose={() => setShowCreate(false)}>
           <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Neuen Nachweis erstellen</div>
-          <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 16 }}>
             Der Nachweis zeigt ausschließlich dein Score-Band. Kein exakter Score, keine Einzelwerte.
           </p>
-          <div style={{ marginBottom: 24 }}>
+
+          <div style={{
+            marginBottom: 20,
+            padding: '14px 16px',
+            borderRadius: 12,
+            background: verifiedOnly ? 'rgba(29,158,117,0.08)' : 'rgba(0,0,0,0.03)',
+            border: `1px solid ${verifiedOnly ? 'rgba(29,158,117,0.25)' : 'rgba(0,0,0,0.08)'}`,
+          }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={verifiedOnly}
+                onChange={(e) => {
+                  setVerifiedOnly(e.target.checked);
+                  setCreateError(null);
+                }}
+                style={{ marginTop: 3, accentColor: '#1d9e75' }}
+                data-testid="verified-only-checkbox"
+              />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: verifiedOnly ? '#0f6e56' : '#22221f' }}>
+                  Offizieller Krankenkassen-Nachweis (GKV / PKV Prämienrabatt)
+                </div>
+                <div style={{ fontSize: 12, color: '#55544f', marginTop: 3, lineHeight: 1.5 }}>
+                  Verwendet ausschließlich verifizierte Cloud-Quellen (Withings, Oura, Strava, Google Fit) und medizinische Labore. Mock- und manuelle Daten werden automatisch ausgeschlossen.
+                </div>
+              </div>
+            </label>
+
+            {verifiedOnly && (
+              <div style={{
+                marginTop: 12,
+                padding: '10px 12px',
+                background: 'rgba(255,255,255,0.65)',
+                borderRadius: 8,
+                fontSize: 12,
+                border: '1px solid rgba(0,0,0,0.06)',
+                lineHeight: 1.5,
+              }}>
+                <div style={{ fontWeight: 600, color: '#22221f', marginBottom: 4 }}>
+                  Quellen-Prüfung für Kassenrabatt:
+                </div>
+                {sources?.some((s) => s.adapter === 'mock' && s.sampleCount > 0) && (
+                  <div style={{ color: '#854f0b', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                    <XCircle size={14} color="#a32d2d" style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Mock-Daten:</strong> {sources.find((s) => s.adapter === 'mock')?.sampleCount.toLocaleString('de-DE')} generierte Werte werden <u>vollständig ausgeschlossen</u>.
+                    </span>
+                  </div>
+                )}
+                {sources?.some((s) => ['upload', 'manual', 'questionnaire'].includes(s.adapter) && s.sampleCount > 0) && (
+                  <div style={{ color: '#55544f', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                    <XCircle size={14} color="#888780" style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Manuelle Uploads / Labor:</strong> Nicht-verifizierte Werte werden ausgeschlossen.
+                    </span>
+                  </div>
+                )}
+                {sources?.some((s) => ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled && s.sampleCount > 0) ? (
+                  <div style={{ color: '#0f6e56', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                    <Check size={14} color="#0f6e56" style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Verifizierte Cloud-Quellen:</strong> {sources.filter((s) => ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled && s.sampleCount > 0).map((s) => SOURCE_LABELS[s.kind] ?? s.kind).join(', ')} (fließen in den Score ein).
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ color: '#a32d2d', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontWeight: 500 }}>
+                    <AlertTriangle size={14} color="#a32d2d" style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Keine verifizierte Quelle vorhanden:</strong> Erstellung wird abgelehnt, bis ein echter Tracker verbunden ist.
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
             <FieldLabel>Gültigkeit</FieldLabel>
             <div style={{ display: 'flex', gap: 8 }}>
               {([30, 90, 180] as const).map((d) => (
@@ -174,9 +311,27 @@ export function Component() {
               ))}
             </div>
           </div>
+
+          {createError && (
+            <div style={{
+              fontSize: 12,
+              color: '#a32d2d',
+              marginBottom: 16,
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: 'rgba(163,45,45,0.08)',
+              border: '1px solid rgba(163,45,45,0.2)',
+              lineHeight: 1.5,
+            }}>
+              {createError}
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
             <Btn variant="ghost" onClick={() => setShowCreate(false)}>Abbrechen</Btn>
-            <Btn onClick={() => createMut.mutate()} testId="confirm-create-token">Erstellen</Btn>
+            <Btn onClick={() => createMut.mutate()} testId="confirm-create-token" disabled={createMut.isPending}>
+              {createMut.isPending ? 'Erstelle…' : 'Erstellen'}
+            </Btn>
           </div>
         </Modal>
       )}
