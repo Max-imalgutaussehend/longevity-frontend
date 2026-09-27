@@ -19,20 +19,7 @@ interface Token {
   certificateType?: string;
 }
 
-const SOURCE_LABELS: Record<string, string> = {
-  apple_health: 'Apple Health',
-  'apple-health': 'Apple Health',
-  oura: 'Oura Ring',
-  lab: 'Laborwerte',
-  questionnaire: 'Fragebogen',
-  withings: 'Withings',
-  strava: 'Strava',
-  google_fit: 'Google Fit',
-  'google-fit': 'Google Fit',
-  google_health: 'Google Health',
-  'google-health': 'Google Health',
-  fhir: 'FHIR Labor',
-};
+import { getSourceLabel } from '../lib/formatters.js';
 
 export function Component() {
   const qc = useQueryClient();
@@ -117,7 +104,7 @@ export function Component() {
               return (
                 <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: i === 0 ? '1px solid rgba(0,0,0,0.06)' : '1px solid rgba(0,0,0,0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 13, color: '#22221f', fontWeight: 500 }}>{SOURCE_LABELS[s.kind] ?? s.kind}</span>
+                    <span style={{ fontSize: 13, color: '#22221f', fontWeight: 500 }}>{getSourceLabel(s.kind)}</span>
                     {isMock && <Chip color="amber">Mock · Für Kassenrabatte ausgeschlossen</Chip>}
                     {isUnverified && <Chip color="neutral">Manuell · Nicht kassenfähig</Chip>}
                     {isVerified && (
@@ -188,7 +175,7 @@ export function Component() {
                       </div>
                       {token.verifiedSources && token.verifiedSources.length > 0 && (
                         <div style={{ fontSize: 11, color: '#0f6e56', marginBottom: 4 }}>
-                          Verifizierte Quellen: {token.verifiedSources.map((s) => SOURCE_LABELS[s] ?? s).join(', ')}
+                          Verifizierte Quellen: {token.verifiedSources.map((s) => getSourceLabel(s)).join(', ')}
                         </div>
                       )}
                       <code data-testid="token-verify-url" style={{ fontSize: 11, color: '#a3a29c' }}>{window.location.origin}/verify/{token.id}</code>
@@ -280,7 +267,7 @@ export function Component() {
                   <div style={{ color: '#0f6e56', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                     <Check size={14} color="#0f6e56" style={{ flexShrink: 0 }} />
                     <span>
-                      <strong>Verifizierte Cloud-Quellen:</strong> {sources.filter((s) => ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled && s.sampleCount > 0).map((s) => SOURCE_LABELS[s.kind] ?? s.kind).join(', ')} (fließen in den Score ein).
+                      <strong>Verifizierte Cloud-Quellen:</strong> {sources.filter((s) => ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled && s.sampleCount > 0).map((s) => getSourceLabel(s.kind)).join(', ')} (fließen in den Score ein).
                     </span>
                   </div>
                 ) : (

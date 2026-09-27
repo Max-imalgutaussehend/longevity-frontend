@@ -3,6 +3,7 @@ import { BarChart3, ShieldCheck } from 'lucide-react';
 import { Card, Btn, Chip, Skeleton, GlassSelect, SectionLabel } from '../../../components/ui.js';
 import type { Source, SamplesSummaryResponse, MetricSummary } from '../../../api/types.js';
 import { SOURCE_BADGES } from '../datenTypes.js';
+import { getSourceLabel } from '../../../lib/formatters.js';
 import { renderMetricIcon, renderSourceIcon, formatMetricVal, timeAgo, formatDate } from '../datenUtils.js';
 
 export interface MetricsTabProps {
@@ -160,7 +161,7 @@ export function MetricsTab({
       ) : (
         <div className="responsive-grid-2">
           {filteredMetrics.map((m) => {
-            const badge = SOURCE_BADGES[m.sourceKind] ?? { label: m.sourceKind };
+            const badge = SOURCE_BADGES[m.sourceKind] ?? { label: getSourceLabel(m.sourceKind) };
             return (
               <Card
                 key={m.metric}
@@ -347,7 +348,7 @@ export function MetricsTab({
               </thead>
               <tbody>
                 {filteredRecentSamples.slice(0, recentLimit).map((s, idx) => {
-                  const badge = SOURCE_BADGES[s.sourceKind] ?? { label: s.sourceKind };
+                  const badge = SOURCE_BADGES[s.sourceKind] ?? { label: getSourceLabel(s.sourceKind) };
                   return (
                     <tr
                       key={s.id ?? idx}

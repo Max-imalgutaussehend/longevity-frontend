@@ -8,13 +8,7 @@ import type { ScoreResult } from '../api/types.js';
 
 interface HistoryPoint { date: string; score: number; coverage: number; }
 interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
-
-const DOMAIN_LABELS: Record<string, string> = {
-  cardiometabolic: 'Kardiometabolik',
-  recovery: 'Regeneration',
-  activity: 'Aktivität',
-  risk: 'Risiko',
-};
+import { getDomainLabel, getMetricLabel, getMetricUnit } from '../lib/formatters.js';
 
 export function Component() {
   const navigate = useNavigate();
@@ -138,7 +132,7 @@ export function Component() {
                 <div key={d.domain}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7 }}>
                     <span style={{ fontSize: 13, color: '#22221f' }}>
-                      {DOMAIN_LABELS[d.domain] ?? d.domain}
+                      {getDomainLabel(d.domain)}
                       <span style={{ fontSize: 11, color: '#a3a29c', marginLeft: 6 }}>{Math.round(d.weight * 100)} %</span>
                     </span>
                     <span style={{ fontSize: 13, fontWeight: 500, color: d.score < 50 ? '#854f0b' : '#22221f' }}>
@@ -165,7 +159,9 @@ export function Component() {
             </div>
             {topLever ? (
               <>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#22221f', margin: '10px 0 6px' }}>{topLever.metric}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#22221f', margin: '10px 0 6px' }}>
+                  {getMetricLabel(topLever.metric)}{getMetricUnit(topLever.metric) ? ` (${getMetricUnit(topLever.metric)})` : ''}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginTop: 16 }}>
                   <span style={{ fontSize: 26, fontWeight: 500, color: '#0f6e56' }}>+{topLever.delta.toFixed(1)}</span>
                   <span style={{ fontSize: 12, color: '#a3a29c' }}>Punkte · {topLever.horizonWeeks} Wo.</span>

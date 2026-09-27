@@ -4,20 +4,7 @@ import { apiClient } from '../api/client.js';
 import { Card, PageTitle, PercentileBar, Skeleton } from '../components/ui.js';
 import type { ScoreResult } from '../api/types.js';
 
-const DOMAIN_LABELS: Record<string, string> = {
-  cardiometabolic: 'Kardiometabolik',
-  recovery: 'Regeneration',
-  activity: 'Aktivität',
-  risk: 'Risiko',
-};
-
-const METRIC_LABELS: Record<string, string> = {
-  vo2max: 'VO₂max', resting_hr: 'Ruhepuls', systolic_bp: 'Systol. Blutdruck',
-  ldl: 'LDL-Cholesterin', hdl: 'HDL-Cholesterin', hba1c: 'HbA1c', waist: 'Taillenumfang',
-  sleep_duration: 'Schlafdauer', sleep_consistency: 'Schlafkonsistenz', hrv_rmssd: 'HRV (RMSSD)',
-  zone2_minutes: 'Zone-2-Minuten', steps: 'Schritte', strength_sessions: 'Krafteinheiten',
-  smoking: 'Rauchen', alcohol_units: 'Alkohol', hscrp: 'hsCRP',
-};
+import { getDomainLabel, getMetricLabel } from '../lib/formatters.js';
 
 export function Component() {
   const navigate = useNavigate();
@@ -44,7 +31,7 @@ export function Component() {
           <Card key={domain.domain}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f' }}>{DOMAIN_LABELS[domain.domain] ?? domain.domain}</div>
+                <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f' }}>{getDomainLabel(domain.domain)}</div>
                 <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>Gewicht {Math.round(domain.weight * 100)} %</div>
               </div>
               <span style={{ fontSize: 28, fontWeight: 500, color: domain.score < 50 ? '#854f0b' : '#0f6e56', letterSpacing: '-0.01em' }}>
@@ -64,7 +51,7 @@ export function Component() {
                 >
                   <div>
                     <div style={{ fontSize: 13, color: m.available ? '#22221f' : '#a3a29c' }}>
-                      {METRIC_LABELS[m.metric] ?? m.metric}
+                      {getMetricLabel(m.metric)}
                       {!m.available && <span style={{ marginLeft: 8, fontSize: 11, color: '#a3a29c' }}>kein Wert</span>}
                     </div>
                     {m.available && m.value !== null && (

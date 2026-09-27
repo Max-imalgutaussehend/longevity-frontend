@@ -27,20 +27,7 @@ const REASON_TEXT: Record<string, string> = {
   expired: 'Die Gültigkeitsdauer dieses Nachweises ist abgelaufen.',
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  oura: 'Oura Ring',
-  withings: 'Withings',
-  strava: 'Strava',
-  google_fit: 'Google Fit',
-  'google-fit': 'Google Fit',
-  google_health: 'Google Health',
-  'google-health': 'Google Health',
-  fhir: 'FHIR Labor',
-  apple_health: 'Apple Health',
-  'apple-health': 'Apple Health',
-  lab: 'Laborwerte',
-  questionnaire: 'Fragebogen',
-};
+import { getSourceLabel } from '../lib/formatters.js';
 
 export function Component() {
   const { id } = useParams<{ id: string }>();
@@ -136,7 +123,7 @@ export function Component() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#888780' }}>Verifizierte Quellen</span>
                         <span style={{ fontWeight: 500, color: '#0f6e56' }}>
-                          {data.verifiedSources.map((s) => SOURCE_LABELS[s] ?? s).join(', ')}
+                          {data.verifiedSources.map((s) => getSourceLabel(s)).join(', ')}
                         </span>
                       </div>
                     )}
