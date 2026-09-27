@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ShieldCheck } from 'lucide-react';
+import { Check, ShieldCheck, Lock } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, Chip } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
@@ -137,11 +137,17 @@ export function Component() {
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: '#888780' }}>Mock- & Entwicklungsdaten</span>
-                      <span style={{ fontWeight: 500, color: '#0f6e56' }}>✓ 100% Ausgeschlossen (0 Werte)</span>
+                      <span style={{ fontWeight: 500, color: '#0f6e56', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Check size={13} color="#0f6e56" />
+                        100% Ausgeschlossen (0 Werte)
+                      </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: '#888780' }}>Manuelle Eingaben & Uploads</span>
-                      <span style={{ fontWeight: 500, color: '#0f6e56' }}>✓ Ausgeschlossen</span>
+                      <span style={{ fontWeight: 500, color: '#0f6e56', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Check size={13} color="#0f6e56" />
+                        Ausgeschlossen
+                      </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: '#888780' }}>Aussteller</span>
@@ -149,8 +155,21 @@ export function Component() {
                     </div>
                   </div>
 
-                  <div style={{ fontSize: 11, color: '#888780', padding: '12px 16px', background: 'rgba(0,0,0,0.03)', borderRadius: 10, lineHeight: 1.6 }}>
-                    🔒 <strong>Manipulationssicher & Betrugsgeschützt:</strong> Dieser Nachweis basiert ausschließlich auf kryptografisch verifizierten Cloud- & Labordaten mit physiologischer Plausibilitätsprüfung. Mock-Daten und manuelle Eingaben sind ausgeschlossen.
+                  <div style={{
+                    fontSize: 11,
+                    color: '#888780',
+                    padding: '12px 16px',
+                    background: 'rgba(0,0,0,0.03)',
+                    borderRadius: 10,
+                    lineHeight: 1.6,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                  }}>
+                    <Lock size={15} color="#0f6e56" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <strong>Manipulationssicher & Betrugsgeschützt:</strong> Dieser Nachweis basiert ausschließlich auf kryptografisch verifizierten Cloud- & Labordaten mit physiologischer Plausibilitätsprüfung. Mock-Daten und manuelle Eingaben sind ausgeschlossen.
+                    </div>
                   </div>
                 </>
               ) : (

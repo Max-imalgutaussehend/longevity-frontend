@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, ShieldCheck } from 'lucide-react';
 import { Card, Btn, Chip, Skeleton, GlassSelect, SectionLabel } from '../../../components/ui.js';
 import type { Source, SamplesSummaryResponse, MetricSummary } from '../../../api/types.js';
 import { SOURCE_BADGES } from '../datenTypes.js';
@@ -183,8 +183,9 @@ export function MetricsTab({
                         </span>
                       </Chip>
                       {['oura', 'withings', 'strava', 'google_fit', 'google_health', 'fhir'].includes(m.sourceKind) ? (
-                        <span style={{ fontSize: 10, color: '#0f6e56', fontWeight: 500, letterSpacing: '0.01em' }}>
-                          🛡️ Kassen-verifiziert
+                        <span style={{ fontSize: 10, color: '#0f6e56', fontWeight: 500, letterSpacing: '0.01em', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          <ShieldCheck size={11} color="#0f6e56" />
+                          Kassen-verifiziert
                         </span>
                       ) : (
                         <span style={{ fontSize: 10, color: '#888780' }}>

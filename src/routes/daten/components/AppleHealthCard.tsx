@@ -1,4 +1,4 @@
-import { Dices, PauseCircle } from 'lucide-react';
+import { Dices, PauseCircle, AlertTriangle } from 'lucide-react';
 import { Card, Btn, Chip, Toggle } from '../../../components/ui.js';
 import { AppleLogo } from '../../../components/BrandLogos.js';
 import type { Source } from '../../../api/types.js';
@@ -89,8 +89,12 @@ export function AppleHealthCard({
               color: '#c2410c',
               border: '1px solid rgba(239,108,0,0.25)',
               fontWeight: 500,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
             }}>
-              ⚠️ Mock · Nicht kassenfähig
+              <AlertTriangle size={12} color="#c2410c" />
+              Mock · Nicht kassenfähig
             </span>
           ) : (
             <span style={{

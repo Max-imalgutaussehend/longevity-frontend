@@ -5,6 +5,7 @@ import {
   Scale,
   Bot,
   Info,
+  ShieldCheck,
 } from 'lucide-react';
 import { Card, Skeleton, Btn } from '../../../components/ui.js';
 import type { Source, MetricResult } from '../../../api/types.js';
@@ -159,7 +160,7 @@ export function SourcesTab({
         fontSize: 12,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500, color: '#22221f' }}>
-          <span>🛡️</span>
+          <ShieldCheck size={16} color="#0f6e56" />
           <span>Krankenkassen-Relevanz (Prämienrabatt):</span>
         </div>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', fontSize: 11 }}>

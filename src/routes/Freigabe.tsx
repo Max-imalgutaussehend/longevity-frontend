@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ShieldCheck, Check, AlertTriangle, XCircle } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, SectionLabel, Chip, Skeleton } from '../components/ui.js';
 
@@ -116,7 +117,14 @@ export function Component() {
                     <span style={{ fontSize: 13, color: '#22221f', fontWeight: 500 }}>{SOURCE_LABELS[s.kind] ?? s.kind}</span>
                     {isMock && <Chip color="amber">Mock · Für Kassenrabatte ausgeschlossen</Chip>}
                     {isUnverified && <Chip color="neutral">Manuell · Nicht kassenfähig</Chip>}
-                    {isVerified && <Chip color="teal">✓ Kassen-verifiziert</Chip>}
+                    {isVerified && (
+                      <Chip color="teal">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <ShieldCheck size={12} />
+                          Kassen-verifiziert
+                        </span>
+                      </Chip>
+                    )}
                     {!s.enabled && !isMock && <Chip color="neutral">Deaktiviert</Chip>}
                   </div>
                   <span style={{ fontSize: 12, color: '#888780' }}>
@@ -251,7 +259,7 @@ export function Component() {
                 </div>
                 {sources?.some((s) => s.adapter === 'mock' && s.sampleCount > 0) && (
                   <div style={{ color: '#854f0b', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                    <span>❌</span>
+                    <XCircle size={14} color="#a32d2d" style={{ flexShrink: 0 }} />
                     <span>
                       <strong>Mock-Daten:</strong> {sources.find((s) => s.adapter === 'mock')?.sampleCount.toLocaleString('de-DE')} generierte Werte werden <u>vollständig ausgeschlossen</u>.
                     </span>
@@ -259,7 +267,7 @@ export function Component() {
                 )}
                 {sources?.some((s) => ['upload', 'manual', 'questionnaire'].includes(s.adapter) && s.sampleCount > 0) && (
                   <div style={{ color: '#55544f', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                    <span>❌</span>
+                    <XCircle size={14} color="#888780" style={{ flexShrink: 0 }} />
                     <span>
                       <strong>Manuelle Uploads / Labor:</strong> Nicht-verifizierte Werte werden ausgeschlossen.
                     </span>
@@ -267,14 +275,14 @@ export function Component() {
                 )}
                 {sources?.some((s) => ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled && s.sampleCount > 0) ? (
                   <div style={{ color: '#0f6e56', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                    <span>✅</span>
+                    <Check size={14} color="#0f6e56" style={{ flexShrink: 0 }} />
                     <span>
                       <strong>Verifizierte Cloud-Quellen:</strong> {sources.filter((s) => ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter) && s.enabled && s.sampleCount > 0).map((s) => SOURCE_LABELS[s.kind] ?? s.kind).join(', ')} (fließen in den Score ein).
                     </span>
                   </div>
                 ) : (
                   <div style={{ color: '#a32d2d', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontWeight: 500 }}>
-                    <span>⚠️</span>
+                    <AlertTriangle size={14} color="#a32d2d" style={{ flexShrink: 0 }} />
                     <span>
                       <strong>Keine verifizierte Quelle vorhanden:</strong> Erstellung wird abgelehnt, bis ein echter Tracker verbunden ist.
                     </span>

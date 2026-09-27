@@ -1,4 +1,4 @@
-import { FlaskConical, PauseCircle } from 'lucide-react';
+import { FlaskConical, PauseCircle, ShieldCheck } from 'lucide-react';
 import { Card, Btn, Chip, Toggle } from '../../../components/ui.js';
 import type { Source } from '../../../api/types.js';
 
@@ -76,9 +76,10 @@ export function FhirCard({
             fontWeight: 500,
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 3,
+            gap: 4,
           }}>
-            🛡️ FHIR-Labor zertifiziert
+            <ShieldCheck size={12} color="#0f6e56" />
+            FHIR-Labor zertifiziert
           </span>
         </div>
         <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
