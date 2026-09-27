@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { AppleLogo } from '../../components/BrandLogos.js';
 import type { Source } from '../../api/types.js';
-import type { SourceSyncStatusInfo } from './datenTypes.js';
+import { LIFESTYLE_FIELDS, type LifestyleField, type SourceSyncStatusInfo } from './datenTypes.js';
 
 export function renderMetricIcon(metric: string, size = 18): React.ReactNode {
   switch (metric) {
@@ -207,3 +207,34 @@ export function timeAgo(dateString: string): string {
   if (diffDays < 7) return `Vor ${diffDays} Tagen`;
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 }
+
+export interface LifestyleValidationResult {
+  error: string | null;
+  values: Array<{ metric: string; value: number; unit: string }>;
+}
+
+export function validateLifestyleInputs(
+  vals: Record<string, string | undefined>,
+  fields: Array<LifestyleField> = LIFESTYLE_FIELDS,
+): LifestyleValidationResult {
+  const values: Array<{ metric: string; value: number; unit: string }> = [];
+
+  for (const f of fields) {
+    const raw = vals[f.key];
+    if (raw === undefined || raw === '') continue;
+
+    const num = Number(raw.replace(',', '.'));
+    if (isNaN(num)) continue;
+    if (num < (f.min ?? 0)) {
+      return { error: `${f.label}: Wert darf nicht negativ sein.`, values: [] };
+    }
+    if (f.max !== undefined && num > f.max) {
+      return { error: `${f.label}: Wert darf maximal ${f.max} sein.`, values: [] };
+    }
+
+    values.push({ metric: f.key, value: num, unit: f.unit });
+  }
+
+  return { error: null, values };
+}
+
