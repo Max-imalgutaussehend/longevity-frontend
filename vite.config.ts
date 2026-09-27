@@ -10,6 +10,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    // Source maps required for Sentry — harmless when Sentry is disabled
+    sourcemap: true,
   },
   test: {
     passWithNoTests: true,

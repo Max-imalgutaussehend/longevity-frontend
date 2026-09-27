@@ -3,7 +3,12 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router.js';
+import { initSentry } from './lib/sentry.js';
 import './styles/tokens.css';
+
+// Initialise Sentry before anything else renders
+initSentry();
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
