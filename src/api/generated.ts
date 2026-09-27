@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a fresh CSRF token and set XSRF-TOKEN cookie */
+        get: operations["getCsrfToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/register": {
         parameters: {
             query?: never;
@@ -909,6 +926,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/verify/public-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public: get Ed25519 public key for offline token verification */
+        get: operations["getVerificationPublicKey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/verify/{id}": {
         parameters: {
             query?: never;
@@ -1091,6 +1125,28 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getCsrfToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSRF token */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        csrfToken: string;
+                    };
+                };
             };
         };
     };
@@ -2989,6 +3045,46 @@ export interface operations {
             };
             /** @description Unauthenticated */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getVerificationPublicKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ed25519 public key in SPKI-PEM and JWK format */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example Ed25519 */
+                        algorithm: string;
+                        /** @example spki-pem */
+                        format: string;
+                        publicKey: string;
+                        jwk: {
+                            /** @example OKP */
+                            kty: string;
+                            /** @example Ed25519 */
+                            crv: string;
+                            x: string;
+                        };
+                    };
+                };
+            };
+            /** @description Public key not configured */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

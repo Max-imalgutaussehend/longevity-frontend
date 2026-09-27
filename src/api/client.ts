@@ -1,18 +1,63 @@
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
+export function getCsrfTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+let csrfTokenPromise: Promise<string | null> | null = null;
+
+export async function fetchCsrfToken(): Promise<string | null> {
+  const existing = getCsrfTokenFromCookie();
+  if (existing) return existing;
+  if (typeof window === 'undefined') return null;
+
+  if (!csrfTokenPromise) {
+    csrfTokenPromise = fetch(`${BASE}/auth/csrf`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        csrfTokenPromise = null;
+        return data?.csrfToken || getCsrfTokenFromCookie();
+      })
+      .catch(() => {
+        csrfTokenPromise = null;
+        return null;
+      });
+  }
+  return csrfTokenPromise;
+}
+
 export async function apiClient<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+  const isPublicAuth = path.startsWith('/auth/login') || path.startsWith('/auth/register');
+
+  let csrfToken: string | null = null;
+  if (isMutating && !isPublicAuth) {
+    csrfToken = getCsrfTokenFromCookie();
+    if (!csrfToken) {
+      csrfToken = await fetchCsrfToken();
+    }
+  }
+
   const hasBody = options.body !== undefined && options.body !== null;
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const defaultHeaders: Record<string, string> =
     isFormData || !hasBody ? {} : { 'Content-Type': 'application/json' };
+  const csrfHeaders: Record<string, string> = csrfToken ? { 'X-CSRF-Token': csrfToken } : {};
 
   const res = await fetch(`${BASE}${path}`, {
     credentials: 'include',
     ...options,
-    headers: { ...defaultHeaders, ...(options.headers as Record<string, string> | undefined) },
+    headers: {
+      ...defaultHeaders,
+      ...csrfHeaders,
+      ...(options.headers as Record<string, string> | undefined),
+    },
   });
 
   if (res.status === 401) {
