@@ -1,26 +1,71 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Chip, SectionLabel, Skeleton } from '../components/ui.js';
 import type { ScoreResult } from '../api/types.js';
 
-interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
-interface SimResult { base: ScoreResult; simulated: ScoreResult; perMetric: { metric: string; delta: number }[]; }
+export interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
+export interface SimResult { base: ScoreResult; simulated: ScoreResult; perMetric: { metric: string; delta: number }[]; }
 
-const METRIC_LABELS: Record<string, string> = {
+export const METRIC_LABELS: Record<string, string> = {
   vo2max: 'VO₂max', resting_hr: 'Ruhepuls', sleep_duration: 'Schlafdauer',
   zone2_minutes: 'Zone-2-Minuten', hrv_rmssd: 'HRV (RMSSD)', steps: 'Schritte',
   strength_sessions: 'Krafteinheiten',
 };
-const METRIC_UNITS: Record<string, string> = {
+export const METRIC_UNITS: Record<string, string> = {
   vo2max: 'ml/kg/min', resting_hr: 'bpm', sleep_duration: 'h',
   zone2_minutes: 'min/Wo.', hrv_rmssd: 'ms', steps: '/Tag', strength_sessions: '/Woche',
 };
-const METRIC_RANGE: Record<string, [number, number, number]> = {
+export const METRIC_RANGE: Record<string, [number, number, number]> = {
   vo2max: [25, 65, 0.5], resting_hr: [40, 100, 1], sleep_duration: [4, 10, 0.1],
   zone2_minutes: [0, 300, 5], hrv_rmssd: [15, 120, 1], steps: [1000, 20000, 500],
   strength_sessions: [0, 4, 0.5],
 };
+
+export const METRIC_COHORT_MEAN: Record<string, number> = {
+  vo2max: 42,
+  resting_hr: 65,
+  sleep_duration: 7.5,
+  zone2_minutes: 90,
+  hrv_rmssd: 50,
+  steps: 7500,
+  strength_sessions: 1,
+};
+
+export function getScoreBand(scoreVal: number): string {
+  const low = Math.min(90, Math.floor(scoreVal / 10) * 10);
+  const high = low === 90 ? 100 : low + 9;
+  return `${low} – ${high}`;
+}
+
+export function extractActualMetricValues(
+  score: ScoreResult | undefined | null,
+  levers: Lever[] | undefined | null
+): Record<string, number | null> {
+  const result: Record<string, number | null> = {};
+
+  if (score?.domains) {
+    for (const d of score.domains) {
+      if (Array.isArray(d.metrics)) {
+        for (const m of d.metrics) {
+          if (m.value !== null && m.value !== undefined) {
+            result[m.metric] = m.value;
+          }
+        }
+      }
+    }
+  }
+
+  if (levers) {
+    for (const l of levers) {
+      if (result[l.metric] === undefined && l.currentValue !== null && l.currentValue !== undefined) {
+        result[l.metric] = l.currentValue;
+      }
+    }
+  }
+
+  return result;
+}
 
 export function Component() {
   const { data: levers, isLoading: leversLoading } = useQuery<Lever[]>({
@@ -32,14 +77,7 @@ export function Component() {
     queryFn: () => apiClient<ScoreResult>('/score/current'),
   });
 
-  const defaultVals = useCallback(() => {
-    const base: Record<string, number> = {};
-    for (const [m, [min]] of Object.entries(METRIC_RANGE)) {
-      const lever = levers?.find((l) => l.metric === m);
-      base[m] = lever?.currentValue ?? min;
-    }
-    return base;
-  }, [levers]);
+  const actualValues = useMemo(() => extractActualMetricValues(score, levers), [score, levers]);
 
   const [vals, setVals] = useState<Record<string, number>>({});
   const [simResult, setSimResult] = useState<SimResult | null>(null);
@@ -60,9 +98,16 @@ export function Component() {
     }, 120);
   }
 
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   function reset() {
-    const base = defaultVals();
-    setVals(base);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    simulateMut.reset();
+    setVals({});
     setSimResult(null);
   }
 
@@ -107,10 +152,12 @@ export function Component() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
             {Object.entries(METRIC_RANGE).map(([metric, [min, max, step]]) => {
-              const lever = levers?.find((l) => l.metric === metric);
-              const currentVal = lever?.currentValue ?? min;
-              const v = vals[metric] ?? currentVal;
-              const changed = v !== currentVal;
+              const actual = actualValues[metric];
+              const hasActual = actual !== null && actual !== undefined;
+              const baseVal = hasActual ? actual : (METRIC_COHORT_MEAN[metric] ?? min);
+              const v = vals[metric] ?? baseVal;
+              const changed = vals[metric] !== undefined && vals[metric] !== baseVal;
+              const markerPct = Math.max(0, Math.min(100, ((baseVal - min) / (max - min)) * 100));
 
               return (
                 <div key={metric}>
@@ -126,15 +173,24 @@ export function Component() {
                       onChange={(e) => handleSlider(metric, Number(e.target.value))}
                       aria-label={METRIC_LABELS[metric] ?? metric}
                     />
-                    <div style={{
-                      position: 'absolute', top: -3,
-                      left: `${((currentVal - min) / (max - min)) * 100}%`,
-                      width: 2, height: 10, background: 'rgba(168,168,156,0.6)',
-                      borderRadius: 1, pointerEvents: 'none', transform: 'translateX(-50%)',
-                    }} />
+                    <div
+                      data-testid={`marker-${metric}`}
+                      title={hasActual ? `Ist-Wert: ${actual}` : `Kohortenmittelwert: ${METRIC_COHORT_MEAN[metric]}`}
+                      style={{
+                        position: 'absolute', top: -3,
+                        left: `${markerPct}%`,
+                        width: hasActual ? 2 : 0,
+                        height: 10,
+                        background: hasActual ? 'rgba(168,168,156,0.8)' : undefined,
+                        borderLeft: hasActual ? undefined : '2px dashed rgba(168,168,156,0.6)',
+                        borderRadius: 1, pointerEvents: 'none', transform: 'translateX(-50%)',
+                      }}
+                    />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                    <span style={{ fontSize: 11, color: '#a3a29c' }}>Ist: {currentVal}</span>
+                    <span style={{ fontSize: 11, color: '#a3a29c' }}>
+                      {hasActual ? `Ist: ${actual}` : `Ø Kohorte: ${METRIC_COHORT_MEAN[metric]} (kein Ist-Wert)`}
+                    </span>
                     <span style={{ fontSize: 11, color: '#a3a29c' }}>{max}</span>
                   </div>
                 </div>
@@ -159,19 +215,19 @@ export function Component() {
                 </div>
               )}
             </div>
-            {(displayScore || displayBioAge) && (
+            {(displayScore !== undefined || displayBioAge !== undefined) && (
               <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {displayBioAge && (
+                {displayBioAge !== undefined && displayBioAge !== null && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 12, color: '#888780' }}>Vitalitätsalter</span>
                     <span style={{ fontSize: 13, fontWeight: 500 }}>{Math.round(displayBioAge)} Jahre</span>
                   </div>
                 )}
-                {displayScore && (
+                {displayScore !== undefined && displayScore !== null && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 12, color: '#888780' }}>Score-Band</span>
                     <span style={{ fontSize: 13, fontWeight: 500 }}>
-                      {Math.floor(displayScore / 10) * 10} – {Math.floor(displayScore / 10) * 10 + 9}
+                      {getScoreBand(displayScore)}
                     </span>
                   </div>
                 )}
