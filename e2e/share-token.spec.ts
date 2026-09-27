@@ -1,5 +1,5 @@
 import { test, expect, Browser } from '@playwright/test';
-import { uniqueEmail, loginAs, registerAndLogin } from './helpers.js';
+import { uniqueEmail, loginAs, registerAndLogin, grantHealthDataConsent, dismissTutorialIfOpen } from './helpers.js';
 
 // Issue #19: create share token and verify in a second browser context (no session)
 test.describe('share token flow', () => {
@@ -10,10 +10,16 @@ test.describe('share token flow', () => {
     const authCtx = await browser.newContext();
     const authPage = await authCtx.newPage();
     await registerAndLogin(authPage, email, PASSWORD);
+    await grantHealthDataConsent(authPage);
 
     await authPage.goto('/freigabe');
+    await dismissTutorialIfOpen(authPage);
     await authPage.getByTestId('create-token-btn').click();
-    // modal opens — confirm with default 90 days
+    // modal opens — the "official insurer proof" checkbox defaults to
+    // checked and is rejected server-side without a verified cloud source;
+    // uncheck it to create a standard (non-insurer-grade) proof with the
+    // default 90-day validity.
+    await authPage.getByTestId('verified-only-checkbox').uncheck();
     await authPage.getByTestId('confirm-create-token').click();
 
     // wait for the token card to appear
@@ -35,6 +41,7 @@ test.describe('share token flow', () => {
     await anonCtx.close();
 
     // ── revoke and verify it shows invalid ───────────────────────────
+    await dismissTutorialIfOpen(authPage);
     await authPage.getByTestId('revoke-token-btn').first().click();
     // wait for revoke to reflect (chip appears)
     await expect(authPage.getByText('Widerrufen')).toBeVisible({ timeout: 5000 });
