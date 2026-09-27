@@ -62,11 +62,11 @@ export function MetricsTab({
         </Card>
 
         <Card style={{ padding: '20px 24px' }}>
-          <div style={{ fontSize: 12, color: '#a3a29c', marginBottom: 4 }}>Verbundene Datenquellen</div>
-          <div style={{ fontSize: 32, fontWeight: 500, color: '#22221f', letterSpacing: '-0.02em' }}>
-            {sources.filter((s) => s.enabled && s.adapter !== 'mock').length}
+          <div style={{ fontSize: 12, color: '#a3a29c', marginBottom: 4 }}>Kassen-verifizierte Quellen</div>
+          <div style={{ fontSize: 32, fontWeight: 500, color: '#0f6e56', letterSpacing: '-0.02em' }}>
+            {sources.filter((s) => s.enabled && ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'].includes(s.adapter)).length}
           </div>
-          <div style={{ fontSize: 11, color: '#55544f', marginTop: 4 }}>Wearables & Schnittstellen</div>
+          <div style={{ fontSize: 11, color: '#55544f', marginTop: 4 }}>GKV / PKV zugelassen</div>
         </Card>
 
         {summaryData?.dateRange && (
@@ -175,12 +175,23 @@ export function MetricsTab({
                         <div style={{ fontSize: 11, color: '#a3a29c' }}>{m.domainLabel}</div>
                       </div>
                     </div>
-                    <Chip color="teal">
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        {renderSourceIcon(m.sourceKind, 13)}
-                        <span>{badge.label}</span>
-                      </span>
-                    </Chip>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      <Chip color="teal">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                          {renderSourceIcon(m.sourceKind, 13)}
+                          <span>{badge.label}</span>
+                        </span>
+                      </Chip>
+                      {['oura', 'withings', 'strava', 'google_fit', 'google_health', 'fhir'].includes(m.sourceKind) ? (
+                        <span style={{ fontSize: 10, color: '#0f6e56', fontWeight: 500, letterSpacing: '0.01em' }}>
+                          🛡️ Kassen-verifiziert
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 10, color: '#888780' }}>
+                          Nicht kassenfähig
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, margin: '14px 0 6px' }}>

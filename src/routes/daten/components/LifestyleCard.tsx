@@ -30,9 +30,22 @@ export function LifestyleCard({
 }: LifestyleCardProps) {
   return (
     <Card>
-      <SectionLabel>Lebensstil & Aktivität</SectionLabel>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+        <SectionLabel>Lebensstil &amp; Aktivität</SectionLabel>
+        <span style={{
+          fontSize: 11,
+          padding: '2px 8px',
+          borderRadius: 999,
+          background: 'rgba(0,0,0,0.05)',
+          color: '#55544f',
+          border: '1px solid rgba(0,0,0,0.1)',
+          fontWeight: 500,
+        }}>
+          Selbstauskunft · Nicht kassenfähig
+        </span>
+      </div>
       <p style={{ fontSize: 13, color: '#22221f', marginBottom: 20 }}>
-        Alle Angaben sind freiwillig und fließen in deinen Score ein.
+        Alle Angaben sind freiwillig und fließen in deinen Standard-Score ein (für Kassenrabatte ausgeschlossen).
       </p>
       <div className="responsive-grid-2">
         {LIFESTYLE_FIELDS.map((f) => {

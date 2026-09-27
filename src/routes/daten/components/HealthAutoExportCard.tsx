@@ -66,8 +66,21 @@ export function HealthAutoExportCard({
           </div>
         </div>
 
-        <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>
-          Health Auto Export & Webhook (iOS & Android)
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+          <span style={{ fontSize: 16, fontWeight: 500, color: '#22221f' }}>
+            Health Auto Export &amp; Webhook
+          </span>
+          <span style={{
+            fontSize: 11,
+            padding: '2px 8px',
+            borderRadius: 999,
+            background: 'rgba(0,0,0,0.05)',
+            color: '#55544f',
+            border: '1px solid rgba(0,0,0,0.1)',
+            fontWeight: 500,
+          }}>
+            App-Export · Nicht kassenfähig
+          </span>
         </div>
         <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
           Hintergrund-Synchronisation über iOS- (Health Auto Export) oder Android-Apps (z. B. Health Sync für Health Connect)

@@ -78,7 +78,34 @@ export function AppleHealthCard({
           </div>
         </div>
 
-        <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Apple Health</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+          <span style={{ fontSize: 16, fontWeight: 500, color: '#22221f' }}>Apple Health</span>
+          {isMock && hasSource ? (
+            <span style={{
+              fontSize: 11,
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: 'rgba(239,108,0,0.10)',
+              color: '#c2410c',
+              border: '1px solid rgba(239,108,0,0.25)',
+              fontWeight: 500,
+            }}>
+              ⚠️ Mock · Nicht kassenfähig
+            </span>
+          ) : (
+            <span style={{
+              fontSize: 11,
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: 'rgba(0,0,0,0.05)',
+              color: '#55544f',
+              border: '1px solid rgba(0,0,0,0.1)',
+              fontWeight: 500,
+            }}>
+              Manuell · Nicht kassenfähig
+            </span>
+          )}
+        </div>
         <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
           {isMock && hasSource
             ? 'Simulierte 90-Tage-Testdaten für diesen Account. Du kannst sie deaktivieren, entfernen, neu generieren oder einen echten Export hochladen.'

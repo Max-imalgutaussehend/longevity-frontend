@@ -64,7 +64,23 @@ export function FhirCard({
           </div>
         </div>
 
-        <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 8 }}>Manuell & Labor</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+          <span style={{ fontSize: 16, fontWeight: 500, color: '#22221f' }}>Manuell &amp; Labor (FHIR)</span>
+          <span style={{
+            fontSize: 11,
+            padding: '2px 8px',
+            borderRadius: 999,
+            background: 'rgba(29,158,117,0.10)',
+            color: '#0f6e56',
+            border: '1px solid rgba(29,158,117,0.22)',
+            fontWeight: 500,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 3,
+          }}>
+            🛡️ FHIR-Labor zertifiziert
+          </span>
+        </div>
         <div style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5, marginBottom: 16 }}>
           Laborwerte wie ApoB, HbA1c oder manuelle Blutdruckerfassungen.
         </div>

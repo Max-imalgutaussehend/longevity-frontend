@@ -145,6 +145,35 @@ export function SourcesTab({
         </div>
       )}
 
+      {/* Krankenkassen-Relevanz Legend */}
+      <div style={{
+        padding: '12px 18px',
+        borderRadius: 14,
+        background: 'rgba(255,255,255,0.65)',
+        border: '1px solid rgba(0,0,0,0.06)',
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 12,
+        fontSize: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500, color: '#22221f' }}>
+          <span>🛡️</span>
+          <span>Krankenkassen-Relevanz (Prämienrabatt):</span>
+        </div>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', fontSize: 11 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#0f6e56' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 99, background: '#1d9e75' }} />
+            <strong>Zugelassen:</strong> Cloud-OAuth (Withings, Oura, Strava, Google Fit) &amp; FHIR-Labor
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#888780' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 99, background: '#a8a89c' }} />
+            <strong>Ausgeschlossen:</strong> Mock-Generatoren, manuelle Uploads &amp; Fragebögen
+          </span>
+        </div>
+      </div>
+
       {/* Sources Grid */}
       {isLoadingSources ? (
         <div className="responsive-grid-2">
