@@ -134,9 +134,9 @@ export function Component() {
     LIFESTYLE_FIELDS.map((f) => [f.key, lifestyleMetrics.find((m) => m.metric === f.key)]),
   );
 
-  const labsMut = useMutation({
+  const lifestyleMut = useMutation({
     mutationFn: (values: Array<{ metric: string; value: number; unit: string; measuredAt?: string }>) =>
-      apiClient('/labs', { method: 'POST', body: JSON.stringify({ values }) }),
+      apiClient('/questionnaire', { method: 'POST', body: JSON.stringify({ values }) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources'] });
       queryClient.invalidateQueries({ queryKey: ['score'] });
@@ -167,7 +167,7 @@ export function Component() {
     }
 
     if (values.length === 0) return;
-    labsMut.mutate(values);
+    lifestyleMut.mutate(values);
   }
 
   const uploadMutation = useMutation({
@@ -572,7 +572,7 @@ export function Component() {
           lifestyleMeta={lifestyleMeta}
           lifestyleVals={lifestyleVals}
           lifestyleError={lifestyleError}
-          isLifestyleSaving={labsMut.isPending}
+          isLifestyleSaving={lifestyleMut.isPending}
           onLifestyleChange={(key, val) => setLifestyleVals((prev) => ({ ...prev, [key]: val }))}
           onSaveLifestyle={() => withConsent(() => submitLifestyle(), 'Lebensstil-Angaben')}
         />
