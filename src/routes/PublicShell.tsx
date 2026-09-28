@@ -499,8 +499,8 @@ export function Component() {
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => scrollTo('kassen')} style={footerLinkStyle}>
-                    Erstkontakt-Formular
+                  <button onClick={() => scrollTo('kontakt')} style={footerLinkStyle}>
+                    Direktkontakt & Team
                   </button>
                 </li>
                 <li>
