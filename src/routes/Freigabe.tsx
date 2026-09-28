@@ -256,13 +256,13 @@ export function Component() {
           </p>
 
           <FieldLabel>Nachweis-Art</FieldLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
             {/* Standard Mode Card */}
             <div
               onClick={() => { setVerifiedOnly(false); setCreateError(null); }}
               style={{
-                padding: '14px 16px',
-                borderRadius: 12,
+                padding: '10px 14px',
+                borderRadius: 10,
                 cursor: 'pointer',
                 background: !verifiedOnly ? 'rgba(29,158,117,0.08)' : 'rgba(0,0,0,0.02)',
                 border: `1.5px solid ${!verifiedOnly ? 'rgba(29,158,117,0.35)' : 'rgba(0,0,0,0.08)'}`,
@@ -275,7 +275,7 @@ export function Component() {
                   type="checkbox"
                   checked={!verifiedOnly}
                   onChange={(e) => { setVerifiedOnly(!e.target.checked); setCreateError(null); }}
-                  style={{ marginTop: 3, accentColor: '#1d9e75' }}
+                  style={{ marginTop: 2, accentColor: '#1d9e75' }}
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -284,8 +284,8 @@ export function Component() {
                     </span>
                     <Chip color="neutral">Sofort ausstellbar</Chip>
                   </div>
-                  <div style={{ fontSize: 12, color: '#55544f', marginTop: 4, lineHeight: 1.5 }}>
-                    Nutzt alle vorliegenden Messdaten (inkl. manueller Eingaben, Mock- und Labordaten). Sofort ausstellbar für Arbeitgeber, Fitness-Anbieter (z. B. Urban Sports Club) oder den persönlichen Nachweis. Nicht kassenfähig.
+                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 3, lineHeight: 1.4 }}>
+                    Nutzt alle Messdaten (inkl. Mock- und Labordaten). Sofort ausstellbar für Arbeitgeber oder Fitnessanbieter. Nicht kassenfähig.
                   </div>
                 </div>
               </label>
@@ -295,8 +295,8 @@ export function Component() {
             <div
               onClick={() => { setVerifiedOnly(true); setCreateError(null); }}
               style={{
-                padding: '14px 16px',
-                borderRadius: 12,
+                padding: '10px 14px',
+                borderRadius: 10,
                 cursor: 'pointer',
                 background: verifiedOnly ? 'rgba(29,158,117,0.08)' : 'rgba(0,0,0,0.02)',
                 border: `1.5px solid ${verifiedOnly ? 'rgba(29,158,117,0.35)' : 'rgba(0,0,0,0.08)'}`,
@@ -313,7 +313,7 @@ export function Component() {
                     setCreateError(null);
                   }}
                   data-testid="verified-only-checkbox"
-                  style={{ marginTop: 3, accentColor: '#1d9e75' }}
+                  style={{ marginTop: 2, accentColor: '#1d9e75' }}
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
@@ -322,53 +322,53 @@ export function Component() {
                     </span>
                     <Chip color="teal">Kassen-Rabatt</Chip>
                   </div>
-                  <div style={{ fontSize: 12, color: '#55544f', marginTop: 4, lineHeight: 1.5 }}>
-                    Verwendet ausschließlich verifizierte Cloud-Quellen (Withings, Oura, Strava, Google Fit) und medizinische Labore. Mock- und manuelle Daten werden automatisch ausgeschlossen.
+                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 3, lineHeight: 1.4 }}>
+                    Verwendet ausschließlich verifizierte Cloud-Quellen (Withings, Oura, Strava, Google Fit) und Labore. Mock- und manuelle Daten werden 100% ausgeschlossen.
                   </div>
                 </div>
               </label>
 
               {verifiedOnly && (
                 <div style={{
-                  marginTop: 12,
-                  padding: '10px 12px',
+                  marginTop: 10,
+                  padding: '8px 10px',
                   background: 'rgba(255,255,255,0.65)',
                   borderRadius: 8,
-                  fontSize: 12,
+                  fontSize: 11,
                   border: '1px solid rgba(0,0,0,0.06)',
-                  lineHeight: 1.5,
+                  lineHeight: 1.4,
                 }}>
-                  <div style={{ fontWeight: 600, color: '#22221f', marginBottom: 4 }}>
+                  <div style={{ fontWeight: 600, color: '#22221f', marginBottom: 2 }}>
                     Quellen-Prüfung für Kassenrabatt:
                   </div>
                   {sources?.some((s) => s.adapter === 'mock' && s.sampleCount > 0) && (
-                    <div style={{ color: '#854f0b', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                      <XCircle size={14} color="#a32d2d" style={{ flexShrink: 0 }} />
+                    <div style={{ color: '#854f0b', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <XCircle size={13} color="#a32d2d" style={{ flexShrink: 0 }} />
                       <span>
-                        <strong>Mock-Daten:</strong> {sources.find((s) => s.adapter === 'mock')?.sampleCount.toLocaleString('de-DE')} generierte Werte werden <u>vollständig ausgeschlossen</u>.
+                        <strong>Mock-Daten:</strong> {sources.find((s) => s.adapter === 'mock')?.sampleCount.toLocaleString('de-DE')} Werte <u>ausgeschlossen</u>.
                       </span>
                     </div>
                   )}
                   {sources?.some((s) => ['upload', 'manual', 'questionnaire'].includes(s.adapter) && s.sampleCount > 0) && (
-                    <div style={{ color: '#55544f', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                      <XCircle size={14} color="#888780" style={{ flexShrink: 0 }} />
+                    <div style={{ color: '#55544f', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <XCircle size={13} color="#888780" style={{ flexShrink: 0 }} />
                       <span>
-                        <strong>Manuelle Uploads / Labor:</strong> Nicht-verifizierte Werte werden ausgeschlossen.
+                        <strong>Manuelle Uploads / Labor:</strong> Nicht-verifizierte Werte ausgeschlossen.
                       </span>
                     </div>
                   )}
                   {hasVerifiedSources ? (
-                    <div style={{ color: '#0f6e56', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                      <Check size={14} color="#0f6e56" style={{ flexShrink: 0 }} />
+                    <div style={{ color: '#0f6e56', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                      <Check size={13} color="#0f6e56" style={{ flexShrink: 0 }} />
                       <span>
-                        <strong>Verifizierte Cloud-Quellen:</strong> {sources?.filter((s) => VERIFIED_ADAPTERS.includes(s.adapter) && s.enabled && s.sampleCount > 0).map((s) => getSourceLabel(s.kind)).join(', ')} (fließen in den Score ein).
+                        <strong>Verifizierte Cloud-Quellen:</strong> {sources?.filter((s) => VERIFIED_ADAPTERS.includes(s.adapter) && s.enabled && s.sampleCount > 0).map((s) => getSourceLabel(s.kind)).join(', ')}.
                       </span>
                     </div>
                   ) : (
-                    <div style={{ color: '#a32d2d', display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontWeight: 500 }}>
-                      <AlertTriangle size={14} color="#a32d2d" style={{ flexShrink: 0 }} />
+                    <div style={{ color: '#a32d2d', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontWeight: 500 }}>
+                      <AlertTriangle size={13} color="#a32d2d" style={{ flexShrink: 0 }} />
                       <span>
-                        <strong>Keine verifizierte Quelle vorhanden:</strong> Erstellung als Kassen-Nachweis ist deaktiviert. Bitte wähle den allgemeinen Score-Nachweis oder binde zuerst einen echten Tracker unter Datenquellen an.
+                        <strong>Keine verifizierte Quelle vorhanden:</strong> Erstellung als Kassen-Nachweis deaktiviert.
                       </span>
                     </div>
                   )}
@@ -380,25 +380,25 @@ export function Component() {
           {/* Standard-Score Preview */}
           {!verifiedOnly && score && (
             <div style={{
-              marginBottom: 20,
-              padding: '14px 16px',
-              borderRadius: 12,
+              marginBottom: 14,
+              padding: '10px 14px',
+              borderRadius: 10,
               background: 'rgba(255,255,255,0.70)',
               border: '1px solid rgba(0,0,0,0.08)',
             }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#22221f', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Info size={14} color="#55544f" />
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#22221f', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Info size={13} color="#55544f" />
                 Score-Vorschau für diesen Standard-Nachweis
               </div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <div style={{ padding: '10px 16px', borderRadius: 10, background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.07)' }}>
-                  <div style={{ fontSize: 10, color: '#a3a29c', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gesamt-Score</div>
-                  <div style={{ fontSize: 22, fontWeight: 500, color: '#22221f', letterSpacing: '-0.02em' }}>{score.score.toFixed(1)}</div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.07)' }}>
+                  <div style={{ fontSize: 9, color: '#a3a29c', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gesamt-Score</div>
+                  <div style={{ fontSize: 18, fontWeight: 500, color: '#22221f' }}>{score.score.toFixed(1)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#0f6e56' }}>Band {score.band.low}–{score.band.high}</div>
-                  <div style={{ fontSize: 12, color: '#55544f', marginTop: 2 }}>
-                    Alle aktiven Datenquellen (inkl. manueller Eingaben) fließen vollständig in diesen Nachweis ein.
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#0f6e56' }}>Band {score.band.low}–{score.band.high}</div>
+                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 1 }}>
+                    Alle aktiven Datenquellen fließen vollständig ein.
                   </div>
                 </div>
               </div>
@@ -408,55 +408,45 @@ export function Component() {
           {/* Score preview: Gesamt vs. Kassen */}
           {verifiedOnly && score && kassenScore && (
             <div style={{
-              marginBottom: 20,
-              padding: '14px 16px',
-              borderRadius: 12,
+              marginBottom: 14,
+              padding: '10px 14px',
+              borderRadius: 10,
               background: 'rgba(255,255,255,0.70)',
               border: '1px solid rgba(0,0,0,0.08)',
             }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#22221f', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Info size={14} color="#55544f" />
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#22221f', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Info size={13} color="#55544f" />
                 Score-Vorschau für diesen Nachweis
               </div>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 {/* Gesamt-Score */}
-                <div style={{ flex: 1, minWidth: 120, padding: '10px 14px', borderRadius: 10, background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.07)' }}>
-                  <div style={{ fontSize: 10, color: '#a3a29c', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dein Gesamt-Score</div>
-                  <div style={{ fontSize: 22, fontWeight: 500, color: '#22221f', letterSpacing: '-0.02em' }}>{score.score.toFixed(1)}</div>
-                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 2 }}>Band {score.band.low}–{score.band.high}</div>
+                <div style={{ flex: 1, minWidth: 100, padding: '6px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.07)' }}>
+                  <div style={{ fontSize: 9, color: '#a3a29c', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Gesamt-Score</div>
+                  <div style={{ fontSize: 18, fontWeight: 500, color: '#22221f' }}>{score.score.toFixed(1)}</div>
+                  <div style={{ fontSize: 10, color: '#55544f', marginTop: 1 }}>Band {score.band.low}–{score.band.high}</div>
                 </div>
                 {/* Arrow */}
-                <div style={{ display: 'flex', alignItems: 'center', color: '#a3a29c', fontSize: 18, flexShrink: 0 }}>→</div>
+                <div style={{ display: 'flex', alignItems: 'center', color: '#a3a29c', fontSize: 16, flexShrink: 0 }}>→</div>
                 {/* Kassen-Score */}
                 <div style={{
-                  flex: 1, minWidth: 120, padding: '10px 14px', borderRadius: 10,
+                  flex: 1, minWidth: 100, padding: '6px 10px', borderRadius: 8,
                   background: kassenScore.bandLow < score.band.low ? 'rgba(238,108,43,0.07)' : 'rgba(29,158,117,0.07)',
                   border: kassenScore.bandLow < score.band.low ? '1px solid rgba(238,108,43,0.25)' : '1px solid rgba(29,158,117,0.25)',
                 }}>
-                  <div style={{ fontSize: 10, color: '#a3a29c', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <ShieldCheck size={11} color="#0f6e56" />
+                  <div style={{ fontSize: 9, color: '#a3a29c', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <ShieldCheck size={10} color="#0f6e56" />
                     Kassen-Nachweis
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: '-0.02em', color: kassenScore.bandLow < score.band.low ? '#c2410c' : '#0f6e56' }}>
+                  <div style={{ fontSize: 18, fontWeight: 500, color: kassenScore.bandLow < score.band.low ? '#c2410c' : '#0f6e56' }}>
                     {kassenScore.score.toFixed(1)}
                   </div>
-                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 2 }}>Band {kassenScore.bandLow}–{kassenScore.bandHigh}</div>
+                  <div style={{ fontSize: 10, color: '#55544f', marginTop: 1 }}>Band {kassenScore.bandLow}–{kassenScore.bandHigh}</div>
                 </div>
               </div>
-              {excludedSources.length > 0 && (
-                <div style={{ marginTop: 10, fontSize: 11, color: '#55544f', lineHeight: 1.5 }}>
-                  <span style={{ color: '#888780' }}>ℹ️ </span>
-                  <strong>{excludedSources.length} {excludedSources.length === 1 ? 'Quelle ist' : 'Quellen sind'} nicht kassenfähig</strong>{' '}
-                  (z. B. {excludedSources.map((s) => getSourceLabel(s.kind)).join(', ')}) und fließen nicht in das offizielle Zertifikat ein.
-                  {kassenScore.bandLow < score.band.low && (
-                    <span> Durch die geringere Datenabdeckung zieht der Score in Richtung Kohortenmittelwert (50 Pkt.).</span>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
-          <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 14 }}>
             <FieldLabel>Gültigkeit</FieldLabel>
 
             <div style={{ display: 'flex', gap: 8 }}>

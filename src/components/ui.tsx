@@ -169,11 +169,23 @@ export function Modal({ onClose, children, zIndex = 10000 }: { onClose: () => vo
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px 16px',
+        overflowY: 'auto',
       }}
       onClick={onClose}
     >
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 440, margin: 24 }}>
-        <Card style={{ padding: '32px 36px' }}>{children}</Card>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 450,
+          margin: 'auto',
+          maxHeight: 'calc(100vh - 40px)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Card style={{ padding: '28px 32px', overflowY: 'auto', maxHeight: '100%' }}>{children}</Card>
       </div>
     </div>
   );
