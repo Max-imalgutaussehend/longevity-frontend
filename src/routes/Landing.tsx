@@ -7,42 +7,72 @@ import { Card, Btn } from '../components/ui.js';
 import { BrandLogosRibbon } from '../components/BrandLogos.js';
 import { apiClient } from '../api/client.js';
 
-interface TeamTopic {
+interface ContactReason {
   id: string;
   label: string;
+  shortLabel: string;
   badge: string;
   subject: string;
-  defaultMsg: string;
+  companyLabel: string;
+  companyPlaceholder: string;
+  companyRequired: boolean;
+  emailLabel: string;
+  messagePlaceholder: string;
+  btnText: string;
 }
 
-const TEAM_TOPICS: TeamTopic[] = [
+const CONTACT_REASONS: ContactReason[] = [
   {
-    id: 'general',
-    label: '💬 Hallo ans Team',
-    badge: 'Kennenlernen',
-    subject: 'Hallo an das LONGEVITY-Team',
-    defaultMsg: 'Hallo Team LONGEVITY,\n\nich verfolge euer Projekt mit großem Interesse und wollte euch kurz schreiben:\n\n',
+    id: 'insurer',
+    label: '🏥 Krankenkasse / Kooperation',
+    shortLabel: 'Krankenkasse',
+    badge: 'B2B & Kassen',
+    subject: 'Kooperationsanfrage Krankenkasse / Partner',
+    companyLabel: 'Krankenkasse / Organisation *',
+    companyPlaceholder: 'z.B. Techniker Krankenkasse, Barmer, BKK...',
+    companyRequired: true,
+    emailLabel: 'Geschäftliche E-Mail-Adresse *',
+    messagePlaceholder: 'Beschreiben Sie kurz Ihre Anforderungen oder Ihr Pilotierungs-Interesse...',
+    btnText: 'Kooperationsanfrage absenden →',
   },
   {
     id: 'feedback',
-    label: '🔬 Score-Feedback & Hebel',
-    badge: 'Algorithmus',
+    label: '💡 Allgemein & Score-Feedback',
+    shortLabel: 'Feedback & Hebel',
+    badge: 'Community',
     subject: 'Feedback zu den Score-Hebel-Berechnungen & Biomarkern',
-    defaultMsg: 'Hallo Max, Victor, Till und das gesamte LONGEVITY-Team,\n\nich habe mir eure Vitalitäts-Berechnungen und den Hebel-Simulator angeschaut. Mir ist Folgendes aufgefallen:\n\n',
+    companyLabel: 'Organisation / Firma (optional)',
+    companyPlaceholder: 'Optional: Unternehmen, Hochschule oder privat',
+    companyRequired: false,
+    emailLabel: 'Deine E-Mail-Adresse *',
+    messagePlaceholder: 'Dein Feedback, Anmerkungen zum Algorithmus oder Feature-Ideen...',
+    btnText: 'Feedback absenden →',
   },
   {
     id: 'research',
-    label: '🎓 DHBW-Forschung & Methodik',
+    label: '🎓 DHBW-Forschung & Wissenschaft',
+    shortLabel: 'Forschung',
     badge: 'Wissenschaft',
     subject: 'Frage zum DHBW-Forschungsprojekt & wissenschaftlichen Kurven',
-    defaultMsg: 'Liebes LONGEVITY-Team,\n\nich interessiere mich für die wissenschaftliche Methodik eures DHBW-Projekts. Könnt ihr mir mehr erzählen zu:\n\n',
+    companyLabel: 'Hochschule / Institut (optional)',
+    companyPlaceholder: 'z.B. DHBW Mannheim, Universität...',
+    companyRequired: false,
+    emailLabel: 'Deine E-Mail-Adresse *',
+    messagePlaceholder: 'Deine Fragen zur Methodik oder wissenschaftlichen Zusammenarbeit...',
+    btnText: 'Forschungsanfrage absenden →',
   },
   {
-    id: 'partnership',
-    label: '🤝 Kooperation & Pilotierung',
-    badge: 'Zusammenarbeit',
-    subject: 'Anfrage für Kooperation / Pilotierung mit dem LONGEVITY Team',
-    defaultMsg: 'Hallo LONGEVITY-Team,\n\nwir möchten mit euch über eine mögliche Zusammenarbeit oder ein Pilotprojekt sprechen:\n\n',
+    id: 'general',
+    label: '💬 Sonstiges / Hallo',
+    shortLabel: 'Allgemein',
+    badge: 'Kennenlernen',
+    subject: 'Hallo an das LONGEVITY-Team',
+    companyLabel: 'Organisation (optional)',
+    companyPlaceholder: 'Optional',
+    companyRequired: false,
+    emailLabel: 'Deine E-Mail-Adresse *',
+    messagePlaceholder: 'Deine Nachricht an das Team...',
+    btnText: 'Nachricht absenden →',
   },
 ];
 
@@ -148,7 +178,10 @@ export function Component() {
     };
   }, [restingHr, sleepHours, vo2max, zone2Min]);
 
-  // Contact form state (#10)
+  // Contact form state with reason selection
+  const [selectedReasonId, setSelectedReasonId] = useState<string>('insurer');
+  const selectedReason = CONTACT_REASONS.find((r) => r.id === selectedReasonId) ?? CONTACT_REASONS[0];
+
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
@@ -159,14 +192,76 @@ export function Component() {
     message: '',
   });
 
+  const [formCopiedEmail, setFormCopiedEmail] = useState(false);
+  const [teamCopiedEmail, setTeamCopiedEmail] = useState(false);
+
+  const handleCopyEmail = (section: 'form' | 'team') => {
+    const text = 'kontakt@longevity.app';
+    const setCopied = () => {
+      if (section === 'form') {
+        setFormCopiedEmail(true);
+        setTimeout(() => setFormCopiedEmail(false), 2500);
+      } else {
+        setTeamCopiedEmail(true);
+        setTimeout(() => setTeamCopiedEmail(false), 2500);
+      }
+    };
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(setCopied).catch(() => {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          setCopied();
+        } catch {
+          setCopied();
+        }
+      });
+    } else {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {
+        // ignore
+      }
+      setCopied();
+    }
+  };
+
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setContactLoading(true);
     setContactError(null);
+
+    const effectiveCompany = contactForm.company.trim() || (
+      selectedReason.id === 'feedback' ? 'Community / Feedback' :
+      selectedReason.id === 'research' ? 'Forschung & DHBW' :
+      'Privatperson / Allgemein'
+    );
+
+    const enrichedMessage = `[Anliegen: ${selectedReason.label}]\n\n${contactForm.message.trim()}`;
+
     try {
       await apiClient('/contact/insurer', {
         method: 'POST',
-        body: JSON.stringify(contactForm),
+        body: JSON.stringify({
+          company: effectiveCompany,
+          name: contactForm.name,
+          email: contactForm.email,
+          message: enrichedMessage,
+        }),
       });
       setContactSubmitted(true);
     } catch (err) {
@@ -176,46 +271,9 @@ export function Component() {
     }
   };
 
-  const [selectedTopicId, setSelectedTopicId] = useState<string>('general');
-  const [copiedEmail, setCopiedEmail] = useState(false);
-  const [copiedDraft, setCopiedDraft] = useState(false);
-  const [senderName, setSenderName] = useState('');
-  const [senderEmail, setSenderEmail] = useState('');
-  const [customSubject, setCustomSubject] = useState('');
-  const [customMessage, setCustomMessage] = useState(TEAM_TOPICS[0].defaultMsg);
-
-  const activeTopic = TEAM_TOPICS.find((t) => t.id === selectedTopicId) ?? TEAM_TOPICS[0];
-
-  const handleSelectTopic = (topic: TeamTopic) => {
-    setSelectedTopicId(topic.id);
-    const isPreviousDefault = TEAM_TOPICS.some((t) => t.defaultMsg === customMessage);
-    if (!customMessage.trim() || isPreviousDefault) {
-      setCustomMessage(topic.defaultMsg);
-    }
-  };
-
-  const handleCopyEmail = () => {
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText('kontakt@longevity.app').then(() => {
-        setCopiedEmail(true);
-        setTimeout(() => setCopiedEmail(false), 2500);
-      });
-    }
-  };
-
-  const effectiveSubject = customSubject.trim() || activeTopic.subject;
-  const effectiveBody = `${customMessage.trim()}${senderName.trim() ? `\n\nBeste Grüße,\n${senderName.trim()}` : ''}${senderEmail.trim() ? `\n(Rückantwort an: ${senderEmail.trim()})` : ''}`;
-
-  const mailtoUrl = `mailto:kontakt@longevity.app?subject=${encodeURIComponent(effectiveSubject)}&body=${encodeURIComponent(effectiveBody)}`;
-
-  const handleCopyDraft = () => {
-    const formattedDraft = `Empfänger: kontakt@longevity.app\nBetreff: ${effectiveSubject}\n\n${effectiveBody}`;
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(formattedDraft).then(() => {
-        setCopiedDraft(true);
-        setTimeout(() => setCopiedDraft(false), 2500);
-      });
-    }
+  const handleSelectTopicAndScrollToForm = (reasonId: string) => {
+    setSelectedReasonId(reasonId);
+    scrollTo('kassen');
   };
 
   const scrollTo = (id: string) => {
@@ -1035,28 +1093,51 @@ export function Component() {
                   <div style={{ textAlign: 'center', padding: '24px 8px' }}>
                     <Check size={40} color="#0f6e56" style={{ margin: '0 auto 12px', display: 'block' }} />
                     <h3 style={{ fontSize: 18, fontWeight: 500, color: '#0f6e56', margin: '0 0 8px' }}>
-                      Vielen Dank für Ihre Anfrage!
+                      Vielen Dank für Ihre Nachricht!
                     </h3>
                     <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.5 }}>
-                      Wir haben Ihre Nachricht erhalten. Ein Mitglied unseres Projektteams wird sich
+                      Wir haben Ihre Anfrage erhalten. Ein Mitglied unseres Projektteams wird sich
                       innerhalb von 24 Stunden persönlich bei Ihnen melden.
                     </p>
                   </div>
                 ) : (
                   <form onSubmit={handleContactSubmit}>
-                    <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 18 }}>
-                      Erstkontakt für Krankenkassen & Partner
+                    <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f', marginBottom: 12 }}>
+                      Kontaktformular & Direktanfrage
+                    </div>
+
+                    {/* Reason Selector Chips (#10) */}
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 6 }}>
+                        Anliegen auswählen:
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {CONTACT_REASONS.map((reason) => {
+                          const isActive = selectedReasonId === reason.id;
+                          return (
+                            <button
+                              key={reason.id}
+                              type="button"
+                              onClick={() => setSelectedReasonId(reason.id)}
+                              className={`team-topic-chip ${isActive ? 'is-active' : ''}`}
+                              style={{ fontSize: 11, padding: '5px 11px' }}
+                            >
+                              <span>{reason.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                       <div>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                          Krankenkasse / Organisation *
+                          {selectedReason.companyLabel}
                         </label>
                         <input
-                          required
+                          required={selectedReason.companyRequired}
                           type="text"
-                          placeholder="z.B. Techniker Krankenkasse, BKK..."
+                          placeholder={selectedReason.companyPlaceholder}
                           value={contactForm.company}
                           onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })}
                           style={inputStyle}
@@ -1070,7 +1151,7 @@ export function Component() {
                         <input
                           required
                           type="text"
-                          placeholder="Dr. Vorname Nachname"
+                          placeholder="Vorname Nachname"
                           value={contactForm.name}
                           onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                           style={inputStyle}
@@ -1079,12 +1160,12 @@ export function Component() {
 
                       <div>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                          Geschäftliche E-Mail-Adresse *
+                          {selectedReason.emailLabel}
                         </label>
                         <input
                           required
                           type="email"
-                          placeholder="name@organisation.de"
+                          placeholder={selectedReason.id === 'insurer' ? 'name@organisation.de' : 'deine.mail@beispiel.de'}
                           value={contactForm.email}
                           onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                           style={inputStyle}
@@ -1093,11 +1174,11 @@ export function Component() {
 
                       <div>
                         <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                          Nachricht oder Pilotierungs-Interesse
+                          Nachricht oder Anliegen
                         </label>
                         <textarea
                           rows={3}
-                          placeholder="Beschreiben Sie kurz Ihre Anforderungen..."
+                          placeholder={selectedReason.messagePlaceholder}
                           value={contactForm.message}
                           onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                           style={{ ...inputStyle, resize: 'vertical' }}
@@ -1108,9 +1189,81 @@ export function Component() {
                         <p style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{contactError}</p>
                       )}
 
-                      <Btn type="submit" full disabled={contactLoading} style={{ marginTop: 6 }}>
-                        {contactLoading ? 'Wird übermittelt…' : 'Erstkontakt anfordern →'}
+                      <Btn type="submit" full disabled={contactLoading} style={{ marginTop: 4 }}>
+                        {contactLoading ? 'Wird übermittelt…' : selectedReason.btnText}
                       </Btn>
+
+                      {/* Direct Mail Option with Copy (#10) */}
+                      <div
+                        style={{
+                          marginTop: 10,
+                          paddingTop: 12,
+                          borderTop: '1px solid rgba(0,0,0,0.06)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: 8,
+                          fontSize: 12,
+                          color: '#55544f',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Mail size={14} color="#0f6e56" />
+                          <span>Offizielle Team-Adresse:</span>
+                          <a
+                            href={`mailto:kontakt@longevity.app?subject=${encodeURIComponent(selectedReason.subject)}`}
+                            style={{ color: '#0f6e56', fontWeight: 600, textDecoration: 'none', fontFamily: 'monospace' }}
+                          >
+                            kontakt@longevity.app
+                          </a>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyEmail('form')}
+                            title="E-Mail-Adresse in die Zwischenablage kopieren"
+                            style={{
+                              background: formCopiedEmail ? '#e1f5ee' : '#ffffff',
+                              color: formCopiedEmail ? '#0f6e56' : '#22221f',
+                              border: formCopiedEmail ? '1px solid #1d9e75' : '1px solid rgba(168, 168, 156, 0.35)',
+                              padding: '5px 11px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            {formCopiedEmail ? <Check size={12} color="#0f6e56" /> : <Copy size={12} />}
+                            <span>{formCopiedEmail ? 'Kopiert!' : 'Kopieren'}</span>
+                          </button>
+                          <a
+                            href={`mailto:kontakt@longevity.app?subject=${encodeURIComponent(selectedReason.subject)}`}
+                            style={{
+                              textDecoration: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              background: 'rgba(255, 255, 255, 0.9)',
+                              color: '#22221f',
+                              border: '1px solid rgba(168, 168, 156, 0.4)',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                              padding: '5px 11px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 500,
+                              fontFamily: 'inherit',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Send size={11} style={{ marginRight: 3 }} /> Mail öffnen
+                          </a>
+                        </div>
+                      </div>
                     </div>
                   </form>
                 )}
@@ -1398,7 +1551,7 @@ export function Component() {
               </div>
             </div>
 
-            {/* Right Column: Interactive Direct Team Contact Hub */}
+            {/* Right Column: Lerne uns kennen & Offizielle Team-Adresse */}
             <Card
               className="card-interactive"
               style={{
@@ -1406,6 +1559,9 @@ export function Component() {
                 background: 'rgba(255, 255, 255, 0.88)',
                 boxShadow: '0 16px 45px rgba(15, 40, 28, 0.08), 0 1px 0 rgba(255, 255, 255, 1) inset',
                 borderRadius: 20,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 20,
               }}
             >
               {/* Header inside Card */}
@@ -1414,7 +1570,6 @@ export function Component() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: 10,
                   flexWrap: 'wrap',
                   gap: 8,
                 }}
@@ -1432,12 +1587,15 @@ export function Component() {
                       color: '#0f6e56',
                     }}
                   >
-                    <Mail size={19} />
+                    <Users size={19} />
                   </div>
                   <div>
                     <h3 style={{ fontSize: 18, fontWeight: 600, color: '#22221f', margin: 0 }}>
-                      Schreib uns als Team
+                      Lerne uns kennen
                     </h3>
+                    <div style={{ fontSize: 12, color: '#888780' }}>
+                      Das DHBW-Entwicklerteam aus Mannheim
+                    </div>
                   </div>
                 </div>
 
@@ -1460,32 +1618,12 @@ export function Component() {
                 </div>
               </div>
 
-              <p style={{ fontSize: 13, color: '#55544f', margin: '0 0 20px', lineHeight: 1.55 }}>
-                Kein Ticketsystem, keine vorgefertigten Bot-Antworten. Deine Nachricht landet direkt im gemeinsamen
-                Posteingang unserer fünf Teammitglieder. Wähle ein Thema oder schreibe uns frei:
+              <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.6 }}>
+                Wir haben LONGEVITY im Rahmen unseres Studiums an der Dualen Hochschule Baden-Württemberg (DHBW)
+                in Mannheim ins Leben gerufen. Unser Ziel: evidenzbasierte Langlebigkeits-Forschung
+                mit kompromissloser Datensouveränität und Freude an moderner Produktentwicklung zu verbinden.
+                Schreib uns direkt &ndash; jede Nachricht landet ohne Umwege in unserem Team-Postfach.
               </p>
-
-              {/* Topic Selector Pills */}
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#22221f', marginBottom: 8 }}>
-                  Thema vorauswählen:
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {TEAM_TOPICS.map((topic) => {
-                    const isActive = selectedTopicId === topic.id;
-                    return (
-                      <button
-                        key={topic.id}
-                        type="button"
-                        onClick={() => handleSelectTopic(topic)}
-                        className={`team-topic-chip ${isActive ? 'is-active' : ''}`}
-                      >
-                        <span>{topic.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
 
               {/* Prominent Team Email Box with 1-Click Copy & Direct Mail App Launch */}
               <div
@@ -1493,8 +1631,7 @@ export function Component() {
                   background: 'linear-gradient(135deg, rgba(225, 245, 238, 0.7) 0%, rgba(240, 244, 241, 0.75) 100%)',
                   border: '1px solid rgba(29, 158, 117, 0.32)',
                   borderRadius: 14,
-                  padding: '14px 16px',
-                  marginBottom: 20,
+                  padding: '16px 18px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -1509,7 +1646,7 @@ export function Component() {
                   <a
                     href="mailto:kontakt@longevity.app"
                     style={{
-                      fontSize: 16,
+                      fontSize: 17,
                       fontWeight: 600,
                       color: '#0f6e56',
                       textDecoration: 'none',
@@ -1523,168 +1660,136 @@ export function Component() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <button
                     type="button"
-                    onClick={handleCopyEmail}
+                    onClick={() => handleCopyEmail('team')}
                     title="E-Mail-Adresse in die Zwischenablage kopieren"
                     style={{
-                      background: copiedEmail ? '#0f6e56' : '#ffffff',
-                      color: copiedEmail ? '#ffffff' : '#22221f',
-                      border: copiedEmail ? '1px solid #0f6e56' : '1px solid rgba(168, 168, 156, 0.35)',
-                      padding: '7px 12px',
+                      background: teamCopiedEmail ? '#0f6e56' : '#ffffff',
+                      color: teamCopiedEmail ? '#ffffff' : '#22221f',
+                      border: teamCopiedEmail ? '1px solid #0f6e56' : '1px solid rgba(168, 168, 156, 0.35)',
+                      padding: '7px 13px',
                       borderRadius: 8,
                       fontSize: 12,
                       fontWeight: 500,
                       cursor: 'pointer',
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
                       gap: 6,
                       transition: 'all 0.15s ease',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                      fontFamily: 'inherit',
                     }}
                   >
-                    {copiedEmail ? <Check size={14} /> : <Copy size={14} />}
-                    <span>{copiedEmail ? 'Kopiert!' : 'Kopieren'}</span>
+                    {teamCopiedEmail ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{teamCopiedEmail ? 'Kopiert!' : 'Kopieren'}</span>
                   </button>
 
                   <a
-                    href={mailtoUrl}
-                    style={{ textDecoration: 'none' }}
+                    href="mailto:kontakt@longevity.app"
+                    style={{
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      background: 'linear-gradient(135deg, #1d9e75 0%, #0f6e56 100%)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(15,110,86,0.4)',
+                      boxShadow: '0 2px 10px rgba(29,158,117,0.25)',
+                      padding: '7px 14px',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
+                    }}
                   >
-                    <Btn small variant="primary" style={{ padding: '7px 14px', fontSize: 12 }}>
-                      <Send size={13} style={{ marginRight: 4 }} />
-                      Mail öffnen
-                    </Btn>
+                    <Send size={13} style={{ marginRight: 4 }} />
+                    Mail öffnen
                   </a>
                 </div>
               </div>
 
-              {/* Interactive Message Composer */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                      Dein Name / Absender
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="z.B. Alex Müller"
-                      value={senderName}
-                      onChange={(e) => setSenderName(e.target.value)}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                      Deine E-Mail (für Rückantwort)
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="deine.mail@beispiel.de"
-                      value={senderEmail}
-                      onChange={(e) => setSenderEmail(e.target.value)}
-                      style={inputStyle}
-                    />
-                  </div>
+              {/* Quick Jump Topic Chips */}
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#22221f', marginBottom: 8 }}>
+                  Worüber möchtest du sprechen?
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {CONTACT_REASONS.map((reason) => (
+                    <button
+                      key={reason.id}
+                      type="button"
+                      onClick={() => handleSelectTopicAndScrollToForm(reason.id)}
+                      className="team-topic-chip"
+                      title={`${reason.label} im Kontaktformular auswählen`}
+                    >
+                      <span>{reason.label}</span>
+                      <span style={{ fontSize: 11, opacity: 0.75 }}>↑</span>
+                    </button>
+                  ))}
                 </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                    Betreffzeile
-                  </label>
-                  <input
-                    type="text"
-                    value={customSubject || activeTopic.subject}
-                    onChange={(e) => setCustomSubject(e.target.value)}
-                    style={inputStyle}
-                  />
+                <div style={{ fontSize: 11, color: '#888780', marginTop: 7 }}>
+                  Klicke auf ein Thema, um es direkt im Kontaktformular weiter oben auszuwählen.
                 </div>
+              </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                    Deine Nachricht an das Team
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={customMessage}
-                    onChange={(e) => setCustomMessage(e.target.value)}
-                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
-                  />
-                </div>
+              {/* Action Buttons: Go to Form & GitHub */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+                <Btn
+                  full
+                  variant="primary"
+                  onClick={() => scrollTo('kassen')}
+                  style={{ padding: '11px 18px', fontSize: 13, flex: '1 1 200px' }}
+                >
+                  Zum Kontaktformular weiter oben ↑
+                </Btn>
 
-                {/* Primary Mail Action Buttons */}
-                <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
-                  <a
-                    href={mailtoUrl}
-                    style={{ textDecoration: 'none', flex: '1 1 200px' }}
-                  >
-                    <Btn full variant="primary" style={{ padding: '10px 16px', fontSize: 13 }}>
-                      <Send size={14} style={{ marginRight: 6 }} />
-                      Im Mailprogramm absenden →
-                    </Btn>
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={handleCopyDraft}
-                    title="Kopiert die gesamte E-Mail (Empfänger, Betreff, Text) in die Zwischenablage"
-                    style={{
-                      flex: '1 1 140px',
-                      background: copiedDraft ? '#e1f5ee' : 'rgba(255, 255, 255, 0.85)',
-                      color: copiedDraft ? '#0f6e56' : '#22221f',
-                      border: copiedDraft ? '1px solid #1d9e75' : '1px solid rgba(168, 168, 156, 0.35)',
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      fontSize: 13,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                      fontFamily: 'inherit',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {copiedDraft ? <Check size={15} color="#0f6e56" /> : <Copy size={15} />}
-                    <span>{copiedDraft ? 'Text kopiert! ✓' : 'Entwurf kopieren'}</span>
-                  </button>
-                </div>
-
-                {/* Response Guarantee & GitHub Link */}
-                <div
+                <a
+                  href="https://github.com/Max-imalgutaussehend/LONGEVITY"
+                  target="_blank"
+                  rel="noreferrer"
                   style={{
-                    display: 'flex',
+                    textDecoration: 'none',
+                    flex: '1 1 140px',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    fontSize: 11,
-                    color: '#888780',
-                    borderTop: '1px solid rgba(0,0,0,0.06)',
-                    paddingTop: 12,
-                    marginTop: 4,
-                    flexWrap: 'wrap',
-                    gap: 8,
+                    justifyContent: 'center',
+                    gap: 6,
+                    background: 'rgba(255, 255, 255, 0.85)',
+                    color: '#22221f',
+                    border: '1px solid rgba(168, 168, 156, 0.45)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    padding: '11px 16px',
+                    borderRadius: 999,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Check size={12} color="#1d9e75" />
-                    <span>In der Regel persönliche Rückmeldung binnen 24h</span>
-                  </div>
-                  <a
-                    href="https://github.com/Max-imalgutaussehend/LONGEVITY"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      color: '#0f6e56',
-                      textDecoration: 'none',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      fontWeight: 500,
-                    }}
-                  >
-                    <span>GitHub Repository</span>
-                    <ExternalLink size={11} />
-                  </a>
+                  <ExternalLink size={14} style={{ marginRight: 4 }} />
+                  GitHub Repo ↗
+                </a>
+              </div>
+
+              {/* Response Guarantee & Direct line */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: 11,
+                  color: '#888780',
+                  borderTop: '1px solid rgba(0,0,0,0.06)',
+                  paddingTop: 12,
+                  flexWrap: 'wrap',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Check size={12} color="#1d9e75" />
+                  <span>Persönliche Rückmeldung in der Regel binnen 24 Stunden</span>
                 </div>
+                <span style={{ color: '#0f6e56', fontWeight: 500 }}>DHBW Lehr- & Forschungsprojekt</span>
               </div>
             </Card>
           </div>
