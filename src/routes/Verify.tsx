@@ -201,7 +201,7 @@ export function Component() {
           </Card>
           {id && (
             <div style={{ textAlign: 'center', fontSize: 11, color: '#a3a29c', marginTop: 16 }}>
-              longevity.maxrommel.de · {id}
+              {window.location.hostname} · {id}
             </div>
           )}
         </div>

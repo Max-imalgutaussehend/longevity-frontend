@@ -72,7 +72,7 @@ export function Component() {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [pendingConsentAction, setPendingConsentAction] = useState<{ action: () => void; label?: string } | null>(null);
 
-  const haeWebhookUrl = 'https://longevity.maxrommel.de/api/sources/health-auto-export/webhook';
+  const haeWebhookUrl = `${window.location.origin}/api/sources/health-auto-export/webhook`;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

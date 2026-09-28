@@ -1,17 +1,26 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Check, Building2, ShieldCheck } from 'lucide-react';
+import { Check, Building2, ShieldCheck, Send } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Chip, Skeleton, Btn } from '../components/ui.js';
 import { InsurerSelectModal } from '../components/InsurerSelectModal.js';
 import type { ScoreResult, Source, User } from '../api/types.js';
+
+type ClaimStatus = 'submitted' | 'accepted' | 'rejected' | null;
 
 interface PartnerOffer {
   id: string; partnerName: string; title: string; description: string;
   minBand: number; minMonths?: number | null; valueLabel: string; isDemo: boolean;
   qualified: boolean; daysHeld?: number; daysRemaining?: number;
   verifiedOnly?: boolean;
+  organizationId?: string | null;
+  claimStatus?: ClaimStatus;
+  claimSubmittedAt?: string | null;
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 export function calculatePointsGap(minBand: number, score: number | null | undefined): string | null {
@@ -21,8 +30,29 @@ export function calculatePointsGap(minBand: number, score: number | null | undef
   return diff.toFixed(1);
 }
 
+export type ClaimAction =
+  | { kind: 'none' }
+  | { kind: 'share-link' }
+  | { kind: 'submit'; label: string }
+  | { kind: 'status'; label: string };
+
+/**
+ * Determines what a qualified offer's action slot should show: the legacy
+ * share-link flow for offers without an organization, or the direct
+ * submission button/status for offers that support it (issue #87).
+ */
+export function getClaimAction(offer: Pick<PartnerOffer, 'qualified' | 'organizationId' | 'claimStatus'>): ClaimAction {
+  if (!offer.qualified) return { kind: 'none' };
+  if (!offer.organizationId) return { kind: 'share-link' };
+  if (offer.claimStatus === 'submitted') return { kind: 'status', label: 'submitted' };
+  if (offer.claimStatus === 'accepted') return { kind: 'status', label: 'accepted' };
+  if (offer.claimStatus === 'rejected') return { kind: 'submit', label: 'Erneut einreichen' };
+  return { kind: 'submit', label: 'Bei Krankenkasse einreichen' };
+}
+
 export function Component() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showInsurerModal, setShowInsurerModal] = useState(false);
 
   const { data: user } = useQuery<User>({
@@ -33,6 +63,13 @@ export function Component() {
   const { data: offers, isLoading } = useQuery<PartnerOffer[]>({
     queryKey: ['offers'],
     queryFn: () => apiClient<PartnerOffer[]>('/offers'),
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: (offerId: string) => apiClient(`/offers/${offerId}/claim`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['offers'] });
+    },
   });
   const { data: score } = useQuery<ScoreResult>({
     queryKey: ['score', 'current'],
@@ -168,13 +205,45 @@ export function Component() {
                   </div>
                   <div style={{ textAlign: 'right', marginLeft: 24, flexShrink: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: offer.qualified ? '#0f6e56' : '#888780' }}>{offer.valueLabel}</div>
-                    {offer.qualified && (
-                      <button
-                        onClick={() => navigate('/freigabe')}
-                        style={{ fontSize: 12, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', marginTop: 4, display: 'block' }}
-                      >
-                        Nachweis erstellen →
-                      </button>
+                    {(() => {
+                      const action = getClaimAction(offer);
+                      const isPendingThis = claimMutation.isPending && claimMutation.variables === offer.id;
+                      if (action.kind === 'status') {
+                        return (
+                          <div style={{ fontSize: 11, color: action.label === 'accepted' ? '#3b6d11' : '#854f0b', marginTop: 4 }}>
+                            {action.label === 'accepted' ? 'Angenommen' : 'Eingereicht'}
+                            {offer.claimSubmittedAt ? ` am ${formatDate(offer.claimSubmittedAt)}` : ''}
+                            {action.label === 'submitted' ? ' · In Prüfung' : ''}
+                          </div>
+                        );
+                      }
+                      if (action.kind === 'submit') {
+                        return (
+                          <button
+                            onClick={() => claimMutation.mutate(offer.id)}
+                            disabled={isPendingThis}
+                            data-testid={`submit-claim-${offer.id}`}
+                            style={{ fontSize: 12, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end', marginLeft: 'auto' }}
+                          >
+                            <Send size={11} />
+                            {isPendingThis ? 'Wird eingereicht...' : action.label}
+                          </button>
+                        );
+                      }
+                      if (action.kind === 'share-link') {
+                        return (
+                          <button
+                            onClick={() => navigate('/freigabe')}
+                            style={{ fontSize: 12, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', marginTop: 4, display: 'block' }}
+                          >
+                            Nachweis erstellen →
+                          </button>
+                        );
+                      }
+                      return null;
+                    })()}
+                    {claimMutation.isError && claimMutation.variables === offer.id && (
+                      <div style={{ fontSize: 11, color: '#a32d2d', marginTop: 4 }}>Einreichung fehlgeschlagen.</div>
                     )}
                   </div>
                 </div>

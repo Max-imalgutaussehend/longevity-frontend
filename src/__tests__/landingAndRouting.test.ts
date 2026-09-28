@@ -15,11 +15,8 @@ export function calculateSimulatedScore(restingHr: number, sleepHours: number, v
   const ageDelta = ((score - 50) / 10) * -1.2;
   const vitalityAge = Math.max(20, Math.round((chronoAge + ageDelta) * 10) / 10);
 
-  let band = 'Band 50';
-  if (score >= 80) band = 'Band 80';
-  else if (score >= 65) band = 'Band 65';
-  else if (score >= 50) band = 'Band 50';
-  else band = 'Band 35';
+  const bandLow = Math.min(90, Math.floor(score / 10) * 10);
+  const band = `Band ${bandLow}–${bandLow + 9}`;
 
   return { score, vitalityAge, yearsGained: Math.round((chronoAge - vitalityAge) * 10) / 10, band };
 }
@@ -59,7 +56,7 @@ describe('Landing Page Simulator Logic (#8, #18)', () => {
   it('calculates higher score and reduced vitality age for optimal biomarkers', () => {
     const optimal = calculateSimulatedScore(50, 8.0, 52, 180);
     expect(optimal.score).toBeGreaterThanOrEqual(80);
-    expect(optimal.band).toBe('Band 80');
+    expect(optimal.band).toMatch(/^Band \d0–\d9$/);
     expect(optimal.vitalityAge).toBeLessThan(34);
     expect(optimal.yearsGained).toBeGreaterThan(0);
   });

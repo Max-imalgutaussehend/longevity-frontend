@@ -1096,6 +1096,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/offers/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a qualified offer directly to its issuing insurer */
+        post: operations["submitBenefitClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/insurer/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List benefit claims submitted to the organization */
+        get: operations["listInsurerClaims"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/insurer/claims/{id}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept or reject a submitted benefit claim */
+        post: operations["decideInsurerClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1174,9 +1225,43 @@ export interface components {
             title: string;
             description: string;
             minBand: number;
+            minMonths?: number | null;
             valueLabel: string;
             isDemo: boolean;
             qualified: boolean;
+            daysHeld?: number;
+            daysRemaining?: number;
+            /** Format: uuid */
+            organizationId?: string | null;
+            /** @enum {string|null} */
+            claimStatus?: "submitted" | "accepted" | "rejected" | null;
+            /** Format: date-time */
+            claimSubmittedAt?: string | null;
+        };
+        BenefitClaim: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "submitted" | "accepted" | "rejected";
+            /** Format: date-time */
+            submittedAt: string;
+        };
+        InsurerClaim: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "submitted" | "accepted" | "rejected";
+            bandLow: number;
+            bandHigh: number;
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            offerTitle: string;
+            /** Format: email */
+            userEmail: string;
+            userDisplayName?: string | null;
+            verifyUrl: string;
         };
         User: {
             /** Format: uuid */
@@ -1820,6 +1905,7 @@ export interface operations {
                     title: string;
                     description: string;
                     minBand: number;
+                    minMonths?: number | null;
                     valueLabel: string;
                     /** Format: date-time */
                     validFrom?: string;
@@ -1922,6 +2008,7 @@ export interface operations {
                     title?: string;
                     description?: string;
                     minBand?: number;
+                    minMonths?: number | null;
                     valueLabel?: string;
                     /** Format: date-time */
                     validFrom?: string | null;
@@ -3464,6 +3551,159 @@ export interface operations {
         responses: {
             /** @description PartnerOffer[] */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    submitBenefitClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BenefitClaim"];
+                };
+            };
+            /** @description Offer has no organization, or holding requirements not met */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Offer not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description An active (submitted or accepted) claim already exists for this offer */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listInsurerClaims: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description InsurerClaim[] */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsurerClaim"][];
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an insurer role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No organization assigned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    decideInsurerClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "accepted" | "rejected";
+                };
+            };
+        };
+        responses: {
+            /** @description Decided */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid decision */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an insurer role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Claim not found or not owned by this organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Already decided */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
