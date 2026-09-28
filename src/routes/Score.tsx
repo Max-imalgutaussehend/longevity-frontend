@@ -6,6 +6,11 @@ import type { ScoreResult } from '../api/types.js';
 
 import { getDomainLabel, getMetricLabel } from '../lib/formatters.js';
 
+export function formatFreshness(freshness: number | null | undefined): string {
+  if (freshness === null || freshness === undefined) return '—';
+  return `Frische ${Math.round(freshness * 100)} %`;
+}
+
 export function Component() {
   const navigate = useNavigate();
   const { data: score, isLoading } = useQuery<ScoreResult>({
@@ -70,9 +75,7 @@ export function Component() {
 
                   <div style={{ fontSize: 12, color: '#888780' }}>
                     {m.available
-                      ? m.ageDays !== null
-                        ? `Frische ${Math.max(0, Math.round((1 - m.ageDays / 365) * 100))} %`
-                        : 'Aktuell'
+                      ? formatFreshness(m.freshness)
                       : (
                         <button
                           onClick={() => navigate('/daten')}

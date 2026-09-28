@@ -14,6 +14,13 @@ interface PartnerOffer {
   verifiedOnly?: boolean;
 }
 
+export function calculatePointsGap(minBand: number, score: number | null | undefined): string | null {
+  if (score === null || score === undefined) return null;
+  const diff = minBand - score;
+  if (diff <= 0) return null;
+  return diff.toFixed(1);
+}
+
 export function Component() {
   const navigate = useNavigate();
   const [showInsurerModal, setShowInsurerModal] = useState(false);
@@ -37,18 +44,20 @@ export function Component() {
   });
 
   // Compute Kassen-Score (same Bayesian shrinkage as backend & Freigabe.tsx)
-  const kassenBandLow = (() => {
+  const kassenInfo = (() => {
     if (!score || !sources) return null;
     const verifiedAdapters = ['withings', 'oura', 'strava', 'google-fit', 'google-health', 'fhir'];
     const totalSamples = sources.reduce((s, src) => s + src.sampleCount, 0);
     const verifiedSamples = sources
       .filter((s) => verifiedAdapters.includes(s.adapter) && s.enabled)
       .reduce((s, src) => s + src.sampleCount, 0);
-    if (totalSamples === 0) return score.band.low;
+    if (totalSamples === 0) return { score: score.score, bandLow: score.band.low };
     const verifiedCoverage = verifiedSamples / totalSamples;
     const shrunk = 50 + verifiedCoverage * (score.score - 50);
-    return Math.floor(shrunk / 10) * 10;
+    return { score: shrunk, bandLow: Math.floor(shrunk / 10) * 10 };
   })();
+  const kassenBandLow = kassenInfo?.bandLow ?? null;
+  const kassenScore = kassenInfo?.score ?? null;
 
   const isInsurerLinked = !!user?.organizationId;
 
@@ -115,10 +124,10 @@ export function Component() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {isLoading ? [1, 2, 3].map((i) => <Card key={i}><Skeleton height={80} /></Card>) :
           offers?.sort((a, b) => a.minBand - b.minBand).map((offer) => {
-            // For verifiedOnly insurer offers, qualify against kassenfähig band; otherwise personal band
-            const activeBandLow = offer.verifiedOnly && kassenBandLow !== null ? kassenBandLow : score?.band.low ?? null;
-            const gap = activeBandLow !== null ? offer.minBand - activeBandLow : null;
-            const needsMorePoints = gap !== null && gap > 0;
+            // For verifiedOnly insurer offers, qualify against kassenfähig score; otherwise personal score
+            const activeScore = offer.verifiedOnly && kassenScore !== null ? kassenScore : score?.score ?? null;
+            const gap = calculatePointsGap(offer.minBand, activeScore);
+            const needsMorePoints = gap !== null;
             const needsHoldingTime = !offer.qualified && !needsMorePoints && (offer.daysRemaining ?? 0) > 0;
 
             return (
