@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Btn, Chip, GlassInput, FieldLabel, Modal, Skeleton } from '../components/ui.js';
+import { Card, PageTitle, Btn, Chip, GlassInput, FieldLabel, Modal, Skeleton, Toggle } from '../components/ui.js';
 
 interface Offer {
   id: string;
@@ -12,6 +12,7 @@ interface Offer {
   valueLabel: string;
   validFrom: string | null;
   validUntil: string | null;
+  membersOnly: boolean;
 }
 
 interface InsurerClaim {
@@ -35,9 +36,10 @@ interface OfferFormState {
   valueLabel: string;
   validFrom: string;
   validUntil: string;
+  membersOnly: boolean;
 }
 
-const EMPTY_FORM: OfferFormState = { title: '', description: '', minBand: '', minMonths: '', valueLabel: '', validFrom: '', validUntil: '' };
+const EMPTY_FORM: OfferFormState = { title: '', description: '', minBand: '', minMonths: '', valueLabel: '', validFrom: '', validUntil: '', membersOnly: true };
 
 function toOfferBody(form: OfferFormState) {
   const minMonthsNum = form.minMonths.trim() !== '' ? Number(form.minMonths) : null;
@@ -49,6 +51,7 @@ function toOfferBody(form: OfferFormState) {
     valueLabel: form.valueLabel,
     validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : null,
     validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : null,
+    membersOnly: form.membersOnly,
   };
 }
 
@@ -109,6 +112,7 @@ export function Component() {
       valueLabel: offer.valueLabel,
       validFrom: offer.validFrom ? offer.validFrom.slice(0, 10) : '',
       validUntil: offer.validUntil ? offer.validUntil.slice(0, 10) : '',
+      membersOnly: offer.membersOnly,
     });
     setError(null);
     setShowForm(true);
@@ -175,6 +179,13 @@ export function Component() {
                     Ab Score-Band {offer.minBand}
                     {offer.minMonths && offer.minMonths > 0 ? ` (mind. ${offer.minMonths} Monate gehalten)` : ''} · {offer.valueLabel}
                     {offer.validUntil && ` · gültig bis ${new Date(offer.validUntil).toLocaleDateString('de-DE')}`}
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    {offer.membersOnly ? (
+                      <Chip color="teal">Nur für Mitglieder</Chip>
+                    ) : (
+                      <Chip color="neutral">Für alle sichtbar</Chip>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -294,6 +305,17 @@ export function Component() {
                   <FieldLabel>Gültig bis (optional)</FieldLabel>
                   <GlassInput type="date" value={form.validUntil} onChange={(v) => setForm((f) => ({ ...f, validUntil: v }))} testId="offer-valid-until" name="validUntil" />
                 </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <FieldLabel>Nur für Mitglieder</FieldLabel>
+                  <div style={{ fontSize: 12, color: '#888780' }}>
+                    {form.membersOnly
+                      ? 'Nur verifizierte Mitglieder Ihrer Krankenkasse sehen dieses Angebot.'
+                      : 'Alle Nutzer sehen dieses Angebot, unabhängig von der Mitgliedschaft.'}
+                  </div>
+                </div>
+                <Toggle on={form.membersOnly} onChange={() => setForm((f) => ({ ...f, membersOnly: !f.membersOnly }))} />
               </div>
               {error && <p data-testid="offer-error" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

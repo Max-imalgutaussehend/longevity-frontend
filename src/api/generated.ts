@@ -1233,6 +1233,7 @@ export interface components {
             daysRemaining?: number;
             /** Format: uuid */
             organizationId?: string | null;
+            membersOnly?: boolean;
             /** @enum {string|null} */
             claimStatus?: "submitted" | "accepted" | "rejected" | null;
             /** Format: date-time */
@@ -1911,6 +1912,8 @@ export interface operations {
                     validFrom?: string;
                     /** Format: date-time */
                     validUntil?: string;
+                    /** @description Exclusive to the organization's own verified members (default true) vs. visible to all users. */
+                    membersOnly?: boolean;
                 };
             };
         };
@@ -2014,6 +2017,7 @@ export interface operations {
                     validFrom?: string | null;
                     /** Format: date-time */
                     validUntil?: string | null;
+                    membersOnly?: boolean;
                 };
             };
         };
