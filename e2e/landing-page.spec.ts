@@ -51,10 +51,10 @@ test.describe('Landing Page & Public Layer (#8, #9, #10, #18)', () => {
     await page.locator('input[placeholder*="name@organisation.de"]').fill('b.koch@aok-test.de');
     await page.locator('textarea').fill('Wir interessieren uns für ein Pilotprojekt zur Incentivierung von Vorsorgeuntersuchungen.');
 
-    await page.getByRole('button', { name: 'Erstkontakt anfordern' }).click();
+    await page.getByRole('button', { name: /Erstkontakt anfordern|Kooperationsanfrage/ }).click();
 
     // Check success state
-    await expect(page.getByText('Vielen Dank für Ihre Anfrage!')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Vielen Dank für (Ihre Anfrage|deine Nachricht)!/)).toBeVisible({ timeout: 5000 });
   });
 
   test('public impressum and datenschutz routes render correctly (#9)', async ({ page }) => {

@@ -33,7 +33,7 @@ const CONTACT_REASONS: ContactReason[] = [
     companyRequired: true,
     emailLabel: 'Geschäftliche E-Mail-Adresse *',
     messagePlaceholder: 'Beschreiben Sie kurz Ihre Organisation sowie Kooperations- oder Anbindungswünsche...',
-    btnText: 'Kooperationsanfrage absenden →',
+    btnText: 'Erstkontakt anfordern',
   },
   {
     id: 'feedback',
@@ -1567,7 +1567,7 @@ export function Component() {
                 <div style={{ textAlign: 'center', padding: '36px 16px' }}>
                   <Check size={44} color="#0f6e56" style={{ margin: '0 auto 14px', display: 'block' }} />
                   <h3 style={{ fontSize: 20, fontWeight: 600, color: '#0f6e56', margin: '0 0 10px' }}>
-                    Vielen Dank für deine Nachricht!
+                    {selectedReason.id === 'insurer' ? 'Vielen Dank für Ihre Anfrage!' : 'Vielen Dank für deine Nachricht!'}
                   </h3>
                   <p style={{ fontSize: 14, color: '#55544f', margin: '0 auto 20px', maxWidth: 420, lineHeight: 1.55 }}>
                     Wir haben dein Anliegen erhalten. Ein Mitglied unseres Entwicklerteams wird sich
@@ -1682,7 +1682,7 @@ export function Component() {
                       <input
                         required
                         type="text"
-                        placeholder="Vorname Nachname"
+                        placeholder={selectedReason.id === 'insurer' ? 'Dr. Vorname Nachname' : 'Vorname Nachname'}
                         value={contactForm.name}
                         onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                         style={inputStyle}
