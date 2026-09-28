@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Btn, GlassInput, FieldLabel, Modal, Skeleton } from '../components/ui.js';
+import { Card, PageTitle, Btn, Chip, GlassInput, FieldLabel, Modal, Skeleton } from '../components/ui.js';
 
 interface Offer {
   id: string;
@@ -12,6 +12,19 @@ interface Offer {
   valueLabel: string;
   validFrom: string | null;
   validUntil: string | null;
+}
+
+interface InsurerClaim {
+  id: string;
+  status: 'submitted' | 'accepted' | 'rejected';
+  bandLow: number;
+  bandHigh: number;
+  submittedAt: string;
+  decidedAt: string | null;
+  offerTitle: string;
+  userEmail: string;
+  userDisplayName: string | null;
+  verifyUrl: string;
 }
 
 interface OfferFormState {
@@ -66,6 +79,17 @@ export function Component() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiClient(`/insurer/offers/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['insurer-offers'] }),
+  });
+
+  const { data: claims, isLoading: claimsLoading } = useQuery<InsurerClaim[]>({
+    queryKey: ['insurer-claims'],
+    queryFn: () => apiClient('/insurer/claims'),
+  });
+
+  const decideMut = useMutation({
+    mutationFn: ({ id, decision }: { id: string; decision: 'accepted' | 'rejected' }) =>
+      apiClient(`/insurer/claims/${id}/decide`, { method: 'POST', body: JSON.stringify({ decision }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['insurer-claims'] }),
   });
 
   function openCreate() {
@@ -166,6 +190,66 @@ export function Component() {
           <p style={{ fontSize: 13, color: '#888780', margin: 0 }}>Noch keine Angebote angelegt.</p>
         </Card>
       )}
+
+      <div style={{ marginTop: 40 }}>
+        <PageTitle title="Eingereichte Nachweise" sub="Direkt eingereichte Vorteils-Nachweise Ihrer Mitglieder" />
+
+        {claimsLoading ? (
+          <div style={{ display: 'grid', gap: 12 }}>
+            <Skeleton height={70} />
+            <Skeleton height={70} />
+          </div>
+        ) : claims && claims.length > 0 ? (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {claims.map((claim) => (
+              <Card key={claim.id} style={{ padding: 20 }} data-testid={`claim-row-${claim.id}`}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: '#22221f' }}>{claim.offerTitle}</span>
+                      {claim.status === 'submitted' && <Chip color="amber">In Prüfung</Chip>}
+                      {claim.status === 'accepted' && <Chip color="green">Angenommen</Chip>}
+                      {claim.status === 'rejected' && <Chip color="red">Abgelehnt</Chip>}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#55544f' }}>
+                      {claim.userDisplayName ?? claim.userEmail} · Band {claim.bandLow}–{claim.bandHigh}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#888780', marginTop: 4 }}>
+                      Eingereicht am {new Date(claim.submittedAt).toLocaleDateString('de-DE')}
+                      {claim.decidedAt && ` · entschieden am ${new Date(claim.decidedAt).toLocaleDateString('de-DE')}`}
+                    </div>
+                  </div>
+                  {claim.status === 'submitted' && (
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <Btn
+                        small
+                        variant="secondary"
+                        onClick={() => decideMut.mutate({ id: claim.id, decision: 'rejected' })}
+                        disabled={decideMut.isPending}
+                        testId={`claim-reject-${claim.id}`}
+                      >
+                        Ablehnen
+                      </Btn>
+                      <Btn
+                        small
+                        onClick={() => decideMut.mutate({ id: claim.id, decision: 'accepted' })}
+                        disabled={decideMut.isPending}
+                        testId={`claim-accept-${claim.id}`}
+                      >
+                        Annehmen
+                      </Btn>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card style={{ padding: 24, textAlign: 'center' }}>
+            <p style={{ fontSize: 13, color: '#888780', margin: 0 }}>Noch keine Nachweise eingereicht.</p>
+          </Card>
+        )}
+      </div>
 
       {showForm && (
         <Modal onClose={closeForm}>
