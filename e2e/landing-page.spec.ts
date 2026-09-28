@@ -36,8 +36,8 @@ test.describe('Landing Page & Public Layer (#8, #9, #10, #18)', () => {
     await hrSlider.fill('48');
 
     // Check that projected score and band are rendered within simulator
-    await expect(simSection.getByText('Prognostizierter Score')).toBeVisible();
-    await expect(simSection.getByText(/Band (80|65|50)/)).toBeVisible();
+    await expect(simSection.getByText('Beispielhafter Score')).toBeVisible();
+    await expect(simSection.getByText(/Band \d0–\d9/)).toBeVisible();
   });
 
   test('contact form for insurers submits and displays confirmation (#10)', async ({ page }) => {
