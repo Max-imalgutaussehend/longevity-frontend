@@ -23,8 +23,27 @@ export async function loginAs(page: Page, email: string, password: string) {
 // browser context's session cookie), so tests unrelated to the consent flow
 // itself don't have to fight the ConsentModal dialog intercepting clicks.
 export async function grantHealthDataConsent(page: Page) {
+  let token: string | undefined;
+  const cookies = await page.context().cookies();
+  const xsrfCookie = cookies.find((c) => c.name === 'XSRF-TOKEN');
+  if (xsrfCookie) {
+    token = decodeURIComponent(xsrfCookie.value);
+  } else {
+    const csrfRes = await page.request.get('/api/auth/csrf');
+    if (csrfRes.ok()) {
+      const data = (await csrfRes.json()) as { csrfToken?: string };
+      token = data.csrfToken;
+    }
+  }
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['x-csrf-token'] = token;
+  }
+
   const res = await page.request.post('/api/account/consent', {
     data: { version: '2026-09-v1' },
+    headers,
   });
   if (!res.ok()) throw new Error(`Failed to grant health data consent: ${res.status()}`);
 }
