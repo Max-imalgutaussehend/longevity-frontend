@@ -14,6 +14,7 @@ import { MetricsTab } from './daten/tabs/MetricsTab.js';
 import { ExpandedMetricModal } from './daten/components/ExpandedMetricModal.js';
 import { HealthAutoExportModal } from './daten/components/HealthAutoExportModal.js';
 import { GoogleManualAuthModal } from './daten/components/GoogleManualAuthModal.js';
+import { validateLifestyleInputs } from './daten/datenUtils.js';
 
 // Re-export utility functions and types for external callers and tests
 export {
@@ -24,6 +25,7 @@ export {
   formatDate,
   getSourceSyncStatusInfo,
   timeAgo,
+  validateLifestyleInputs,
 } from './daten/datenUtils.js';
 
 export type {
@@ -146,28 +148,14 @@ export function Component() {
 
   function submitLifestyle() {
     setLifestyleError(null);
-    const values: Array<{ metric: string; value: number; unit: string }> = [];
-
-    for (const f of LIFESTYLE_FIELDS) {
-      const raw = lifestyleVals[f.key];
-      if (raw === undefined || raw === '') continue;
-
-      const num = Number(raw.replace(',', '.'));
-      if (isNaN(num)) continue;
-      if (num < (f.min ?? 0)) {
-        setLifestyleError(`${f.label}: Wert darf nicht negativ sein.`);
-        return;
-      }
-      if (f.max !== undefined && num > f.max) {
-        setLifestyleError(`${f.label}: Wert darf maximal ${f.max} sein.`);
-        return;
-      }
-
-      values.push({ metric: f.key, value: num, unit: f.unit });
+    const result = validateLifestyleInputs(lifestyleVals, LIFESTYLE_FIELDS);
+    if (result.error) {
+      setLifestyleError(result.error);
+      return;
     }
 
-    if (values.length === 0) return;
-    lifestyleMut.mutate(values);
+    if (result.values.length === 0) return;
+    lifestyleMut.mutate(result.values);
   }
 
   const uploadMutation = useMutation({

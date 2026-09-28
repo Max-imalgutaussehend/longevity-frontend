@@ -12,7 +12,7 @@ import { getMetricLabel, getMetricUnit } from '../lib/formatters.js';
 export const METRIC_RANGE: Record<string, [number, number, number]> = {
   vo2max: [25, 65, 0.5], resting_hr: [40, 100, 1], sleep_duration: [4, 10, 0.1],
   zone2_minutes: [0, 300, 5], hrv_rmssd: [15, 120, 1], steps: [1000, 20000, 500],
-  strength_sessions: [0, 4, 0.5],
+  strength_sessions: [0, 14, 0.5],
 };
 
 export const METRIC_COHORT_MEAN: Record<string, number> = {

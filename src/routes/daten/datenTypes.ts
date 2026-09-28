@@ -63,8 +63,9 @@ export const LIFESTYLE_FIELDS: Array<LifestyleField> = [
     unit: '/week',
     kind: 'number',
     min: 0,
-    max: 4,
+    max: 14,
     placeholder: 'z. B. 2',
+    tooltip: 'Gezielte Krafttrainingseinheiten pro Woche (medizinisch plausibel bis 14)',
   },
   {
     key: 'zone2_minutes',
