@@ -17,9 +17,10 @@ export interface ConsentModalProps {
   onClose: () => void;
   onConsented?: () => void;
   sourceLabel?: string;
+  zIndex?: number;
 }
 
-export function ConsentModal({ isOpen, onClose, onConsented, sourceLabel }: ConsentModalProps) {
+export function ConsentModal({ isOpen, onClose, onConsented, sourceLabel, zIndex = 10050 }: ConsentModalProps) {
   const queryClient = useQueryClient();
   const [agreed, setAgreed] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
@@ -54,7 +55,7 @@ export function ConsentModal({ isOpen, onClose, onConsented, sourceLabel }: Cons
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 400,
+        zIndex,
         background: 'rgba(12, 20, 16, 0.55)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',

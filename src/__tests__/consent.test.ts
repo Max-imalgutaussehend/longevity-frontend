@@ -29,3 +29,42 @@ describe('GDPR Art. 9 Consent Specifications (#24)', () => {
     expect(HEALTH_DATA_CONSENT_TEXT).toContain('Wirkung für die Zukunft');
   });
 });
+
+describe('ConsentModal Z-Index Layering (#80)', () => {
+  it('renders with zIndex: 10050 to display above TutorialModal (zIndex: 9999)', async () => {
+    const { renderToString } = await import('react-dom/server');
+    const { createElement } = await import('react');
+    const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query');
+    const { ConsentModal } = await import('../components/ConsentModal.js');
+
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(ConsentModal, { isOpen: true, onClose: () => {} })
+      )
+    );
+
+    expect(html).toContain('z-index:10050');
+  });
+
+  it('supports custom zIndex override if specified', async () => {
+    const { renderToString } = await import('react-dom/server');
+    const { createElement } = await import('react');
+    const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query');
+    const { ConsentModal } = await import('../components/ConsentModal.js');
+
+    const queryClient = new QueryClient();
+    const html = renderToString(
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(ConsentModal, { isOpen: true, onClose: () => {}, zIndex: 12000 })
+      )
+    );
+
+    expect(html).toContain('z-index:12000');
+  });
+});
+
