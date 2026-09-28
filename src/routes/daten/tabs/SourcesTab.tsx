@@ -41,6 +41,7 @@ export interface SourcesTabProps {
   onAppleUploadClick: () => void;
   onOpenHaeModal: () => void;
   onOpenGoogleCodelab: () => void;
+  onOpenManualLabModal?: () => void;
   onFhirUploadClick: () => void;
   onNavigateDashboard: () => void;
 
@@ -79,6 +80,7 @@ export function SourcesTab({
   onAppleUploadClick,
   onOpenHaeModal,
   onOpenGoogleCodelab,
+  onOpenManualLabModal,
   onFhirUploadClick,
   onNavigateDashboard,
   onToggleSource,
@@ -342,6 +344,7 @@ export function SourcesTab({
             isUploading={isFhirUploadPending}
             isDeletingSamples={isDeleteSamplesPending}
             isTogglePending={isTogglePending}
+            onOpenManualLabModal={onOpenManualLabModal}
             onUploadClick={onFhirUploadClick}
             onNavigateDashboard={onNavigateDashboard}
             onToggle={(enabled) => fhirSrc && onToggleSource(fhirSrc.id, enabled)}

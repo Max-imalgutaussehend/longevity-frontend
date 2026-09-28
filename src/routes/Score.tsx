@@ -11,6 +11,16 @@ export function formatFreshness(freshness: number | null | undefined): string {
   return `Frische ${Math.round(freshness * 100)} %`;
 }
 
+export function getScoreMetricRoute(metric: string): string {
+  if (['smoking', 'alcohol_units', 'strength_sessions', 'zone2_minutes', 'waist'].includes(metric)) {
+    return `/daten?open=lifestyle&metric=${metric}`;
+  }
+  if (['systolic_bp', 'ldl', 'hdl', 'hba1c', 'hscrp', 'fasting_glucose', 'triglycerides'].includes(metric)) {
+    return `/daten?open=labs&metric=${metric}`;
+  }
+  return '/daten?tab=sources';
+}
+
 export function Component() {
   const navigate = useNavigate();
   const { data: score, isLoading } = useQuery<ScoreResult>({
@@ -78,7 +88,8 @@ export function Component() {
                       ? formatFreshness(m.freshness)
                       : (
                         <button
-                          onClick={() => navigate('/daten')}
+                          onClick={() => navigate(getScoreMetricRoute(m.metric))}
+                          data-testid={`score-enter-${m.metric}`}
                           style={{ fontSize: 12, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}
                         >
                           + Eintragen

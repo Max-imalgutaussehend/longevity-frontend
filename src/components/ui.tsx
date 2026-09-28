@@ -2,15 +2,17 @@ import type { CSSProperties, ReactNode, MouseEvent } from 'react';
 
 /* ── Primitives ────────────────────────────────────────────────── */
 
-export function Card({ children, style, className, onClick, 'data-testid': testId }: {
+export function Card({ children, style, className, onClick, 'data-testid': testId, id }: {
   children: ReactNode;
   style?: CSSProperties;
   className?: string;
   onClick?: (e: MouseEvent) => void;
   'data-testid'?: string;
+  id?: string;
 }) {
   return (
     <div
+      id={id}
       className={`glass ${className ?? ''}`}
       onClick={onClick}
       data-testid={testId}
@@ -177,7 +179,21 @@ export function Modal({ onClose, children }: { onClose: () => void; children: Re
   );
 }
 
-export function GlassInput({ placeholder, type = 'text', value, onChange, onFocus, onBlur, testId, name }: {
+export function GlassInput({
+  placeholder,
+  type = 'text',
+  value,
+  onChange,
+  onFocus,
+  onBlur,
+  testId,
+  name,
+  min,
+  max,
+  step,
+  style,
+  autoFocus,
+}: {
   placeholder?: string;
   type?: string;
   value?: string;
@@ -186,6 +202,11 @@ export function GlassInput({ placeholder, type = 'text', value, onChange, onFocu
   onBlur?: () => void;
   testId?: string;
   name?: string;
+  min?: string | number;
+  max?: string | number;
+  step?: string | number;
+  style?: CSSProperties;
+  autoFocus?: boolean;
 }) {
   return (
     <input
@@ -193,6 +214,10 @@ export function GlassInput({ placeholder, type = 'text', value, onChange, onFocu
       placeholder={placeholder}
       value={value}
       name={name}
+      min={min}
+      max={max}
+      step={step}
+      autoFocus={autoFocus}
       data-testid={testId}
       onChange={(e) => onChange?.(e.target.value)}
       onFocus={(e) => { e.currentTarget.style.borderColor = 'rgba(29,158,117,0.5)'; onFocus?.(); }}
@@ -203,6 +228,7 @@ export function GlassInput({ placeholder, type = 'text', value, onChange, onFocu
         background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(12px)',
         fontSize: 14, fontFamily: 'inherit', color: '#22221f', outline: 'none',
         transition: 'border-color 0.15s',
+        ...style,
       }}
     />
   );

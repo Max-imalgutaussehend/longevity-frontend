@@ -7,6 +7,7 @@ interface FhirCardProps {
   isUploading: boolean;
   isDeletingSamples: boolean;
   isTogglePending: boolean;
+  onOpenManualLabModal?: () => void;
   onUploadClick: () => void;
   onNavigateDashboard: () => void;
   onToggle: (enabled: boolean) => void;
@@ -18,6 +19,7 @@ export function FhirCard({
   isUploading,
   isDeletingSamples,
   isTogglePending,
+  onOpenManualLabModal,
   onUploadClick,
   onNavigateDashboard,
   onToggle,
@@ -114,6 +116,9 @@ export function FhirCard({
       </div>
 
       <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Btn full testId="open-manual-lab-modal" onClick={onOpenManualLabModal}>
+          Laborwerte manuell eintragen
+        </Btn>
         {hasSource && src?.id && (
           <Btn
             full

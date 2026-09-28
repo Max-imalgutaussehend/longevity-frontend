@@ -15,6 +15,7 @@ import { ExpandedMetricModal } from './daten/components/ExpandedMetricModal.js';
 import { HealthAutoExportModal } from './daten/components/HealthAutoExportModal.js';
 import { GoogleManualAuthModal } from './daten/components/GoogleManualAuthModal.js';
 import { validateLifestyleInputs } from './daten/datenUtils.js';
+import { ManualLabModal } from './daten/components/ManualLabModal.js';
 
 // Re-export utility functions and types for external callers and tests
 export {
@@ -32,12 +33,14 @@ export type {
   SourceSyncStatusInfo,
   ConsentStatus,
   LifestyleField,
+  ManualLabField,
 } from './daten/datenTypes.js';
 
 export {
   SOURCE_BADGES,
   SMOKING_OPTIONS,
   LIFESTYLE_FIELDS,
+  MANUAL_LAB_FIELDS,
 } from './daten/datenTypes.js';
 
 export function Component() {
@@ -47,6 +50,8 @@ export function Component() {
   const fhirFileInputRef = useRef<HTMLInputElement>(null);
 
   const [showHaeModal, setShowHaeModal] = useState(false);
+  const [showManualLabModal, setShowManualLabModal] = useState(false);
+  const [initialLabMetric, setInitialLabMetric] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
@@ -73,9 +78,29 @@ export function Component() {
     const params = new URLSearchParams(window.location.search);
     const connected = params.get('connected');
     const tabParam = params.get('tab');
+    const openParam = params.get('open');
+    const metricParam = params.get('metric');
+
     if (tabParam === 'metrics' || tabParam === 'sources') {
       setActiveTab(tabParam);
     }
+
+    if (openParam === 'labs' || openParam === 'lab') {
+      setActiveTab('sources');
+      setInitialLabMetric(metricParam);
+      setShowManualLabModal(true);
+    } else if (openParam === 'lifestyle') {
+      setActiveTab('sources');
+      setTimeout(() => {
+        const el = document.getElementById('lifestyle-card');
+        el?.scrollIntoView({ behavior: 'smooth' });
+        if (metricParam) {
+          const inputEl = document.querySelector<HTMLInputElement>(`[data-testid="lifestyle-${metricParam}"]`);
+          inputEl?.focus();
+        }
+      }, 100);
+    }
+
     if (connected) {
       queryClient.invalidateQueries({ queryKey: ['sources'] });
       queryClient.invalidateQueries({ queryKey: ['score'] });
@@ -549,6 +574,7 @@ export function Component() {
           onAppleUploadClick={() => withConsent(() => fileInputRef.current?.click(), 'Apple Health Export')}
           onOpenHaeModal={() => withConsent(() => setShowHaeModal(true), 'Health Auto Export Webhook')}
           onOpenGoogleCodelab={() => withConsent(() => handleOpenGoogleCodelabMode(), 'Google Health')}
+          onOpenManualLabModal={() => withConsent(() => setShowManualLabModal(true), 'Manuelle Laborwerte')}
           onFhirUploadClick={() => withConsent(() => fhirFileInputRef.current?.click(), 'FHIR Laborbefund')}
           onNavigateDashboard={() => navigate('/dashboard')}
           onToggleSource={(sourceId, enabled) => toggleSourceMutation.mutate({ sourceId, enabled })}
@@ -581,6 +607,19 @@ export function Component() {
       )}
 
       {/* Modals */}
+      <ManualLabModal
+        isOpen={showManualLabModal}
+        initialMetric={initialLabMetric}
+        onClose={() => {
+          setShowManualLabModal(false);
+          setInitialLabMetric(null);
+        }}
+        onSuccess={() => {
+          setUploadSuccess('Laborwerte erfolgreich erfasst!');
+          setUploadError(null);
+        }}
+      />
+
       <ExpandedMetricModal
         metric={expandedMetric}
         selectedSource={selectedSource}
