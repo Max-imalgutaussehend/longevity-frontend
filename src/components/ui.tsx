@@ -160,11 +160,11 @@ export function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) 
   );
 }
 
-export function Modal({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+export function Modal({ onClose, children, zIndex = 10000 }: { onClose: () => void; children: ReactNode; zIndex?: number }) {
   return (
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 300,
+        position: 'fixed', inset: 0, zIndex,
         background: 'rgba(15,30,22,0.22)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',

@@ -268,14 +268,13 @@ export function Component() {
                 border: `1.5px solid ${!verifiedOnly ? 'rgba(29,158,117,0.35)' : 'rgba(0,0,0,0.08)'}`,
                 transition: 'all 0.15s ease',
               }}
+              data-testid="mode-standard"
             >
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
                 <input
-                  type="radio"
-                  name="cert-mode"
+                  type="checkbox"
                   checked={!verifiedOnly}
-                  onChange={() => { setVerifiedOnly(false); setCreateError(null); }}
-                  data-testid="mode-standard"
+                  onChange={(e) => { setVerifiedOnly(!e.target.checked); setCreateError(null); }}
                   style={{ marginTop: 3, accentColor: '#1d9e75' }}
                 />
                 <div style={{ flex: 1 }}>
@@ -303,15 +302,17 @@ export function Component() {
                 border: `1.5px solid ${verifiedOnly ? 'rgba(29,158,117,0.35)' : 'rgba(0,0,0,0.08)'}`,
                 transition: 'all 0.15s ease',
               }}
+              data-testid="mode-verified"
             >
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
                 <input
-                  type="radio"
-                  name="cert-mode"
+                  type="checkbox"
                   checked={verifiedOnly}
-                  onChange={() => { setVerifiedOnly(true); setCreateError(null); }}
-                  data-testid="mode-verified"
-                  data-testid-verified="verified-only-checkbox"
+                  onChange={(e) => {
+                    setVerifiedOnly(e.target.checked);
+                    setCreateError(null);
+                  }}
+                  data-testid="verified-only-checkbox"
                   style={{ marginTop: 3, accentColor: '#1d9e75' }}
                 />
                 <div style={{ flex: 1 }}>

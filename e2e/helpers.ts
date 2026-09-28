@@ -73,8 +73,12 @@ export async function registerAndLogin(page: Page, email: string, password: stri
 // force-opens it via a session flag — so it can reappear on later navigations
 // too (e.g. after goto()). Dismiss it with Escape if it's covering the page.
 export async function dismissTutorialIfOpen(page: Page) {
+  await page.evaluate(() => {
+    sessionStorage.removeItem('longevity_auto_open_tutorial');
+    localStorage.setItem('longevity_tutorial_completed', 'true');
+  }).catch(() => {});
   const tutorialHeading = page.getByText('LONGEVITY GUIDE');
-  if (await tutorialHeading.isVisible({ timeout: 1000 }).catch(() => false)) {
+  if (await tutorialHeading.isVisible({ timeout: 1500 }).catch(() => false)) {
     await page.keyboard.press('Escape');
     await tutorialHeading.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
   }
