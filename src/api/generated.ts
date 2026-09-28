@@ -225,6 +225,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/public-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active partner health insurers for public selection */
+        get: operations["listPublicOrganizations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations/join": {
         parameters: {
             query?: never;
@@ -234,7 +251,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Link the current b2c user to an organization via join code */
+        /** Link the current b2c user to an organization via KVNR verification or join code */
         post: operations["joinOrganization"];
         delete?: never;
         options?: never;
@@ -1172,6 +1189,17 @@ export interface components {
             /** @enum {string} */
             sex: "m" | "f";
             chronoAge: number;
+            /** Format: uuid */
+            organizationId?: string | null;
+            /** Format: date-time */
+            organizationVerifiedAt?: string | null;
+            organization?: {
+                /** Format: uuid */
+                id?: string;
+                name?: string;
+                /** Format: date-time */
+                verifiedAt?: string | null;
+            } | null;
         };
         WeeklyReport: {
             /** Format: date */
@@ -1576,6 +1604,30 @@ export interface operations {
             };
         };
     };
+    listPublicOrganizations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Array of active organizations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                    }[];
+                };
+            };
+        };
+    };
     joinOrganization: {
         parameters: {
             query?: never;
@@ -1586,13 +1638,30 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    joinCode: string;
+                    joinCode?: string;
+                    /** Format: uuid */
+                    organizationId?: string;
+                    kvnr?: string;
                 };
             };
         };
         responses: {
             /** @description OK */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok?: boolean;
+                        organizationName?: string;
+                        /** Format: date-time */
+                        verifiedAt?: string;
+                    };
+                };
+            };
+            /** @description Invalid KVNR or missing parameters */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1612,8 +1681,15 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Invalid join code */
+            /** @description Organization or join code not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description KVNR already linked to another account */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

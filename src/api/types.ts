@@ -12,6 +12,11 @@ export type ShareToken = components["schemas"]["ShareToken"];
 export type PartnerOffer = components["schemas"]["PartnerOffer"];
 export type WeeklyReport = components["schemas"]["WeeklyReport"];
 
+export interface PublicOrganization {
+  id: string;
+  name: string;
+}
+
 export interface MetricHistoryItem {
   id: number;
   value: number;

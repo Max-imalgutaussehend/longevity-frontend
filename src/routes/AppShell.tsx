@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Sparkles, Scale, Shield, LogOut } from 'lucide-react';
+import { Sparkles, Scale, Shield, LogOut, Building2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
 import { TutorialModal } from '../components/TutorialModal.js';
+import { InsurerSelectModal } from '../components/InsurerSelectModal.js';
 import { VerifyEmailBanner } from '../components/VerifyEmailBanner.js';
 import brandIcon from '../assets/brand-icon.png';
 
@@ -23,6 +24,7 @@ export function Component() {
   const location = useLocation();
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showInsurerModal, setShowInsurerModal] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const hasAutoOpenedRef = useRef(false);
@@ -56,7 +58,9 @@ export function Component() {
 
     const sessionAutoOpen = sessionStorage.getItem('longevity_auto_open_tutorial') === 'true';
     const userCompletedKey = `longevity_tutorial_completed_${user.id}`;
-    const userCompleted = localStorage.getItem(userCompletedKey) === 'true';
+    const userCompleted =
+      localStorage.getItem(userCompletedKey) === 'true' ||
+      localStorage.getItem('longevity_tutorial_completed') === 'true';
 
     // Auto-open if explicitly requested by session flag OR user has never completed it for their account
     if (sessionAutoOpen || !userCompleted) {
@@ -207,6 +211,39 @@ export function Component() {
                     )}
                   </div>
 
+                  {/* Health Insurer membership button */}
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      setShowInsurerModal(true);
+                    }}
+                    style={{
+                      background: user?.organizationId ? 'rgba(29,158,117,0.08)' : 'rgba(0,0,0,0.03)',
+                      border: `1px solid ${user?.organizationId ? 'rgba(29,158,117,0.2)' : 'rgba(0,0,0,0.08)'}`,
+                      borderRadius: 10,
+                      padding: '8px 12px',
+                      color: user?.organizationId ? '#0f6e56' : '#55544f',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontFamily: 'inherit',
+                      transition: 'background 0.15s',
+                    }}
+                    data-testid="profile-insurer-btn"
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Building2 size={14} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
+                        {user?.organization?.name ?? 'Krankenkasse verbinden'}
+                      </span>
+                    </span>
+                    {user?.organizationId && <span style={{ fontSize: 11, color: '#0f6e56', fontWeight: 600 }}>✓</span>}
+                  </button>
+
                   {/* Tutorial launch button */}
                   <button
                     onClick={() => {
@@ -339,6 +376,9 @@ export function Component() {
 
       {/* Interactive Onboarding Tutorial Modal */}
       <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+
+      {/* Health Insurer Selection & Verification Modal */}
+      <InsurerSelectModal isOpen={showInsurerModal} onClose={() => setShowInsurerModal(false)} />
     </>
   );
 }

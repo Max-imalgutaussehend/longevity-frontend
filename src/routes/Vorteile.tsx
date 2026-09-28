@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Check, ShieldCheck } from 'lucide-react';
+import { Check, Building2, ShieldCheck } from 'lucide-react';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Chip, Skeleton } from '../components/ui.js';
-import type { ScoreResult, Source } from '../api/types.js';
+import { Card, PageTitle, Chip, Skeleton, Btn } from '../components/ui.js';
+import { InsurerSelectModal } from '../components/InsurerSelectModal.js';
+import type { ScoreResult, Source, User } from '../api/types.js';
 
 interface PartnerOffer {
   id: string; partnerName: string; title: string; description: string;
@@ -14,6 +16,13 @@ interface PartnerOffer {
 
 export function Component() {
   const navigate = useNavigate();
+  const [showInsurerModal, setShowInsurerModal] = useState(false);
+
+  const { data: user } = useQuery<User>({
+    queryKey: ['me'],
+    queryFn: () => apiClient<User>('/me'),
+  });
+
   const { data: offers, isLoading } = useQuery<PartnerOffer[]>({
     queryKey: ['offers'],
     queryFn: () => apiClient<PartnerOffer[]>('/offers'),
@@ -41,8 +50,10 @@ export function Component() {
     return Math.floor(shrunk / 10) * 10;
   })();
 
+  const isInsurerLinked = !!user?.organizationId;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <PageTitle title="Vorteile" />
         {score && (
@@ -57,6 +68,49 @@ export function Component() {
           </div>
         )}
       </div>
+
+      {/* Health Insurer Connection Banner or Status */}
+      {isInsurerLinked ? (
+        <div style={{
+          padding: '12px 18px', borderRadius: 12,
+          background: 'rgba(29,158,117,0.06)', border: '1px solid rgba(29,158,117,0.18)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ShieldCheck size={16} color="#0f6e56" />
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#1d2c25' }}>
+              Versichert bei {user?.organization?.name ?? 'Partner-Krankenkasse'}
+            </span>
+            <Chip color="teal">Verifiziert ✓</Chip>
+          </div>
+          <button
+            onClick={() => setShowInsurerModal(true)}
+            style={{ background: 'none', border: 'none', color: '#0f6e56', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+            data-testid="edit-insurer-btn"
+          >
+            Ändern / Details →
+          </button>
+        </div>
+      ) : (
+        <Card className="glass-deep" style={{ borderLeft: '4px solid #1d9e75', padding: '18px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(29,158,117,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f6e56' }}>
+                <Building2 size={20} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#22221f' }}>Krankenkasse verknüpfen</div>
+                <div style={{ fontSize: 12, color: '#55544f', marginTop: 2 }}>
+                  Wähle deine Krankenkasse für exklusive Bonusprogramme und Beitragsnachlässe nach § 65a SGB V.
+                </div>
+              </div>
+            </div>
+            <Btn small variant="primary" onClick={() => setShowInsurerModal(true)} testId="connect-insurer-banner-btn">
+              Jetzt verknüpfen
+            </Btn>
+          </div>
+        </Card>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {isLoading ? [1, 2, 3].map((i) => <Card key={i}><Skeleton height={80} /></Card>) :
@@ -125,6 +179,8 @@ export function Component() {
           Diese Konditionen sind Demo-Daten. Sie stellen kein verbindliches Angebot dar.
         </div>
       )}
+
+      <InsurerSelectModal isOpen={showInsurerModal} onClose={() => setShowInsurerModal(false)} />
     </div>
   );
 }
