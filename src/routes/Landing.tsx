@@ -1,10 +1,50 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { Check, X } from 'lucide-react';
+import { Check, X, Mail, Copy, Send, MapPin, Users, GraduationCap, Sparkles, ExternalLink } from 'lucide-react';
 import heroVideo from '../assets/hero-video.mp4';
+import teamImage from '../assets/team.png';
 import { Card, Btn } from '../components/ui.js';
 import { BrandLogosRibbon } from '../components/BrandLogos.js';
 import { apiClient } from '../api/client.js';
+
+interface TeamTopic {
+  id: string;
+  label: string;
+  badge: string;
+  subject: string;
+  defaultMsg: string;
+}
+
+const TEAM_TOPICS: TeamTopic[] = [
+  {
+    id: 'general',
+    label: '💬 Hallo ans Team',
+    badge: 'Kennenlernen',
+    subject: 'Hallo an das LONGEVITY-Team',
+    defaultMsg: 'Hallo Team LONGEVITY,\n\nich verfolge euer Projekt mit großem Interesse und wollte euch kurz schreiben:\n\n',
+  },
+  {
+    id: 'feedback',
+    label: '🔬 Score-Feedback & Hebel',
+    badge: 'Algorithmus',
+    subject: 'Feedback zu den Score-Hebel-Berechnungen & Biomarkern',
+    defaultMsg: 'Hallo Max, Victor, Till und das gesamte LONGEVITY-Team,\n\nich habe mir eure Vitalitäts-Berechnungen und den Hebel-Simulator angeschaut. Mir ist Folgendes aufgefallen:\n\n',
+  },
+  {
+    id: 'research',
+    label: '🎓 DHBW-Forschung & Methodik',
+    badge: 'Wissenschaft',
+    subject: 'Frage zum DHBW-Forschungsprojekt & wissenschaftlichen Kurven',
+    defaultMsg: 'Liebes LONGEVITY-Team,\n\nich interessiere mich für die wissenschaftliche Methodik eures DHBW-Projekts. Könnt ihr mir mehr erzählen zu:\n\n',
+  },
+  {
+    id: 'partnership',
+    label: '🤝 Kooperation & Pilotierung',
+    badge: 'Zusammenarbeit',
+    subject: 'Anfrage für Kooperation / Pilotierung mit dem LONGEVITY Team',
+    defaultMsg: 'Hallo LONGEVITY-Team,\n\nwir möchten mit euch über eine mögliche Zusammenarbeit oder ein Pilotprojekt sprechen:\n\n',
+  },
+];
 
 function useScrollReveal() {
   useEffect(() => {
@@ -133,6 +173,48 @@ export function Component() {
       setContactError((err as Error).message ?? 'Anfrage konnte nicht gesendet werden.');
     } finally {
       setContactLoading(false);
+    }
+  };
+
+  const [selectedTopicId, setSelectedTopicId] = useState<string>('general');
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedDraft, setCopiedDraft] = useState(false);
+  const [senderName, setSenderName] = useState('');
+  const [senderEmail, setSenderEmail] = useState('');
+  const [customSubject, setCustomSubject] = useState('');
+  const [customMessage, setCustomMessage] = useState(TEAM_TOPICS[0].defaultMsg);
+
+  const activeTopic = TEAM_TOPICS.find((t) => t.id === selectedTopicId) ?? TEAM_TOPICS[0];
+
+  const handleSelectTopic = (topic: TeamTopic) => {
+    setSelectedTopicId(topic.id);
+    const isPreviousDefault = TEAM_TOPICS.some((t) => t.defaultMsg === customMessage);
+    if (!customMessage.trim() || isPreviousDefault) {
+      setCustomMessage(topic.defaultMsg);
+    }
+  };
+
+  const handleCopyEmail = () => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText('kontakt@longevity.app').then(() => {
+        setCopiedEmail(true);
+        setTimeout(() => setCopiedEmail(false), 2500);
+      });
+    }
+  };
+
+  const effectiveSubject = customSubject.trim() || activeTopic.subject;
+  const effectiveBody = `${customMessage.trim()}${senderName.trim() ? `\n\nBeste Grüße,\n${senderName.trim()}` : ''}${senderEmail.trim() ? `\n(Rückantwort an: ${senderEmail.trim()})` : ''}`;
+
+  const mailtoUrl = `mailto:kontakt@longevity.app?subject=${encodeURIComponent(effectiveSubject)}&body=${encodeURIComponent(effectiveBody)}`;
+
+  const handleCopyDraft = () => {
+    const formattedDraft = `Empfänger: kontakt@longevity.app\nBetreff: ${effectiveSubject}\n\n${effectiveBody}`;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(formattedDraft).then(() => {
+        setCopiedDraft(true);
+        setTimeout(() => setCopiedDraft(false), 2500);
+      });
     }
   };
 
@@ -1037,43 +1119,574 @@ export function Component() {
           </div>
         </section>
 
-        {/* ── 7. ÜBER UNS & DHBW FORSCHUNGSKONTEXT ───────────────────── */}
-        <section id="ueber-uns" className="scroll-reveal" style={{ marginBottom: 110, textAlign: 'center', scrollMarginTop: 110 }}>
-          <span style={{ fontSize: 12, fontWeight: 500, color: '#0f6e56', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-            Hinter den Kulissen
-          </span>
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 38px)', fontWeight: 500, color: '#22221f', margin: '8px 0 16px' }}>
-            Entstanden aus Forschung und Leidenschaft
-          </h2>
-          <p style={{ fontSize: 15, color: '#55544f', maxWidth: 700, margin: '0 auto 36px', lineHeight: 1.6 }}>
-            LONGEVITY startete als studentisches Spitzenprojekt an der Dualen Hochschule Baden-Württemberg (DHBW).
-            Unser Antrieb: Statt Lifestyle-Versprechen und esoterischen Ratschlägen setzen wir auf echte epidemiologische
-            Daten, offene Formeln und höchste Datensicherheit.
-          </p>
+        {/* ── 7. DAS TEAM & DIREKTER EMAIL-KONTAKT ───────────────── */}
+        <section
+          id="ueber-uns"
+          className="scroll-reveal"
+          style={{ marginBottom: 120, scrollMarginTop: 110 }}
+        >
+          {/* Header */}
+          <div style={{ textAlign: 'center', maxWidth: 840, margin: '0 auto 48px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                  padding: '4px 14px',
+                  borderRadius: 999,
+                  background: 'rgba(29, 158, 117, 0.12)',
+                  color: '#0f6e56',
+                  border: '1px solid rgba(29, 158, 117, 0.25)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <GraduationCap size={14} />
+                DHBW Mannheim · Duale Hochschule Baden-Württemberg
+              </span>
+            </div>
 
+            <h2
+              style={{
+                fontSize: 'clamp(28px, 4vw, 42px)',
+                fontWeight: 500,
+                color: '#22221f',
+                lineHeight: 1.2,
+                letterSpacing: '-0.02em',
+                margin: '0 0 16px',
+              }}
+            >
+              Von Studierenden entwickelt.{' '}
+              <span
+                style={{
+                  background: 'linear-gradient(135deg, #1d9e75 0%, #0f6e56 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                Direkt als Team ansprechbar.
+              </span>
+            </h2>
+
+            <p
+              style={{
+                fontSize: 'clamp(15px, 2vw, 17px)',
+                color: '#55544f',
+                lineHeight: 1.65,
+                margin: '0 auto',
+                maxWidth: 720,
+              }}
+            >
+              Hinter LONGEVITY steht kein anonymer Großkonzern, sondern ein 5-köpfiges Entwickler- und
+              Forschungsteam an der DHBW Mannheim. Wir verbinden offene Wissenschaft mit modernster
+              Software-Architektur und echter Datensouveränität. Schreib uns direkt &ndash; wir freuen uns
+              auf jeden Austausch und antworten persönlich!
+            </p>
+          </div>
+
+          {/* 2-Column Showcase: Left Image & Ethos, Right Direct Contact Hub */}
           <div
             style={{
-              display: 'inline-flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: 16,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))',
+              gap: 32,
+              alignItems: 'start',
             }}
           >
-            <a
-              href="https://github.com/Max-imalgutaussehend/LONGEVITY"
-              target="_blank"
-              rel="noreferrer"
-              style={{ textDecoration: 'none' }}
+            {/* Left Column: Team Photo & Real-World Presence */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div className="team-image-card">
+                <div style={{ position: 'relative', overflow: 'hidden' }}>
+                  <img
+                    src={teamImage}
+                    alt="Das LONGEVITY Entwickler-Team in Mannheim vor dem Wasserturm"
+                    style={{
+                      width: '100%',
+                      aspectRatio: '1024 / 879',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+
+                  {/* Top-Right Badge: Team Indicator */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 16,
+                      right: 16,
+                      background: 'rgba(7, 18, 14, 0.75)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: '1px solid rgba(255, 255, 255, 0.25)',
+                      padding: '6px 14px',
+                      borderRadius: 999,
+                      color: '#ffffff',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                    }}
+                  >
+                    <span className="pulse-emerald-dot" />
+                    <span>5 Köpfe · DHBW Team</span>
+                  </div>
+
+                  {/* Bottom Gradient Overlay with Location */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      padding: '36px 20px 16px',
+                      background:
+                        'linear-gradient(to top, rgba(7, 18, 14, 0.90) 0%, rgba(7, 18, 14, 0.45) 60%, transparent 100%)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-end',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: '0.01em' }}>
+                        LONGEVITY Kernteam
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: 'rgba(255, 255, 255, 0.88)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          marginTop: 3,
+                        }}
+                      >
+                        <MapPin size={13} color="#5dcaa5" />
+                        <span>Mannheim (Blick auf Wasserturm & Fernmeldeturm)</span>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        background: 'rgba(255, 255, 255, 0.16)',
+                        border: '1px solid rgba(255, 255, 255, 0.28)',
+                        borderRadius: 999,
+                        padding: '3px 10px',
+                        backdropFilter: 'blur(8px)',
+                        color: '#ffffff',
+                        fontWeight: 500,
+                      }}
+                    >
+                      Baden-Württemberg
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3 Value Pillars beneath photo */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                <div
+                  className="glass card-interactive"
+                  style={{
+                    borderRadius: 14,
+                    padding: '14px 16px',
+                    border: '1px solid rgba(255, 255, 255, 0.9)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#0f6e56',
+                      textTransform: 'uppercase',
+                      marginBottom: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <Users size={13} /> 5 Entwickler
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
+                    Interdisziplinär & agil an der DHBW
+                  </div>
+                </div>
+
+                <div
+                  className="glass card-interactive"
+                  style={{
+                    borderRadius: 14,
+                    padding: '14px 16px',
+                    border: '1px solid rgba(255, 255, 255, 0.9)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#0f6e56',
+                      textTransform: 'uppercase',
+                      marginBottom: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <Sparkles size={13} /> 100% Inhouse
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
+                    Vom Score-Algorithmus bis zum Frontend
+                  </div>
+                </div>
+
+                <div
+                  className="glass card-interactive"
+                  style={{
+                    borderRadius: 14,
+                    padding: '14px 16px',
+                    border: '1px solid rgba(255, 255, 255, 0.9)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#0f6e56',
+                      textTransform: 'uppercase',
+                      marginBottom: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <Mail size={13} /> Direktkontakt
+                  </div>
+                  <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
+                    Echte Antworten ohne Warteschleife
+                  </div>
+                </div>
+              </div>
+
+              {/* Mission Statement */}
+              <div
+                style={{
+                  background: 'rgba(240, 244, 241, 0.85)',
+                  borderRadius: 14,
+                  padding: '16px 20px',
+                  border: '1px solid rgba(29, 158, 117, 0.22)',
+                  fontSize: 13,
+                  color: '#44433e',
+                  lineHeight: 1.6,
+                }}
+              >
+                <em>
+                  &bdquo;Wir entwickeln LONGEVITY als wissenschaftlich nachvollziehbare Alternative zu
+                  proprietären Health-Blackboxes. Deine Fragen, Kritik und Anregungen fließen direkt in unsere
+                  nächste Iteration ein.&ldquo;
+                </em>
+              </div>
+            </div>
+
+            {/* Right Column: Interactive Direct Team Contact Hub */}
+            <Card
+              className="card-interactive"
+              style={{
+                padding: 'clamp(24px, 3.5vw, 36px) clamp(18px, 3.5vw, 32px)',
+                background: 'rgba(255, 255, 255, 0.88)',
+                boxShadow: '0 16px 45px rgba(15, 40, 28, 0.08), 0 1px 0 rgba(255, 255, 255, 1) inset',
+                borderRadius: 20,
+              }}
             >
-              <Btn variant="secondary">
-                GitHub Repository ansehen ↗
-              </Btn>
-            </a>
-            <Link to="/register" style={{ textDecoration: 'none' }}>
-              <Btn variant="primary">
-                Jetzt ausprobieren →
-              </Btn>
-            </Link>
+              {/* Header inside Card */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 10,
+                  flexWrap: 'wrap',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: 'rgba(29, 158, 117, 0.12)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#0f6e56',
+                    }}
+                  >
+                    <Mail size={19} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 600, color: '#22221f', margin: 0 }}>
+                      Schreib uns als Team
+                    </h3>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: '#0f6e56',
+                    background: '#e1f5ee',
+                    padding: '4px 12px',
+                    borderRadius: 999,
+                    border: '1px solid rgba(29, 158, 117, 0.25)',
+                  }}
+                >
+                  <span className="pulse-emerald-dot" />
+                  <span>Team erreichbar</span>
+                </div>
+              </div>
+
+              <p style={{ fontSize: 13, color: '#55544f', margin: '0 0 20px', lineHeight: 1.55 }}>
+                Kein Ticketsystem, keine vorgefertigten Bot-Antworten. Deine Nachricht landet direkt im gemeinsamen
+                Posteingang unserer fünf Teammitglieder. Wähle ein Thema oder schreibe uns frei:
+              </p>
+
+              {/* Topic Selector Pills */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#22221f', marginBottom: 8 }}>
+                  Thema vorauswählen:
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {TEAM_TOPICS.map((topic) => {
+                    const isActive = selectedTopicId === topic.id;
+                    return (
+                      <button
+                        key={topic.id}
+                        type="button"
+                        onClick={() => handleSelectTopic(topic)}
+                        className={`team-topic-chip ${isActive ? 'is-active' : ''}`}
+                      >
+                        <span>{topic.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Prominent Team Email Box with 1-Click Copy & Direct Mail App Launch */}
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, rgba(225, 245, 238, 0.7) 0%, rgba(240, 244, 241, 0.75) 100%)',
+                  border: '1px solid rgba(29, 158, 117, 0.32)',
+                  borderRadius: 14,
+                  padding: '14px 16px',
+                  marginBottom: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }}>
+                    Offizielle Team-Adresse
+                  </div>
+                  <a
+                    href="mailto:kontakt@longevity.app"
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: '#0f6e56',
+                      textDecoration: 'none',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    kontakt@longevity.app
+                  </a>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={handleCopyEmail}
+                    title="E-Mail-Adresse in die Zwischenablage kopieren"
+                    style={{
+                      background: copiedEmail ? '#0f6e56' : '#ffffff',
+                      color: copiedEmail ? '#ffffff' : '#22221f',
+                      border: copiedEmail ? '1px solid #0f6e56' : '1px solid rgba(168, 168, 156, 0.35)',
+                      padding: '7px 12px',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    {copiedEmail ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copiedEmail ? 'Kopiert!' : 'Kopieren'}</span>
+                  </button>
+
+                  <a
+                    href={mailtoUrl}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <Btn small variant="primary" style={{ padding: '7px 14px', fontSize: 12 }}>
+                      <Send size={13} style={{ marginRight: 4 }} />
+                      Mail öffnen
+                    </Btn>
+                  </a>
+                </div>
+              </div>
+
+              {/* Interactive Message Composer */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
+                      Dein Name / Absender
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="z.B. Alex Müller"
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
+                      Deine E-Mail (für Rückantwort)
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="deine.mail@beispiel.de"
+                      value={senderEmail}
+                      onChange={(e) => setSenderEmail(e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
+                    Betreffzeile
+                  </label>
+                  <input
+                    type="text"
+                    value={customSubject || activeTopic.subject}
+                    onChange={(e) => setCustomSubject(e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
+                    Deine Nachricht an das Team
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
+                  />
+                </div>
+
+                {/* Primary Mail Action Buttons */}
+                <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                  <a
+                    href={mailtoUrl}
+                    style={{ textDecoration: 'none', flex: '1 1 200px' }}
+                  >
+                    <Btn full variant="primary" style={{ padding: '10px 16px', fontSize: 13 }}>
+                      <Send size={14} style={{ marginRight: 6 }} />
+                      Im Mailprogramm absenden →
+                    </Btn>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyDraft}
+                    title="Kopiert die gesamte E-Mail (Empfänger, Betreff, Text) in die Zwischenablage"
+                    style={{
+                      flex: '1 1 140px',
+                      background: copiedDraft ? '#e1f5ee' : 'rgba(255, 255, 255, 0.85)',
+                      color: copiedDraft ? '#0f6e56' : '#22221f',
+                      border: copiedDraft ? '1px solid #1d9e75' : '1px solid rgba(168, 168, 156, 0.35)',
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      fontFamily: 'inherit',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {copiedDraft ? <Check size={15} color="#0f6e56" /> : <Copy size={15} />}
+                    <span>{copiedDraft ? 'Text kopiert! ✓' : 'Entwurf kopieren'}</span>
+                  </button>
+                </div>
+
+                {/* Response Guarantee & GitHub Link */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: 11,
+                    color: '#888780',
+                    borderTop: '1px solid rgba(0,0,0,0.06)',
+                    paddingTop: 12,
+                    marginTop: 4,
+                    flexWrap: 'wrap',
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Check size={12} color="#1d9e75" />
+                    <span>In der Regel persönliche Rückmeldung binnen 24h</span>
+                  </div>
+                  <a
+                    href="https://github.com/Max-imalgutaussehend/LONGEVITY"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      color: '#0f6e56',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontWeight: 500,
+                    }}
+                  >
+                    <span>GitHub Repository</span>
+                    <ExternalLink size={11} />
+                  </a>
+                </div>
+              </div>
+            </Card>
           </div>
         </section>
 
