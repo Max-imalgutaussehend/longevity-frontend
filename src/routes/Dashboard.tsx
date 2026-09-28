@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Flame } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, Skeleton } from '../components/ui.js';
 import { OnboardingCard } from '../components/OnboardingCard.js';
@@ -8,7 +9,28 @@ import type { ScoreResult } from '../api/types.js';
 
 interface HistoryPoint { date: string; score: number; coverage: number; }
 interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
+interface WeeklyReportResult { streakDays?: number; }
 import { getDomainLabel, getMetricLabel, getMetricUnit } from '../lib/formatters.js';
+
+export function getBandProgressInfo(score: { score: number; band: { low: number; high: number } }) {
+  if (score.band.low >= 90) {
+    return {
+      percent: 100,
+      text: 'Höchstes Band 90–100 erreicht',
+      isMaxBand: true,
+      remainingPoints: 0,
+      nextBand: null,
+    };
+  }
+  const remaining = Math.max(0, score.band.high + 1 - score.score);
+  return {
+    percent: Math.min(100, Math.max(0, ((score.score - score.band.low) / 10) * 100)),
+    text: `Noch ${remaining.toFixed(1)} Pkt. bis Band ${score.band.high + 1}`,
+    isMaxBand: false,
+    remainingPoints: Math.round(remaining * 10) / 10,
+    nextBand: score.band.high + 1,
+  };
+}
 
 export function Component() {
   const navigate = useNavigate();
@@ -23,6 +45,10 @@ export function Component() {
   const { data: levers } = useQuery<Lever[]>({
     queryKey: ['score', 'levers'],
     queryFn: () => apiClient<Lever[]>('/score/levers'),
+  });
+  const { data: weeklyReport } = useQuery<WeeklyReportResult>({
+    queryKey: ['report', 'weekly'],
+    queryFn: () => apiClient<WeeklyReportResult>('/report/weekly'),
   });
 
   const topLever = levers?.[0];
@@ -173,17 +199,50 @@ export function Component() {
           </Card>
 
           {/* Band progress */}
-          {score && (
-            <Card style={{ padding: '20px 24px' }}>
-              <div style={{ fontSize: 12, color: '#a3a29c', marginBottom: 8 }}>Band {score.band.low}–{score.band.high}</div>
-              <div style={{ height: 4, borderRadius: 99, background: 'rgba(0,0,0,0.05)', marginBottom: 6 }}>
-                <div style={{ height: '100%', borderRadius: 99, background: '#1d9e75', width: `${((score.score - score.band.low) / 10) * 100}%` }} />
-              </div>
-              <div style={{ fontSize: 12, color: '#55544f' }}>
-                Noch <strong style={{ color: '#0f6e56' }}>{(score.band.high + 1 - score.score).toFixed(1)} Pkt.</strong> bis Band {score.band.high + 1}
-              </div>
-            </Card>
-          )}
+          {score && (() => {
+            const progress = getBandProgressInfo(score);
+            return (
+              <Card data-testid="band-progress-card" style={{ padding: '20px 24px' }}>
+                <div style={{ fontSize: 12, color: '#a3a29c', marginBottom: 8 }}>Band {score.band.low}–{score.band.high}</div>
+                <div style={{ height: 4, borderRadius: 99, background: 'rgba(0,0,0,0.05)', marginBottom: 6 }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      borderRadius: 99,
+                      background: '#1d9e75',
+                      width: `${progress.percent}%`,
+                      transition: 'width 0.8s ease',
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 12, color: '#55544f' }}>
+                  {progress.isMaxBand ? (
+                    <span style={{ fontWeight: 500, color: '#0f6e56' }}>{progress.text}</span>
+                  ) : (
+                    <>
+                      Noch <strong style={{ color: '#0f6e56' }}>{progress.remainingPoints.toFixed(1)} Pkt.</strong> bis Band {progress.nextBand}
+                    </>
+                  )}
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* Data Streak */}
+          <Card data-testid="streak-card" style={{ padding: '20px 24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, color: '#a3a29c' }}>Datenstreak</span>
+              <Flame size={16} color="#0f6e56" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <span data-testid="streak-days" style={{ fontSize: 24, fontWeight: 600, color: '#22221f' }}>
+                {weeklyReport?.streakDays ?? 0}
+              </span>
+              <span style={{ fontSize: 12, color: '#55544f' }}>
+                {(weeklyReport?.streakDays ?? 0) === 1 ? 'Tag in Folge' : 'Tage in Folge'}
+              </span>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
