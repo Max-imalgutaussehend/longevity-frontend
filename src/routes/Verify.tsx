@@ -267,6 +267,87 @@ export function Component() {
                       {REASON_TEXT[data?.reason ?? ''] ?? 'Dieser Nachweis ist ungültig.'}
                     </p>
                   </>
+                ) : (
+                  <>
+                    <div style={{
+                      fontSize: 11,
+                      color: '#55544f',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      marginBottom: 20,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      background: 'rgba(0,0,0,0.04)',
+                      padding: '6px 14px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(0,0,0,0.08)',
+                    }}>
+                      <Check size={14} color="#0f6e56" />
+                      <span>Standard Score-Nachweis · Signatur geprüft</span>
+                    </div>
+
+                    <div data-testid="verify-band" style={{
+                      display: 'inline-flex',
+                      padding: '14px 32px',
+                      borderRadius: 999,
+                      background: 'rgba(29,158,117,0.10)',
+                      color: '#0f6e56',
+                      fontSize: 32,
+                      fontWeight: 500,
+                      border: '1px solid rgba(29,158,117,0.22)',
+                      marginBottom: 24,
+                    }}>
+                      Band {data.band.low} – {data.band.high}
+                    </div>
+
+                    <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 20 }}>
+                      Der Inhaber hat einen Vitalitätsscore im Band <strong>{data.band.low}–{data.band.high}</strong> nachgewiesen.<br />
+                      Ausgestellt {new Date(data.issuedAt).toLocaleDateString('de-DE')} · Gültig bis {new Date(data.expiresAt).toLocaleDateString('de-DE')}.
+                    </p>
+
+                    <div style={{
+                      textAlign: 'left',
+                      padding: '16px 20px',
+                      background: 'rgba(0,0,0,0.02)',
+                      borderRadius: 14,
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      fontSize: 12,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 10,
+                      marginBottom: 20,
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#888780' }}>Zertifikat</span>
+                        <span style={{ fontWeight: 500, color: '#22221f' }}>{data.certificateType ?? 'Standard Score-Nachweis'}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#888780' }}>Vertrauensstufe</span>
+                        <Chip color="neutral">Allgemeiner Vitalitätsnachweis</Chip>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#888780' }}>Kassenfähigkeit</span>
+                        <span style={{ fontSize: 11, color: '#888780' }}>Nicht für Kassen-Prämienrabatte zertifiziert</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#888780' }}>Aussteller</span>
+                        <span style={{ fontSize: 11, color: '#55544f' }}>{data.issuer ?? 'LONGEVITY Health Intermediary'}</span>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      fontSize: 11,
+                      color: '#888780',
+                      padding: '12px 16px',
+                      background: 'rgba(0,0,0,0.03)',
+                      borderRadius: 10,
+                      lineHeight: 1.6,
+                    }}>
+                      Dieser Nachweis enthält ausschließlich das Score-Band und das Datum. Kein exakter Score, keine Einzelwerte, keine personenbezogenen Daten.
+                    </div>
+                  </>
                 )}
               </Card>
               <div style={{ textAlign: 'center', fontSize: 12, color: '#a3a29c', marginTop: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
