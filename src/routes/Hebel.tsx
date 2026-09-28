@@ -7,7 +7,7 @@ import type { ScoreResult } from '../api/types.js';
 export interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
 export interface SimResult { base: ScoreResult; simulated: ScoreResult; perMetric: { metric: string; delta: number }[]; }
 
-import { getMetricLabel, getMetricUnit } from '../lib/formatters.js';
+import { getMetricLabel, getMetricUnit, formatMetricValue, formatMetricUnit } from '../lib/formatters.js';
 
 export const METRIC_RANGE: Record<string, [number, number, number]> = {
   vo2max: [25, 65, 0.5], resting_hr: [40, 100, 1], sleep_duration: [4, 10, 0.1],
@@ -157,7 +157,7 @@ export function Component() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontSize: 13, color: '#22221f' }}>{getMetricLabel(metric)}</span>
                     <span style={{ fontSize: 13, fontWeight: 500, color: changed ? '#0f6e56' : '#22221f' }}>
-                      {v} <span style={{ color: '#888780', fontWeight: 400 }}>{getMetricUnit(metric)}</span>
+                      {formatMetricValue(metric, v)} <span style={{ color: '#888780', fontWeight: 400 }}>{formatMetricUnit(metric, getMetricUnit(metric))}</span>
                     </span>
                   </div>
                   <div style={{ position: 'relative' }}>
@@ -168,7 +168,7 @@ export function Component() {
                     />
                     <div
                       data-testid={`marker-${metric}`}
-                      title={hasActual ? `Ist-Wert: ${actual}` : `Kohortenmittelwert: ${METRIC_COHORT_MEAN[metric]}`}
+                      title={hasActual ? `Ist-Wert: ${formatMetricValue(metric, actual)}` : `Kohortenmittelwert: ${formatMetricValue(metric, METRIC_COHORT_MEAN[metric])}`}
                       style={{
                         position: 'absolute', top: -3,
                         left: `${markerPct}%`,
@@ -182,9 +182,9 @@ export function Component() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                     <span style={{ fontSize: 11, color: '#a3a29c' }}>
-                      {hasActual ? `Ist: ${actual}` : `Ø Kohorte: ${METRIC_COHORT_MEAN[metric]} (kein Ist-Wert)`}
+                      {hasActual ? `Ist: ${formatMetricValue(metric, actual)}` : `Ø Kohorte: ${formatMetricValue(metric, METRIC_COHORT_MEAN[metric])} (kein Ist-Wert)`}
                     </span>
-                    <span style={{ fontSize: 11, color: '#a3a29c' }}>{max}</span>
+                    <span style={{ fontSize: 11, color: '#a3a29c' }}>{formatMetricValue(metric, max)}</span>
                   </div>
                 </div>
               );

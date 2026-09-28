@@ -4,7 +4,7 @@ import { apiClient } from '../api/client.js';
 import { Card, PageTitle, PercentileBar, Skeleton } from '../components/ui.js';
 import type { ScoreResult } from '../api/types.js';
 
-import { getDomainLabel, getMetricLabel } from '../lib/formatters.js';
+import { getDomainLabel, getMetricLabel, formatMetricValue, formatMetricUnit } from '../lib/formatters.js';
 
 export function formatFreshness(freshness: number | null | undefined): string {
   if (freshness === null || freshness === undefined) return '—';
@@ -71,7 +71,7 @@ export function Component() {
                     </div>
                     {m.available && m.value !== null && (
                       <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>
-                        {m.value} {m.unit}
+                        {formatMetricValue(m.metric, m.value)} {formatMetricUnit(m.metric, m.unit)}
                         {m.ageDays !== null && (
                           <span style={{ marginLeft: 6, color: m.ageDays > 180 ? '#854f0b' : '#a3a29c' }}>
                             · {m.ageDays}d alt

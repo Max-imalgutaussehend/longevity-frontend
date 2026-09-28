@@ -130,3 +130,49 @@ export function getMetricUnit(metric: string | null | undefined): string {
   if (!metric) return '';
   return METRIC_UNITS[metric] ?? '';
 }
+
+export const UNIT_TRANSLATIONS: Record<string, string> = {
+  'steps/day': 'Schritte/Tag',
+  '/day': '/Tag',
+  'min/week': 'min/Wo.',
+  '/week': '/Woche',
+  'hours': 'h',
+  'hour': 'h',
+};
+
+/**
+ * Liefert die lokalisierte Einheit einer Metrik.
+ * Übersetzt auch rohe englische API-Einheiten wie 'steps/day', 'min/week', '/week'.
+ */
+export function formatMetricUnit(metric?: string | null, rawUnit?: string | null): string {
+  const trimmed = rawUnit?.trim();
+  if (trimmed && UNIT_TRANSLATIONS[trimmed]) {
+    return UNIT_TRANSLATIONS[trimmed];
+  }
+  if (metric === 'steps') {
+    return 'Schritte/Tag';
+  }
+  if (metric && METRIC_UNITS[metric]) {
+    return METRIC_UNITS[metric];
+  }
+  return trimmed ?? '';
+}
+
+/**
+ * Formatiert metrische Werte mit passender Rundung und Nachkommastellen:
+ * - Schritte als Integer mit deutscher Tausendertrennung (z. B. 8.914)
+ * - Ruhepuls und systol. Blutdruck als gerundete Integer (z. B. 60)
+ * - VO₂max und Schlafdauer mit 1 Nachkommastelle (z. B. 51.9)
+ * - Sonstige Werte: Integer falls ganzzahlig, sonst 1 Nachkommastelle
+ */
+export function formatMetricValue(
+  metric: string | null | undefined,
+  val: number | null | undefined,
+): string {
+  if (val === null || val === undefined || isNaN(val)) return '—';
+  if (metric === 'steps') return Math.round(val).toLocaleString('de-DE');
+  if (metric === 'resting_hr' || metric === 'systolic_bp') return Math.round(val).toString();
+  if (metric === 'sleep_duration' || metric === 'vo2max') return val.toFixed(1);
+  return Number.isInteger(val) ? val.toString() : val.toFixed(1);
+}
+
