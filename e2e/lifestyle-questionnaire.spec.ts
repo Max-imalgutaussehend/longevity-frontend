@@ -38,14 +38,14 @@ test.describe('lifestyle questionnaire', () => {
     }).toPass({ timeout: 10_000 });
   });
 
-  test('rejects strength_sessions above 4 without submitting', async ({ page }) => {
+  test('rejects strength_sessions above 14 without submitting', async ({ page }) => {
     const email = uniqueEmail();
     const password = TEST_PASSWORD;
     await registerAndLogin(page, email, password);
     await grantHealthDataConsent(page);
 
     await page.goto('/daten');
-    await page.getByTestId('lifestyle-strength_sessions').fill('7');
+    await page.getByTestId('lifestyle-strength_sessions').fill('15');
 
     let requestFired = false;
     page.on('request', (req) => {
@@ -53,7 +53,7 @@ test.describe('lifestyle questionnaire', () => {
     });
 
     await page.getByTestId('save-lifestyle-values').click();
-    await expect(page.getByText('maximal 4 sein')).toBeVisible();
+    await expect(page.getByText('maximal 14 sein')).toBeVisible();
     expect(requestFired).toBe(false);
   });
 });
