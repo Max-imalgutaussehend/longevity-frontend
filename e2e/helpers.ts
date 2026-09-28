@@ -11,6 +11,7 @@ export const TEST_PASSWORD = 'Longevity-Test-2026';
 export async function loginAs(page: Page, email: string, password: string) {
   await page.addInitScript(() => {
     localStorage.setItem('longevity_tutorial_completed', 'true');
+    sessionStorage.removeItem('longevity_auto_open_tutorial');
   });
   await page.goto('/login');
   await page.getByTestId('login-email').fill(email);
@@ -51,6 +52,7 @@ export async function grantHealthDataConsent(page: Page) {
 export async function registerAndLogin(page: Page, email: string, password: string) {
   await page.addInitScript(() => {
     localStorage.setItem('longevity_tutorial_completed', 'true');
+    sessionStorage.removeItem('longevity_auto_open_tutorial');
   });
   await page.goto('/register');
   await page.getByTestId('register-email').fill(email);

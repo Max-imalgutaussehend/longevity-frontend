@@ -58,7 +58,9 @@ export function Component() {
 
     const sessionAutoOpen = sessionStorage.getItem('longevity_auto_open_tutorial') === 'true';
     const userCompletedKey = `longevity_tutorial_completed_${user.id}`;
-    const userCompleted = localStorage.getItem(userCompletedKey) === 'true';
+    const userCompleted =
+      localStorage.getItem(userCompletedKey) === 'true' ||
+      localStorage.getItem('longevity_tutorial_completed') === 'true';
 
     // Auto-open if explicitly requested by session flag OR user has never completed it for their account
     if (sessionAutoOpen || !userCompleted) {
