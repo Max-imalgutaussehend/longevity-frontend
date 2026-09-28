@@ -29,7 +29,7 @@ export function LifestyleCard({
   onSave,
 }: LifestyleCardProps) {
   return (
-    <Card>
+    <Card id="lifestyle-card">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
         <SectionLabel>Lebensstil &amp; Aktivität</SectionLabel>
         <span style={{

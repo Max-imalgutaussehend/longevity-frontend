@@ -36,12 +36,13 @@ export const SMOKING_OPTIONS = [
 ];
 
 export interface LifestyleField {
-  key: 'smoking' | 'alcohol_units' | 'strength_sessions' | 'zone2_minutes';
+  key: 'smoking' | 'alcohol_units' | 'strength_sessions' | 'zone2_minutes' | 'waist';
   label: string;
   unit: string;
   kind: 'select' | 'number';
   min?: number;
   max?: number;
+  step?: string | number;
   tooltip?: string;
   placeholder?: string;
 }
@@ -54,6 +55,7 @@ export const LIFESTYLE_FIELDS: Array<LifestyleField> = [
     unit: 'units/week',
     kind: 'number',
     min: 0,
+    max: 100,
     placeholder: 'z. B. 4',
     tooltip: '1 Einheit = 10g Alkohol ≈ 1 kleines Bier',
   },
@@ -73,7 +75,103 @@ export const LIFESTYLE_FIELDS: Array<LifestyleField> = [
     unit: 'min/week',
     kind: 'number',
     min: 0,
+    max: 1440,
     placeholder: 'z. B. 90',
     tooltip: 'Lockeres Ausdauertraining — "könnte sich noch unterhalten"',
+  },
+  {
+    key: 'waist',
+    label: 'Taillenumfang',
+    unit: 'cm',
+    kind: 'number',
+    min: 40,
+    max: 220,
+    step: '1',
+    placeholder: 'z. B. 85',
+    tooltip: 'Taillenumfang auf Nabelhöhe in cm (plausibler Bereich: 40–220 cm)',
+  },
+];
+
+export interface ManualLabField {
+  key: 'systolic_bp' | 'ldl' | 'hdl' | 'hba1c' | 'hscrp' | 'fasting_glucose' | 'triglycerides';
+  label: string;
+  unit: string;
+  min: number;
+  max: number;
+  step?: string | number;
+  placeholder?: string;
+  tooltip?: string;
+}
+
+export const MANUAL_LAB_FIELDS: Array<ManualLabField> = [
+  {
+    key: 'systolic_bp',
+    label: 'Systolischer Blutdruck',
+    unit: 'mmHg',
+    min: 70,
+    max: 250,
+    step: '1',
+    placeholder: 'z. B. 120',
+    tooltip: 'Systolischer Blutdruck in Ruhe (oberer Wert)',
+  },
+  {
+    key: 'ldl',
+    label: 'LDL-Cholesterin',
+    unit: 'mg/dL',
+    min: 10,
+    max: 500,
+    step: '1',
+    placeholder: 'z. B. 110',
+    tooltip: 'Low-Density Lipoprotein Cholesterin',
+  },
+  {
+    key: 'hdl',
+    label: 'HDL-Cholesterin',
+    unit: 'mg/dL',
+    min: 5,
+    max: 200,
+    step: '1',
+    placeholder: 'z. B. 55',
+    tooltip: 'High-Density Lipoprotein Cholesterin',
+  },
+  {
+    key: 'hba1c',
+    label: 'HbA1c',
+    unit: '%',
+    min: 3.5,
+    max: 15,
+    step: '0.1',
+    placeholder: 'z. B. 5.4',
+    tooltip: 'Langzeitblutzucker (glykiertes Hämoglobin)',
+  },
+  {
+    key: 'hscrp',
+    label: 'hsCRP',
+    unit: 'mg/L',
+    min: 0.01,
+    max: 50,
+    step: '0.01',
+    placeholder: 'z. B. 0.8',
+    tooltip: 'Hochsensitives C-reaktives Protein (Entzündungsmarker)',
+  },
+  {
+    key: 'fasting_glucose',
+    label: 'Nüchternglukose (optional)',
+    unit: 'mg/dL',
+    min: 40,
+    max: 400,
+    step: '1',
+    placeholder: 'z. B. 90',
+    tooltip: 'Blutzucker im nüchternen Zustand',
+  },
+  {
+    key: 'triglycerides',
+    label: 'Triglyzeride (optional)',
+    unit: 'mg/dL',
+    min: 20,
+    max: 1000,
+    step: '1',
+    placeholder: 'z. B. 130',
+    tooltip: 'Blutfette im Nüchternzustand',
   },
 ];
