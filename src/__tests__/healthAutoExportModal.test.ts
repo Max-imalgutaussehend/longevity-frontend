@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { buildHealthAutoExportWebhookUrl } from '../routes/daten/components/HealthAutoExportModal.js';
 
 describe('Health Auto Export Webhook URL logic (#98)', () => {
-  it('constructs default legacy webhook URL when no secret is provided', () => {
+  it('falls back to window.location.origin when no baseUrl is provided', () => {
     expect(buildHealthAutoExportWebhookUrl()).toBe(
-      'https://longevity.maxrommel.de/api/sources/health-auto-export/webhook',
+      `${window.location.origin}/api/sources/health-auto-export/webhook`,
     );
   });
 
