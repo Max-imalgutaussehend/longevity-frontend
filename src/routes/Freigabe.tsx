@@ -443,6 +443,11 @@ export function Component() {
                   <div style={{ fontSize: 10, color: '#55544f', marginTop: 1 }}>Band {kassenScore.bandLow}–{kassenScore.bandHigh}</div>
                 </div>
               </div>
+              {excludedSources.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 10, color: '#55544f', lineHeight: 1.4 }}>
+                  ℹ️ {excludedSources.length} nicht-kassenfähige {excludedSources.length === 1 ? 'Quelle' : 'Quellen'} fließen nicht in das Zertifikat ein.
+                </div>
+              )}
             </div>
           )}
 
