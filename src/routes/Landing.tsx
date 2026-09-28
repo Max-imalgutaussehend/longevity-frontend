@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { Check, X, Mail, Copy, Send, MapPin, Users, GraduationCap, Sparkles, ExternalLink, ShieldCheck, Lock, Award, Rocket, Code, Briefcase } from 'lucide-react';
+import { Check, X, Mail, Copy, Send, MapPin, Users, GraduationCap, Sparkles, ExternalLink, ShieldCheck, Lock, Award, Handshake, Code, Briefcase } from 'lucide-react';
 import heroVideo from '../assets/hero-video.mp4';
 import teamImage from '../assets/team.png';
 import { Card, Btn } from '../components/ui.js';
@@ -32,7 +32,7 @@ const CONTACT_REASONS: ContactReason[] = [
     companyPlaceholder: 'z.B. Techniker Krankenkasse, Barmer, BKK...',
     companyRequired: true,
     emailLabel: 'Geschäftliche E-Mail-Adresse *',
-    messagePlaceholder: 'Beschreiben Sie kurz Ihr Anliegen oder geplante Einführungsschritte...',
+    messagePlaceholder: 'Beschreiben Sie kurz Ihre Organisation sowie Kooperations- oder Anbindungswünsche...',
     btnText: 'Kooperationsanfrage absenden →',
   },
   {
@@ -1147,7 +1147,7 @@ export function Component() {
                 </p>
               </Card>
 
-              {/* Card 4: Schlüsselfertig & Einführung */}
+              {/* Card 4: Kooperation & Anbindung */}
               <Card className="card-interactive" style={{ padding: '24px 22px', background: 'rgba(255, 255, 255, 0.85)' }}>
                 <div
                   style={{
@@ -1162,14 +1162,15 @@ export function Component() {
                     color: '#0f6e56',
                   }}
                 >
-                  <Rocket size={20} />
+                  <Handshake size={20} />
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: '#22221f', marginBottom: 6 }}>
-                  Schlüsselfertig & Einführung
+                  Kooperation & Anbindung
                 </div>
                 <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.55 }}>
-                  LONGEVITY ist als Plattform bereits vollständig entwickelt und sofort einsatzbereit. Bei der
-                  Einführung für Ihre Versicherten oder Mitarbeiter unterstützen wir Sie gerne persönlich und partnerschaftlich.
+                  LONGEVITY wird vollständig von uns bereitgestellt und betrieben – ohne IT-Aufwand für Sie.
+                  Bei Kooperationen und der technischen Anbindung an Ihre Bonusprogramme oder Versicherten-Apps
+                  unterstützen wir Sie direkt.
                 </p>
               </Card>
             </div>
@@ -1190,10 +1191,10 @@ export function Component() {
             >
               <div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: '#22221f', marginBottom: 4 }}>
-                  Möchten Sie LONGEVITY in Ihrer Organisation einführen?
+                  Interesse an einer Kooperation oder Schnittstellen-Anbindung?
                 </div>
                 <div style={{ fontSize: 13, color: '#55544f' }}>
-                  Wir unterstützen Sie gerne persönlich bei der Einführung und beantworten alle fachlichen Fragen direkt.
+                  Wir besprechen gerne gemeinsame Kooperationsmodelle und unterstützen Sie direkt bei der technischen Anbindung.
                 </div>
               </div>
 
