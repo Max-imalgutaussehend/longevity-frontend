@@ -11,7 +11,7 @@ interface HealthAutoExportModalProps {
 }
 
 export function buildHealthAutoExportWebhookUrl(baseUrl?: string, secret?: string): string {
-  const base = (baseUrl || 'https://longevity.maxrommel.de').replace(/\/+$/, '');
+  const base = (baseUrl || window.location.origin).replace(/\/+$/, '');
   if (!secret) {
     return `${base}/api/sources/health-auto-export/webhook`;
   }

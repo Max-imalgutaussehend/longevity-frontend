@@ -92,21 +92,11 @@ export function Component() {
     const ageDelta = ((score - 50) / 10) * -1.2;
     const vitalityAge = Math.max(20, Math.round((chronoAge + ageDelta) * 10) / 10);
 
-    let band = 'Band 50';
-    let bandColor = '#888780';
-    if (score >= 80) {
-      band = 'Band 80 (Exzellent)';
-      bandColor = '#0f6e56';
-    } else if (score >= 65) {
-      band = 'Band 65 (Vital)';
-      bandColor = '#1d9e75';
-    } else if (score >= 50) {
-      band = 'Band 50 (Solide)';
-      bandColor = '#55544f';
-    } else {
-      band = 'Band 35 (Ausbaufähig)';
-      bandColor = '#854f0b';
-    }
+    // Band label reflects the same 10-point banding used by the real score
+    // engine (Math.floor(score / 10) * 10), not an invented scale.
+    const bandLow = Math.min(90, Math.floor(score / 10) * 10);
+    const band = `Band ${bandLow}–${bandLow + 9}`;
+    const bandColor = score >= 80 ? '#0f6e56' : score >= 65 ? '#1d9e75' : score >= 50 ? '#55544f' : '#854f0b';
 
     return {
       score,
@@ -762,7 +752,7 @@ export function Component() {
                 }}
               >
                 <div style={{ fontSize: 12, fontWeight: 500, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                  Prognostizierter Score
+                  Beispielhafter Score
                 </div>
 
                 {/* Huge animated score number */}
@@ -828,6 +818,11 @@ export function Component() {
                     Deine echten Werte ermitteln →
                   </Btn>
                 </Link>
+
+                <p style={{ fontSize: 11, color: '#a3a29c', marginTop: 14, lineHeight: 1.5 }}>
+                  Vereinfachte Beispielrechnung zur Veranschaulichung — keine echte Score-Berechnung.
+                  Dein tatsächlicher Score basiert auf 4 wissenschaftlichen Domänen und echten Messdaten.
+                </p>
               </div>
             </div>
           </div>
