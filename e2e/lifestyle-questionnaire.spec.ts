@@ -25,7 +25,7 @@ test.describe('lifestyle questionnaire', () => {
     await page.getByTestId('lifestyle-zone2_minutes').fill('180');
 
     const [response] = await Promise.all([
-      page.waitForResponse((res) => res.url().includes('/api/labs') && res.request().method() === 'POST'),
+      page.waitForResponse((res) => (res.url().includes('/api/questionnaire') || res.url().includes('/api/labs')) && res.request().method() === 'POST'),
       page.getByTestId('save-lifestyle-values').click(),
     ]);
     expect(response.status()).toBe(201);
@@ -49,7 +49,7 @@ test.describe('lifestyle questionnaire', () => {
 
     let requestFired = false;
     page.on('request', (req) => {
-      if (req.url().includes('/api/labs') && req.method() === 'POST') requestFired = true;
+      if ((req.url().includes('/api/questionnaire') || req.url().includes('/api/labs')) && req.method() === 'POST') requestFired = true;
     });
 
     await page.getByTestId('save-lifestyle-values').click();
