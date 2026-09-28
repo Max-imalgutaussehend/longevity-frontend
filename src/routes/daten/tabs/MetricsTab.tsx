@@ -91,7 +91,37 @@ export function MetricsTab({
         )}
       </div>
 
+      {/* Kassen-Score coverage bar */}
+      {summaryData && summaryData.metrics.length > 0 && (() => {
+        const verifiedAdapters = ['oura', 'withings', 'strava', 'google_fit', 'google_health', 'fhir'];
+        const verifiedCount = summaryData.metrics.filter((m) => verifiedAdapters.includes(m.sourceKind)).length;
+        const total = summaryData.metrics.length;
+        const pct = Math.round((verifiedCount / total) * 100);
+        return (
+          <div style={{
+            padding: '12px 18px',
+            borderRadius: 14,
+            background: pct >= 50 ? 'rgba(29,158,117,0.06)' : 'rgba(238,108,43,0.06)',
+            border: `1px solid ${pct >= 50 ? 'rgba(29,158,117,0.2)' : 'rgba(238,108,43,0.25)'}`,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#22221f' }}>
+                <ShieldCheck size={14} color="#0f6e56" />
+                Kassen-Abdeckung: {verifiedCount} von {total} Metriken kassenfähig ({pct} %)
+              </div>
+              <span style={{ fontSize: 11, color: '#55544f' }}>
+                {pct < 50 ? 'Verbinde mehr verifizierte Quellen für ein stärkeres Kassen-Band.' : 'Gute Abdeckung für GKV / PKV.'}
+              </span>
+            </div>
+            <div style={{ height: 6, borderRadius: 99, background: 'rgba(0,0,0,0.05)' }}>
+              <div style={{ height: '100%', borderRadius: 99, background: pct >= 50 ? '#1d9e75' : '#e57532', width: `${pct}%`, transition: 'width 0.6s ease' }} />
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Filter Bar */}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[
