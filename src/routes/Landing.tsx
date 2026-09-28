@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { Check, X, Mail, Copy, Send, MapPin, Users, GraduationCap, Sparkles, ExternalLink, ShieldCheck, Lock, Activity, Award } from 'lucide-react';
+import { Check, X, Mail, Copy, Send, MapPin, Users, GraduationCap, Sparkles, ExternalLink, ShieldCheck, Lock, Award, Rocket, Code, Briefcase } from 'lucide-react';
 import heroVideo from '../assets/hero-video.mp4';
 import teamImage from '../assets/team.png';
 import { Card, Btn } from '../components/ui.js';
@@ -32,7 +32,7 @@ const CONTACT_REASONS: ContactReason[] = [
     companyPlaceholder: 'z.B. Techniker Krankenkasse, Barmer, BKK...',
     companyRequired: true,
     emailLabel: 'Geschäftliche E-Mail-Adresse *',
-    messagePlaceholder: 'Beschreiben Sie kurz Ihre Anforderungen oder Ihr Pilotierungs-Interesse...',
+    messagePlaceholder: 'Beschreiben Sie kurz Ihr Anliegen oder geplante Einführungsschritte...',
     btnText: 'Kooperationsanfrage absenden →',
   },
   {
@@ -1147,7 +1147,7 @@ export function Component() {
                 </p>
               </Card>
 
-              {/* Card 4: Pilotierung */}
+              {/* Card 4: Schlüsselfertig & Einführung */}
               <Card className="card-interactive" style={{ padding: '24px 22px', background: 'rgba(255, 255, 255, 0.85)' }}>
                 <div
                   style={{
@@ -1162,14 +1162,14 @@ export function Component() {
                     color: '#0f6e56',
                   }}
                 >
-                  <Activity size={20} />
+                  <Rocket size={20} />
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: '#22221f', marginBottom: 6 }}>
-                  Pilotprojekt & Begleitung
+                  Schlüsselfertig & Einführung
                 </div>
                 <p style={{ fontSize: 13, color: '#55544f', margin: 0, lineHeight: 1.55 }}>
-                  Vom Proof-of-Concept bis zur Pilot-Kohorte: Unser DHBW-Forschungsteam begleitet Sie direkt
-                  bei der Evaluation und technischen Anbindung – partnerschaftlich und agil.
+                  LONGEVITY ist als Plattform bereits vollständig entwickelt und sofort einsatzbereit. Bei der
+                  Einführung für Ihre Versicherten oder Mitarbeiter unterstützen wir Sie gerne persönlich und partnerschaftlich.
                 </p>
               </Card>
             </div>
@@ -1190,10 +1190,10 @@ export function Component() {
             >
               <div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: '#22221f', marginBottom: 4 }}>
-                  Planen Sie ein Pilotprojekt oder ein digitales Bonusprogramm?
+                  Möchten Sie LONGEVITY in Ihrer Organisation einführen?
                 </div>
                 <div style={{ fontSize: 13, color: '#55544f' }}>
-                  Besprechen Sie technische Schnittstellen und Pilotierungen direkt mit unserem Entwicklerteam.
+                  Wir unterstützen Sie gerne persönlich bei der Einführung und beantworten alle fachlichen Fragen direkt.
                 </div>
               </div>
 
@@ -1266,13 +1266,13 @@ export function Component() {
                 color: '#55544f',
                 lineHeight: 1.65,
                 margin: '0 auto',
-                maxWidth: 720,
+                maxWidth: 760,
               }}
             >
-              Hinter LONGEVITY steht kein anonymer Großkonzern, sondern ein 5-köpfiges Entwickler- und
-              Forschungsteam an der DHBW Mannheim. Wir verbinden offene Wissenschaft mit modernster
-              Software-Architektur und echter Datensouveränität. Schreib uns direkt &ndash; wir freuen uns
-              auf jeden Austausch und antworten persönlich!
+              Hinter LONGEVITY steht kein anonymer Großkonzern, sondern ein 5-köpfiges Team der DHBW Mannheim:
+              Drei Software-Entwickler und zwei BWL-Expertinnen verbinden modernste Software-Architektur und
+              Datensouveränität mit fundierter Produktführung und verlässlicher Kooperation. Schreib uns direkt &ndash;
+              wir freuen uns auf jeden Austausch und antworten persönlich!
             </p>
           </div>
 
@@ -1379,6 +1379,64 @@ export function Component() {
                 </div>
               </div>
 
+              {/* Team Roles: 3 Tech + 2 Business */}
+              <div
+                style={{
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: 14,
+                  padding: '12px 18px',
+                  border: '1px solid rgba(29, 158, 117, 0.22)',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: 12,
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.03)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 9,
+                      background: '#e1f5ee',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#0f6e56',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Code size={16} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>Tech & Engineering</div>
+                    <div style={{ fontSize: 12, color: '#55544f' }}>Max, Victor & Till</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 9,
+                      background: '#e1f5ee',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#0f6e56',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Briefcase size={16} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>Business & Strategie</div>
+                    <div style={{ fontSize: 12, color: '#55544f' }}>Lea & Christina</div>
+                  </div>
+                </div>
+              </div>
+
               {/* 3 Value Pillars beneath photo */}
               <div
                 style={{
@@ -1407,10 +1465,10 @@ export function Component() {
                       gap: 5,
                     }}
                   >
-                    <Users size={13} /> 5 Entwickler
+                    <Users size={13} /> 3 Tech · 2 BWL
                   </div>
                   <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                    Interdisziplinär & agil an der DHBW
+                    Code, Architektur, Finanzen & Partnerschaften vereint
                   </div>
                 </div>
 
@@ -1437,7 +1495,7 @@ export function Component() {
                     <Sparkles size={13} /> 100% Inhouse
                   </div>
                   <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                    Vom Score-Algorithmus bis zum Frontend
+                    Vom Score-Algorithmus über FHIR bis zum Partnermodell
                   </div>
                 </div>
 
@@ -1464,7 +1522,7 @@ export function Component() {
                     <Mail size={13} /> Direktkontakt
                   </div>
                   <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                    Echte Antworten ohne Warteschleife
+                    Echte Antworten vom Team &ndash; werktags in 24h
                   </div>
                 </div>
               </div>
@@ -1482,10 +1540,13 @@ export function Component() {
                 }}
               >
                 <em>
-                  &bdquo;Wir entwickeln LONGEVITY als wissenschaftlich nachvollziehbare Alternative zu
-                  proprietären Health-Blackboxes. Deine Fragen, Kritik und Anregungen fließen direkt in unsere
-                  nächste Iteration ein.&ldquo;
+                  &bdquo;Unser Anspruch: Medizinische Evidenz, modernste Software-Architektur und verlässliche
+                  Partnerschaften so zu vereinen, dass Nutzer die Kontrolle über ihre Gesundheitsdaten behalten &ndash;
+                  und Partner messbare Mehrwerte erzielen.&ldquo;
                 </em>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#0f6e56', marginTop: 8, textAlign: 'right' }}>
+                  &mdash; Max, Victor, Till (Tech) &middot; Lea & Christina (Business)
+                </div>
               </div>
             </div>
 
