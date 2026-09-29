@@ -32,6 +32,8 @@ export function Component() {
   const [hasInitializedDefault, setHasInitializedDefault] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [deletePassword, setDeletePassword] = useState('');
+  const [deleteRequested, setDeleteRequested] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { data: sources, isLoading: srcLoading } = useQuery<Source[]>({
     queryKey: ['sources'],
@@ -108,8 +110,12 @@ export function Component() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: () => apiClient('/account', { method: 'DELETE', body: JSON.stringify({ password: deletePassword }) }),
-    onSuccess: () => { window.location.href = '/login'; },
+    mutationFn: () => apiClient('/account/request-delete', { method: 'POST', body: JSON.stringify({ password: deletePassword }) }),
+    onSuccess: () => { setDeleteRequested(true); setDeleteError(null); },
+    onError: (err: unknown) => {
+      const e = err as { detail?: string; title?: string; message?: string };
+      setDeleteError(e?.detail ?? e?.title ?? e?.message ?? 'Löschung konnte nicht angefordert werden.');
+    },
   });
 
   const exportMut = useMutation({
@@ -507,19 +513,40 @@ export function Component() {
       )}
 
       {showDelete && (
-        <Modal onClose={() => setShowDelete(false)}>
-          <div style={{ fontSize: 16, fontWeight: 500, color: '#a32d2d', marginBottom: 8 }}>Konto unwiderruflich löschen</div>
-          <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 16 }}>
-            Gelöscht werden: alle Messwerte, Score-Snapshots, Nachweise und dein Konto. Diese Aktion ist nicht umkehrbar.
-          </p>
-          <div style={{ marginBottom: 20 }}>
-            <FieldLabel>Passwort zur Bestätigung</FieldLabel>
-            <GlassInput type="password" placeholder="Dein Passwort" value={deletePassword} onChange={setDeletePassword} />
-          </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <Btn variant="ghost" onClick={() => setShowDelete(false)}>Abbrechen</Btn>
-            <Btn variant="danger" onClick={() => deleteMut.mutate()}>Konto löschen</Btn>
-          </div>
+        <Modal onClose={() => { setShowDelete(false); setDeleteRequested(false); setDeleteError(null); setDeletePassword(''); }}>
+          {deleteRequested ? (
+            <>
+              <div style={{ fontSize: 16, fontWeight: 500, color: '#0f6e56', marginBottom: 8 }}>Bestätigungs-E-Mail gesendet</div>
+              <p data-testid="delete-request-sent" style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 20 }}>
+                Wir haben dir eine E-Mail gesendet. Bitte klicke auf den Bestätigungslink, um dein Konto endgültig zu löschen. Der Link ist 30 Minuten gültig.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Btn variant="ghost" onClick={() => { setShowDelete(false); setDeleteRequested(false); setDeletePassword(''); }}>Schließen</Btn>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 16, fontWeight: 500, color: '#a32d2d', marginBottom: 8 }}>Konto unwiderruflich löschen</div>
+              <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.7, marginBottom: 16 }}>
+                Gelöscht werden: alle Messwerte, Score-Snapshots, Nachweise und dein Konto. Diese Aktion ist nicht umkehrbar. Wir senden dir zur Bestätigung einen Link per E-Mail.
+              </p>
+              <div style={{ marginBottom: 20 }}>
+                <FieldLabel>Passwort zur Bestätigung</FieldLabel>
+                <GlassInput type="password" placeholder="Dein Passwort" value={deletePassword} onChange={setDeletePassword} />
+              </div>
+              {deleteError && (
+                <div style={{ fontSize: 12, color: '#a32d2d', marginBottom: 16, padding: '10px 14px', borderRadius: 8, background: 'rgba(163,45,45,0.08)', border: '1px solid rgba(163,45,45,0.2)', lineHeight: 1.5 }}>
+                  {deleteError}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <Btn variant="ghost" onClick={() => setShowDelete(false)}>Abbrechen</Btn>
+                <Btn variant="danger" onClick={() => deleteMut.mutate()} testId="confirm-delete-account" disabled={deleteMut.isPending}>
+                  {deleteMut.isPending ? 'Sende…' : 'Löschung anfordern'}
+                </Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
     </div>

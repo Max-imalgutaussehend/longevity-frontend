@@ -22,6 +22,10 @@ export const routes: RouteObject[] = [
     lazy: () => import('./routes/VerifyEmail.js'),
   },
   {
+    path: '/confirm-delete-account/:token',
+    lazy: () => import('./routes/ConfirmDeleteAccount.js'),
+  },
+  {
     path: '/verify',
     lazy: () => import('./routes/Verify.js'),
   },
