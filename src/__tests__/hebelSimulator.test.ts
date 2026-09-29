@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   getScoreBand,
   extractActualMetricValues,
+  estimateBioAgeReduction,
   METRIC_COHORT_MEAN,
   type Lever,
 } from '../routes/Hebel.js';
@@ -116,6 +117,18 @@ describe('Hebel Simulator Istwerte & Score-Band (#82)', () => {
     it('falls back gracefully when score or levers are empty', () => {
       const actuals = extractActualMetricValues(null, null);
       expect(actuals).toEqual({});
+    });
+  });
+
+  describe('estimateBioAgeReduction() (#94)', () => {
+    it('converts a score delta to years using the score engine\'s 3.33 points/year ratio', () => {
+      expect(estimateBioAgeReduction(3.33)).toBeCloseTo(1.0, 2);
+      expect(estimateBioAgeReduction(6.66)).toBeCloseTo(2.0, 2);
+      expect(estimateBioAgeReduction(0)).toBe(0);
+    });
+
+    it('matches the backend bioAge formula direction: higher score delta -> larger reduction', () => {
+      expect(estimateBioAgeReduction(5)).toBeGreaterThan(estimateBioAgeReduction(2));
     });
   });
 
