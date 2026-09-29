@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, Btn, GlassInput, FieldLabel } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
@@ -26,6 +27,7 @@ export function Component() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const accountDeleted = new URLSearchParams(window.location.search).get('accountDeleted') === 'true';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +51,19 @@ export function Component() {
           <img src={brandIcon} alt="Longevity" style={{ width: 120, height: 120, objectFit: 'contain', display: 'block', margin: '0 auto 20px' }} />
           <div style={{ fontSize: 24, fontWeight: 500, color: '#22221f', letterSpacing: '-0.01em' }}>Willkommen zurück</div>
         </div>
+        {accountDeleted && (
+          <div data-testid="account-deleted-banner" style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20,
+            padding: '14px 16px', borderRadius: 12, background: 'rgba(29,158,117,0.10)',
+            border: '1px solid rgba(29,158,117,0.22)', color: '#0f6e56',
+          }}>
+            <Check size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 2 }}>Konto erfolgreich gelöscht</div>
+              <div style={{ fontSize: 12, color: '#55544f' }}>Dein Konto und alle gespeicherten Gesundheitsdaten wurden unwiderruflich gelöscht.</div>
+            </div>
+          </div>
+        )}
         <Card style={{ padding: '36px 36px 32px' }}>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
