@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   getScoreBand,
   extractActualMetricValues,
   estimateBioAgeReduction,
+  focusStorageKey,
+  readFocusMetric,
+  writeFocusMetric,
   METRIC_COHORT_MEAN,
   type Lever,
 } from '../routes/Hebel.js';
@@ -120,15 +123,80 @@ describe('Hebel Simulator Istwerte & Score-Band (#82)', () => {
     });
   });
 
-  describe('estimateBioAgeReduction() (#94)', () => {
-    it('converts a score delta to years using the score engine\'s 3.33 points/year ratio', () => {
-      expect(estimateBioAgeReduction(3.33)).toBeCloseTo(1.0, 2);
-      expect(estimateBioAgeReduction(6.66)).toBeCloseTo(2.0, 2);
-      expect(estimateBioAgeReduction(0)).toBe(0);
+  describe('estimateBioAgeReduction() (#94, clamped per PR review)', () => {
+    it('converts a score delta to years using the score engine\'s 3.33 points/year ratio, away from the clamp', () => {
+      // currentScore 50 -> bioAge == chronoAge exactly, well inside the ±15y clamp either direction.
+      expect(estimateBioAgeReduction(50, 40, 3.33)).toBeCloseTo(1.0, 2);
+      expect(estimateBioAgeReduction(50, 40, 6.66)).toBeCloseTo(2.0, 2);
+      expect(estimateBioAgeReduction(50, 40, 0)).toBe(0);
     });
 
     it('matches the backend bioAge formula direction: higher score delta -> larger reduction', () => {
-      expect(estimateBioAgeReduction(5)).toBeGreaterThan(estimateBioAgeReduction(2));
+      expect(estimateBioAgeReduction(50, 40, 5)).toBeGreaterThan(estimateBioAgeReduction(50, 40, 2));
+    });
+
+    it('never returns a negative reduction for a positive score delta', () => {
+      expect(estimateBioAgeReduction(50, 40, 5)).toBeGreaterThanOrEqual(0);
+    });
+
+    it('caps the reduction at the score engine\'s ±15-year clamp boundary (PR review finding)', () => {
+      // A user already at the -15y clamp (score 99.95 -> bioAge = chronoAge - 15) gains
+      // nothing further from a lever, because bioAge cannot go below chronoAge - 15.
+      const chronoAge = 40;
+      const scoreAtClampBoundary = 50 + 15 * 3.33; // bioAge == chronoAge - 15 exactly
+      const reduction = estimateBioAgeReduction(scoreAtClampBoundary, chronoAge, 10);
+      expect(reduction).toBe(0);
+    });
+
+    it('reports only the portion of the reduction that falls before the clamp boundary', () => {
+      const chronoAge = 40;
+      // Starting 1 year of headroom above the clamp (bioAge = chronoAge - 14) — a
+      // 10-point lever should only buy back that last 1 year, not the full
+      // 10/3.33 ≈ 3.0 years it would promise unclamped.
+      const scoreOneYearFromClamp = 50 + 14 * 3.33;
+      const reduction = estimateBioAgeReduction(scoreOneYearFromClamp, chronoAge, 10);
+      expect(reduction).toBeLessThan(10 / 3.33);
+      expect(reduction).toBeCloseTo(1, 1);
+    });
+  });
+
+  describe('lever focus localStorage — per-user scoping (PR review finding)', () => {
+    // Node's experimental global localStorage shadows jsdom's window.localStorage
+    // and throws without --localstorage-file, so this suite provides its own
+    // minimal in-memory stub rather than depending on either.
+    beforeEach(() => {
+      const store = new Map<string, string>();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (globalThis as any).localStorage = {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => { store.set(k, v); },
+        removeItem: (k: string) => { store.delete(k); },
+        clear: () => { store.clear(); },
+      };
+    });
+
+    it('scopes the storage key to the user id, so two users on the same browser don\'t share a focus', () => {
+      expect(focusStorageKey('user-a')).not.toBe(focusStorageKey('user-b'));
+    });
+
+    it('writing a focus for one user does not leak into another user\'s read', () => {
+      writeFocusMetric('user-a', 'vo2max');
+      expect(readFocusMetric('user-a')).toBe('vo2max');
+      expect(readFocusMetric('user-b')).toBeNull();
+    });
+
+    it('returns null and no-ops when no userId is available yet (e.g. before /me resolves)', () => {
+      expect(readFocusMetric(undefined)).toBeNull();
+      writeFocusMetric(undefined, 'vo2max');
+      expect(readFocusMetric('user-a')).toBeNull();
+    });
+
+    it('clearing a user\'s focus removes only that user\'s key', () => {
+      writeFocusMetric('user-a', 'vo2max');
+      writeFocusMetric('user-b', 'resting_hr');
+      writeFocusMetric('user-a', null);
+      expect(readFocusMetric('user-a')).toBeNull();
+      expect(readFocusMetric('user-b')).toBe('resting_hr');
     });
   });
 

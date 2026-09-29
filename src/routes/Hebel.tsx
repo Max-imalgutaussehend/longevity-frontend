@@ -11,12 +11,26 @@ export interface SimResult { base: ScoreResult; simulated: ScoreResult; perMetri
 import { getMetricLabel, getMetricUnit, formatMetricValue, formatMetricUnit } from '../lib/formatters.js';
 import { getMetricEducation, METRIC_BADGE_LABELS, type MetricBadge } from '../lib/metricEducation.js';
 
-// Score-to-BioAge conversion factor used by the score engine (src/score/index.ts):
-// bioAge = chronoAge - (score - 50) / 3.33 — i.e. 3.33 score points ≈ 1 year of bio-age.
+// Score-to-BioAge conversion used by the score engine (src/score/index.ts):
+// bioAge = clamp(chronoAge - (score - 50) / 3.33, chronoAge - 15, chronoAge + 15)
+// i.e. 3.33 score points ≈ 1 year of bio-age, clamped to ±15 years from chronoAge.
 const SCORE_POINTS_PER_BIOAGE_YEAR = 3.33;
+const BIOAGE_CLAMP_YEARS = 15;
 
-export function estimateBioAgeReduction(scoreDelta: number): number {
-  return scoreDelta / SCORE_POINTS_PER_BIOAGE_YEAR;
+/**
+ * Estimates how much a lever's score delta would reduce bio-age, applying the
+ * same clamp the score engine uses — a lever's raw point delta alone can
+ * promise more reduction than the engine will ever actually apply once a
+ * user is already near the ±15-year clamp boundary.
+ */
+export function estimateBioAgeReduction(currentScore: number, chronoAge: number, scoreDelta: number): number {
+  const currentBioAge = clampBioAge(chronoAge - (currentScore - 50) / SCORE_POINTS_PER_BIOAGE_YEAR, chronoAge);
+  const projectedBioAge = clampBioAge(chronoAge - (currentScore + scoreDelta - 50) / SCORE_POINTS_PER_BIOAGE_YEAR, chronoAge);
+  return Math.max(0, currentBioAge - projectedBioAge);
+}
+
+function clampBioAge(bioAge: number, chronoAge: number): number {
+  return Math.min(chronoAge + BIOAGE_CLAMP_YEARS, Math.max(chronoAge - BIOAGE_CLAMP_YEARS, bioAge));
 }
 
 const BADGE_ICON: Record<MetricBadge, typeof Rocket> = {
@@ -31,20 +45,26 @@ const BADGE_CHIP_COLOR: Record<MetricBadge, 'amber' | 'teal' | 'green'> = {
   kasse: 'green',
 };
 
-const FOCUS_STORAGE_KEY = 'longevity_lever_focus';
+const FOCUS_STORAGE_PREFIX = 'longevity_lever_focus_';
 
-function readFocusMetric(): string | null {
+export function focusStorageKey(userId: string): string {
+  return `${FOCUS_STORAGE_PREFIX}${userId}`;
+}
+
+export function readFocusMetric(userId: string | undefined): string | null {
+  if (!userId) return null;
   try {
-    return localStorage.getItem(FOCUS_STORAGE_KEY);
+    return localStorage.getItem(focusStorageKey(userId));
   } catch {
     return null;
   }
 }
 
-function writeFocusMetric(metric: string | null) {
+export function writeFocusMetric(userId: string | undefined, metric: string | null) {
+  if (!userId) return;
   try {
-    if (metric) localStorage.setItem(FOCUS_STORAGE_KEY, metric);
-    else localStorage.removeItem(FOCUS_STORAGE_KEY);
+    if (metric) localStorage.setItem(focusStorageKey(userId), metric);
+    else localStorage.removeItem(focusStorageKey(userId));
   } catch {
     // localStorage unavailable (private mode / disabled) — focus simply won't persist
   }
@@ -110,6 +130,10 @@ export function Component() {
     queryKey: ['score', 'current'],
     queryFn: () => apiClient<ScoreResult>('/score/current'),
   });
+  const { data: me } = useQuery<{ id: string }>({
+    queryKey: ['me'],
+    queryFn: () => apiClient('/me'),
+  });
 
   const actualValues = useMemo(() => extractActualMetricValues(score, levers), [score, levers]);
 
@@ -117,12 +141,17 @@ export function Component() {
   const [simResult, setSimResult] = useState<SimResult | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expandedLever, setExpandedLever] = useState<string | null>(null);
-  const [focusMetric, setFocusMetric] = useState<string | null>(() => readFocusMetric());
+  const [openSliderTip, setOpenSliderTip] = useState<string | null>(null);
+  const [focusMetric, setFocusMetric] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (me?.id) setFocusMetric(readFocusMetric(me.id));
+  }, [me?.id]);
 
   function toggleFocus(metric: string) {
     const next = focusMetric === metric ? null : metric;
     setFocusMetric(next);
-    writeFocusMetric(next);
+    writeFocusMetric(me?.id, next);
   }
 
   const simulateMut = useMutation({
@@ -172,7 +201,7 @@ export function Component() {
             const isExpanded = expandedLever === lever.metric;
             const isFocus = focusMetric === lever.metric;
             const BadgeIcon = edu ? BADGE_ICON[edu.badge] : null;
-            const bioAgeReduction = estimateBioAgeReduction(lever.delta);
+            const bioAgeReduction = score ? estimateBioAgeReduction(score.score, score.chronoAge, lever.delta) : 0;
 
             return (
               <Card key={lever.metric} style={{ borderTop: `3px solid ${i === 0 ? '#1d9e75' : 'rgba(0,0,0,0.08)'}` }}>
@@ -192,7 +221,7 @@ export function Component() {
                   <span style={{ fontSize: 26, fontWeight: 500, color: '#0f6e56', letterSpacing: '-0.01em' }}>+{lever.delta.toFixed(1)}</span>
                   <span style={{ fontSize: 12, color: '#888780', marginLeft: 6 }}>Punkte · {lever.horizonWeeks} Wochen</span>
                   <div style={{ fontSize: 12, color: '#a3a29c', marginTop: 4 }}>
-                    {lever.currentValue?.toFixed(1) ?? '?'} → {lever.targetValue.toFixed(1)} {getMetricUnit(lever.metric)}
+                    {lever.currentValue !== null ? formatMetricValue(lever.metric, lever.currentValue) : '?'} → {formatMetricValue(lever.metric, lever.targetValue)} {formatMetricUnit(lever.metric, getMetricUnit(lever.metric))}
                   </div>
                   {bioAgeReduction > 0 && (
                     <div style={{ fontSize: 12, color: '#0f6e56', marginTop: 8, fontWeight: 500 }}>
@@ -263,6 +292,7 @@ export function Component() {
               const markerPct = Math.max(0, Math.min(100, ((baseVal - min) / (max - min)) * 100));
 
               const edu = getMetricEducation(metric);
+              const isTipOpen = openSliderTip === metric;
 
               return (
                 <div key={metric}>
@@ -270,15 +300,27 @@ export function Component() {
                     <span style={{ fontSize: 13, color: '#22221f', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                       {getMetricLabel(metric)}
                       {edu && (
-                        <span title={edu.sampleHabit} style={{ display: 'inline-flex', color: '#a3a29c', cursor: 'help' }}>
+                        <button
+                          type="button"
+                          onClick={() => setOpenSliderTip(isTipOpen ? null : metric)}
+                          aria-label={`Alltagstipp zu ${getMetricLabel(metric)}`}
+                          aria-expanded={isTipOpen}
+                          data-testid={`slider-tip-toggle-${metric}`}
+                          style={{ display: 'inline-flex', color: '#a3a29c', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+                        >
                           <Info size={11} />
-                        </span>
+                        </button>
                       )}
                     </span>
                     <span style={{ fontSize: 13, fontWeight: 500, color: changed ? '#0f6e56' : '#22221f' }}>
                       {formatMetricValue(metric, v)} <span style={{ color: '#888780', fontWeight: 400 }}>{formatMetricUnit(metric, getMetricUnit(metric))}</span>
                     </span>
                   </div>
+                  {edu && isTipOpen && (
+                    <div style={{ fontSize: 12, color: '#55544f', background: 'rgba(15,110,86,0.06)', border: '1px solid rgba(15,110,86,0.15)', borderRadius: 8, padding: '8px 12px', marginBottom: 10, lineHeight: 1.5 }}>
+                      {edu.sampleHabit}
+                    </div>
+                  )}
                   <div style={{ position: 'relative' }}>
                     <input
                       type="range" min={min} max={max} step={step} value={v}
