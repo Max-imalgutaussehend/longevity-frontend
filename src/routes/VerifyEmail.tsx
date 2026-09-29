@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Check, ArrowRight } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, Btn } from '../components/ui.js';
@@ -12,17 +13,21 @@ export function Component() {
   const [status, setStatus] = useState<Status>('loading');
   const [errorTitle, setErrorTitle] = useState<string | null>(null);
   const ran = useRef(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (ran.current || !token) return;
     ran.current = true;
     apiClient('/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) })
-      .then(() => setStatus('success'))
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['me'] });
+        setStatus('success');
+      })
       .catch((err: unknown) => {
         setErrorTitle((err as Error).message ?? 'Verifikation fehlgeschlagen.');
         setStatus('error');
       });
-  }, [token]);
+  }, [token, queryClient]);
 
   return (
     <>
