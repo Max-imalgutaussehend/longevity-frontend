@@ -1,13 +1,54 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { Rocket, Gem, ShieldCheck, Target, ChevronDown, Info } from 'lucide-react';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Chip, SectionLabel, Skeleton } from '../components/ui.js';
+import { Card, PageTitle, Chip, SectionLabel, Skeleton, Btn } from '../components/ui.js';
 import type { ScoreResult } from '../api/types.js';
 
 export interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
 export interface SimResult { base: ScoreResult; simulated: ScoreResult; perMetric: { metric: string; delta: number }[]; }
 
 import { getMetricLabel, getMetricUnit } from '../lib/formatters.js';
+import { getMetricEducation, METRIC_BADGE_LABELS, type MetricBadge } from '../lib/metricEducation.js';
+
+// Score-to-BioAge conversion factor used by the score engine (src/score/index.ts):
+// bioAge = chronoAge - (score - 50) / 3.33 — i.e. 3.33 score points ≈ 1 year of bio-age.
+const SCORE_POINTS_PER_BIOAGE_YEAR = 3.33;
+
+export function estimateBioAgeReduction(scoreDelta: number): number {
+  return scoreDelta / SCORE_POINTS_PER_BIOAGE_YEAR;
+}
+
+const BADGE_ICON: Record<MetricBadge, typeof Rocket> = {
+  'quick-win': Rocket,
+  'high-impact': Gem,
+  kasse: ShieldCheck,
+};
+
+const BADGE_CHIP_COLOR: Record<MetricBadge, 'amber' | 'teal' | 'green'> = {
+  'quick-win': 'amber',
+  'high-impact': 'teal',
+  kasse: 'green',
+};
+
+const FOCUS_STORAGE_KEY = 'longevity_lever_focus';
+
+function readFocusMetric(): string | null {
+  try {
+    return localStorage.getItem(FOCUS_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeFocusMetric(metric: string | null) {
+  try {
+    if (metric) localStorage.setItem(FOCUS_STORAGE_KEY, metric);
+    else localStorage.removeItem(FOCUS_STORAGE_KEY);
+  } catch {
+    // localStorage unavailable (private mode / disabled) — focus simply won't persist
+  }
+}
 
 export const METRIC_RANGE: Record<string, [number, number, number]> = {
   vo2max: [25, 65, 0.5], resting_hr: [40, 100, 1], sleep_duration: [4, 10, 0.1],
@@ -75,6 +116,14 @@ export function Component() {
   const [vals, setVals] = useState<Record<string, number>>({});
   const [simResult, setSimResult] = useState<SimResult | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [expandedLever, setExpandedLever] = useState<string | null>(null);
+  const [focusMetric, setFocusMetric] = useState<string | null>(() => readFocusMetric());
+
+  function toggleFocus(metric: string) {
+    const next = focusMetric === metric ? null : metric;
+    setFocusMetric(next);
+    writeFocusMetric(next);
+  }
 
   const simulateMut = useMutation({
     mutationFn: (overrides: Record<string, number>) =>
@@ -118,19 +167,80 @@ export function Component() {
       {/* Lever cards */}
       <div className="responsive-grid-3">
         {leversLoading ? [1, 2, 3].map((i) => <Card key={i}><Skeleton height={140} /></Card>) :
-          levers?.slice(0, 3).map((lever, i) => (
-            <Card key={lever.metric} style={{ borderTop: `3px solid ${i === 0 ? '#1d9e75' : 'rgba(0,0,0,0.08)'}` }}>
-              <div style={{ fontSize: 10, color: '#a3a29c', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Hebel {i + 1}</div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: '#22221f', marginBottom: 20 }}>{getMetricLabel(lever.metric)}</div>
-              <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                <span style={{ fontSize: 26, fontWeight: 500, color: '#0f6e56', letterSpacing: '-0.01em' }}>+{lever.delta.toFixed(1)}</span>
-                <span style={{ fontSize: 12, color: '#888780', marginLeft: 6 }}>Punkte · {lever.horizonWeeks} Wochen</span>
-                <div style={{ fontSize: 12, color: '#a3a29c', marginTop: 4 }}>
-                  {lever.currentValue?.toFixed(1) ?? '?'} → {lever.targetValue.toFixed(1)} {getMetricUnit(lever.metric)}
+          levers?.slice(0, 3).map((lever, i) => {
+            const edu = getMetricEducation(lever.metric);
+            const isExpanded = expandedLever === lever.metric;
+            const isFocus = focusMetric === lever.metric;
+            const BadgeIcon = edu ? BADGE_ICON[edu.badge] : null;
+            const bioAgeReduction = estimateBioAgeReduction(lever.delta);
+
+            return (
+              <Card key={lever.metric} style={{ borderTop: `3px solid ${i === 0 ? '#1d9e75' : 'rgba(0,0,0,0.08)'}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, color: '#a3a29c', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Hebel {i + 1}</div>
+                  {edu && BadgeIcon && (
+                    <Chip color={BADGE_CHIP_COLOR[edu.badge]}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <BadgeIcon size={11} />
+                        {METRIC_BADGE_LABELS[edu.badge]}
+                      </span>
+                    </Chip>
+                  )}
                 </div>
-              </div>
-            </Card>
-          ))}
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#22221f', marginBottom: 20 }}>{getMetricLabel(lever.metric)}</div>
+                <div style={{ paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                  <span style={{ fontSize: 26, fontWeight: 500, color: '#0f6e56', letterSpacing: '-0.01em' }}>+{lever.delta.toFixed(1)}</span>
+                  <span style={{ fontSize: 12, color: '#888780', marginLeft: 6 }}>Punkte · {lever.horizonWeeks} Wochen</span>
+                  <div style={{ fontSize: 12, color: '#a3a29c', marginTop: 4 }}>
+                    {lever.currentValue?.toFixed(1) ?? '?'} → {lever.targetValue.toFixed(1)} {getMetricUnit(lever.metric)}
+                  </div>
+                  {bioAgeReduction > 0 && (
+                    <div style={{ fontSize: 12, color: '#0f6e56', marginTop: 8, fontWeight: 500 }}>
+                      Potenzielle Reduktion des Vitalitätsalters: −{bioAgeReduction.toFixed(1)} Jahre
+                    </div>
+                  )}
+                </div>
+
+                {edu && (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedLever(isExpanded ? null : lever.metric)}
+                      data-testid={`lever-action-toggle-${lever.metric}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                        fontSize: 12, fontWeight: 500, color: '#0f6e56', fontFamily: 'inherit',
+                      }}
+                    >
+                      Was muss ich tun?
+                      <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s' }} />
+                    </button>
+                    {isExpanded && (
+                      <p style={{ fontSize: 12, color: '#55544f', lineHeight: 1.6, marginTop: 10, marginBottom: 0 }}>
+                        {edu.sampleHabit}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 16 }}>
+                  <Btn
+                    small
+                    full
+                    variant={isFocus ? 'primary' : 'secondary'}
+                    onClick={() => toggleFocus(lever.metric)}
+                    testId={`lever-focus-${lever.metric}`}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <Target size={13} />
+                      {isFocus ? 'Wochen-Fokus aktiv' : 'Als Fokus setzen'}
+                    </span>
+                  </Btn>
+                </div>
+              </Card>
+            );
+          })}
       </div>
 
       {/* Simulator */}
@@ -152,10 +262,19 @@ export function Component() {
               const changed = vals[metric] !== undefined && vals[metric] !== baseVal;
               const markerPct = Math.max(0, Math.min(100, ((baseVal - min) / (max - min)) * 100));
 
+              const edu = getMetricEducation(metric);
+
               return (
                 <div key={metric}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, color: '#22221f' }}>{getMetricLabel(metric)}</span>
+                    <span style={{ fontSize: 13, color: '#22221f', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      {getMetricLabel(metric)}
+                      {edu && (
+                        <span title={edu.sampleHabit} style={{ display: 'inline-flex', color: '#a3a29c', cursor: 'help' }}>
+                          <Info size={11} />
+                        </span>
+                      )}
+                    </span>
                     <span style={{ fontSize: 13, fontWeight: 500, color: changed ? '#0f6e56' : '#22221f' }}>
                       {v} <span style={{ color: '#888780', fontWeight: 400 }}>{getMetricUnit(metric)}</span>
                     </span>

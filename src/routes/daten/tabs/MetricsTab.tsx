@@ -1,10 +1,64 @@
 import { useState } from 'react';
-import { BarChart3, ShieldCheck } from 'lucide-react';
-import { Card, Btn, Chip, Skeleton, GlassSelect, SectionLabel } from '../../../components/ui.js';
+import { BarChart3, ShieldCheck, Info, X } from 'lucide-react';
+import { Card, Btn, Chip, Modal, Skeleton, GlassSelect, SectionLabel } from '../../../components/ui.js';
 import type { Source, SamplesSummaryResponse, MetricSummary } from '../../../api/types.js';
 import { SOURCE_BADGES } from '../datenTypes.js';
 import { getSourceLabel } from '../../../lib/formatters.js';
 import { renderMetricIcon, renderSourceIcon, formatMetricVal, timeAgo, formatDate } from '../datenUtils.js';
+import { getMetricEducation, METRIC_BADGE_LABELS } from '../../../lib/metricEducation.js';
+
+function MetricEducationModal({ metric, onClose }: { metric: string; onClose: () => void }) {
+  const edu = getMetricEducation(metric);
+  if (!edu) return null;
+  return (
+    <Modal onClose={onClose}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+        <div>
+          <div style={{ fontSize: 17, fontWeight: 500, color: '#22221f' }}>{edu.title}</div>
+          <Chip color={edu.badge === 'high-impact' ? 'teal' : edu.badge === 'kasse' ? 'green' : 'amber'}>
+            {METRIC_BADGE_LABELS[edu.badge]}
+          </Chip>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Schließen"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a3a29c', padding: 4 }}
+        >
+          <X size={18} />
+        </button>
+      </div>
+      <p style={{ fontSize: 13, color: '#55544f', lineHeight: 1.6, marginTop: 12, marginBottom: 18 }}>
+        {edu.summary}
+      </p>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+          Warum zählt das?
+        </div>
+        <p style={{ fontSize: 13, color: '#22221f', lineHeight: 1.6, margin: 0 }}>{edu.whyItMatters}</p>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+          Referenz- &amp; Optimalbereich
+        </div>
+        <p style={{ fontSize: 13, color: '#22221f', lineHeight: 1.6, margin: 0 }}>{edu.optimalRange}</p>
+      </div>
+
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+          Top 3 Alltags-Hebel
+        </div>
+        <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {edu.actionableTips.map((tip, i) => (
+            <li key={i} style={{ fontSize: 13, color: '#22221f', lineHeight: 1.5 }}>{tip}</li>
+          ))}
+        </ul>
+      </div>
+    </Modal>
+  );
+}
 
 export interface MetricsTabProps {
   summaryData?: SamplesSummaryResponse;
@@ -30,6 +84,7 @@ export function MetricsTab({
   onNavigateSourcesTab,
 }: MetricsTabProps) {
   const [recentLimit, setRecentLimit] = useState(50);
+  const [infoMetric, setInfoMetric] = useState<string | null>(null);
 
   const filteredMetrics = (summaryData?.metrics ?? []).filter((m) => {
     if (selectedDomain !== 'all' && m.domain !== selectedDomain) return false;
@@ -202,7 +257,20 @@ export function MetricsTab({
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center' }}>{renderMetricIcon(m.metric, 24)}</span>
                       <div>
-                        <div style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{m.label}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{m.label}</span>
+                          {getMetricEducation(m.metric) && (
+                            <button
+                              type="button"
+                              onClick={() => setInfoMetric(m.metric)}
+                              aria-label={`Mehr zu ${m.label}`}
+                              data-testid={`metric-info-${m.metric}`}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a3a29c', padding: 2, display: 'inline-flex' }}
+                            >
+                              <Info size={13} />
+                            </button>
+                          )}
+                        </div>
                         <div style={{ fontSize: 11, color: '#a3a29c' }}>{m.domainLabel}</div>
                       </div>
                     </div>
@@ -425,6 +493,8 @@ export function MetricsTab({
           </div>
         </Card>
       )}
+
+      {infoMetric && <MetricEducationModal metric={infoMetric} onClose={() => setInfoMetric(null)} />}
     </div>
   );
 }
