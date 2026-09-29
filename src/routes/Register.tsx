@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
 import { Card, Btn, GlassInput, FieldLabel } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
+import { PasswordRequirements } from '../components/PasswordRequirements.js';
 
 function AuthShell({ children }: { children: React.ReactNode }) {
   return (
@@ -66,7 +67,9 @@ export function Component() {
               Wir haben dir einen Bestätigungslink an <strong>{email}</strong> geschickt. Öffne die E-Mail und klicke auf den Link, um dein Konto vollständig zu nutzen.
             </p>
             <Btn full testId="register-go-dashboard" onClick={() => {
-              sessionStorage.setItem('longevity_auto_open_tutorial', 'true');
+              if (localStorage.getItem('longevity_tutorial_completed') !== 'true') {
+                sessionStorage.setItem('longevity_auto_open_tutorial', 'true');
+              }
               navigate('/dashboard');
             }}>Weiter zum Dashboard</Btn>
           </Card>
@@ -92,6 +95,7 @@ export function Component() {
               <div>
                 <FieldLabel>Passwort</FieldLabel>
                 <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="register-password" name="password" />
+                <PasswordRequirements password={password} />
               </div>
               <div>
                 <FieldLabel>Passwort bestätigen</FieldLabel>

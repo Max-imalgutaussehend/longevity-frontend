@@ -5,6 +5,8 @@ import {
   getSourceLabel,
   getMetricUnit,
   humanizeKey,
+  formatMetricValue,
+  formatMetricUnit,
 } from '../lib/formatters.js';
 
 describe('Central Formatters & Label System (#88)', () => {
@@ -109,4 +111,51 @@ describe('Central Formatters & Label System (#88)', () => {
       expect(humanizeKey('activeEnergyBurned')).toBe('Active Energy Burned');
     });
   });
+
+  describe('formatMetricValue() (#82)', () => {
+    it('formats steps as integer with German locale thousands separator', () => {
+      expect(formatMetricValue('steps', 8913.72)).toBe('8.914');
+      expect(formatMetricValue('steps', 12345)).toBe('12.345');
+    });
+
+    it('rounds resting heart rate and blood pressure to whole numbers', () => {
+      expect(formatMetricValue('resting_hr', 60.28)).toBe('60');
+      expect(formatMetricValue('resting_hr', 58.7)).toBe('59');
+      expect(formatMetricValue('systolic_bp', 120.2)).toBe('120');
+    });
+
+    it('formats vo2max and sleep duration with 1 decimal place', () => {
+      expect(formatMetricValue('vo2max', 51.94)).toBe('51.9');
+      expect(formatMetricValue('vo2max', 45)).toBe('45.0');
+      expect(formatMetricValue('sleep_duration', 7.86)).toBe('7.9');
+      expect(formatMetricValue('sleep_duration', 7)).toBe('7.0');
+    });
+
+    it('handles other metrics nicely', () => {
+      expect(formatMetricValue('other', 14)).toBe('14');
+      expect(formatMetricValue('other', 14.56)).toBe('14.6');
+    });
+
+    it('handles null, undefined, and NaN safely', () => {
+      expect(formatMetricValue('steps', null)).toBe('—');
+      expect(formatMetricValue('steps', undefined)).toBe('—');
+      expect(formatMetricValue('steps', NaN)).toBe('—');
+    });
+  });
+
+  describe('formatMetricUnit() (#82)', () => {
+    it('translates raw English API units to German localized equivalents', () => {
+      expect(formatMetricUnit('steps', 'steps/day')).toBe('Schritte/Tag');
+      expect(formatMetricUnit('steps', 'steps')).toBe('Schritte/Tag');
+      expect(formatMetricUnit('zone2_minutes', 'min/week')).toBe('min/Wo.');
+      expect(formatMetricUnit('strength_sessions', '/week')).toBe('/Woche');
+    });
+
+    it('falls back to METRIC_UNITS or rawUnit', () => {
+      expect(formatMetricUnit('resting_hr', 'bpm')).toBe('bpm');
+      expect(formatMetricUnit('vo2max')).toBe('ml/kg/min');
+      expect(formatMetricUnit('custom', 'mg/dl')).toBe('mg/dl');
+    });
+  });
 });
+

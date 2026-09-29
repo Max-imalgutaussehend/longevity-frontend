@@ -25,14 +25,20 @@ export function Component() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       await apiClient('/auth/request-password-reset', { method: 'POST', body: JSON.stringify({ email }) });
+      setSent(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : null;
+      setError(msg || 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
     } finally {
       setLoading(false);
-      setSent(true);
     }
   };
 
@@ -61,6 +67,9 @@ export function Component() {
                 <div style={{ paddingTop: 6 }}>
                   <Btn type="submit" full testId="forgot-password-submit">{loading ? 'Einen Moment…' : 'Link senden'}</Btn>
                 </div>
+                {error && (
+                  <p data-testid="forgot-password-error" style={{ fontSize: 12, color: '#a32d2d', margin: 0 }}>{error}</p>
+                )}
               </div>
             </form>
           )}

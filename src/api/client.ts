@@ -61,7 +61,21 @@ export async function apiClient<T>(
   });
 
   if (res.status === 401) {
-    if (typeof window !== 'undefined') {
+    // Only redirect to /login when the session is actually missing/expired.
+    // A 401 due to wrong password on sensitive actions (e.g. account deletion)
+    // should NOT trigger a forced logout.
+    let isSessionExpired = true;
+    try {
+      const cloned = res.clone();
+      const body = await cloned.json();
+      const title: string = body?.title ?? '';
+      // Only log out if the server explicitly signals "not authenticated"
+      isSessionExpired = title === 'Nicht angemeldet.' || title === '';
+    } catch {
+      // If we can't parse the body, assume session expired
+    }
+
+    if (isSessionExpired && typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       const search = window.location.search;
       if (!pathname.startsWith('/login') && !pathname.startsWith('/register')) {
@@ -78,7 +92,9 @@ export async function apiClient<T>(
         }
       }
     }
-    throw new Error('Unauthorized');
+    const problem = await res.clone().json().catch(() => ({}));
+    const message = problem.error || problem.title || problem.message || 'Nicht angemeldet.';
+    throw Object.assign(new Error(message), { status: 401, problem });
   }
 
   if (!res.ok) {

@@ -26,6 +26,10 @@ export const routes: RouteObject[] = [
     lazy: () => import('./routes/ConfirmDeleteAccount.js'),
   },
   {
+    path: '/verify',
+    lazy: () => import('./routes/Verify.js'),
+  },
+  {
     path: '/verify/:id',
     lazy: () => import('./routes/Verify.js'),
   },
