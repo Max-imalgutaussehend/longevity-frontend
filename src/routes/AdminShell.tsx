@@ -18,7 +18,10 @@ export function Component() {
 
   useEffect(() => {
     if (!isLoading && user && user.role !== 'platform_admin') {
-      navigate('/dashboard', { replace: true });
+      navigate('/dashboard', {
+        replace: true,
+        state: { flash: { type: 'error', message: 'Zugriff verweigert: Administrator-Berechtigung erforderlich.' } },
+      });
     }
   }, [isLoading, user, navigate]);
 

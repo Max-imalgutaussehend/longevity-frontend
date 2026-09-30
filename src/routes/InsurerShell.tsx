@@ -25,7 +25,10 @@ export function Component() {
 
   useEffect(() => {
     if (!isLoading && user && user.role !== 'insurer_admin' && user.role !== 'insurer_staff') {
-      navigate('/dashboard', { replace: true });
+      navigate('/dashboard', {
+        replace: true,
+        state: { flash: { type: 'error', message: 'Zugriff verweigert: Krankenkassen-Berechtigung erforderlich.' } },
+      });
     }
   }, [isLoading, user, navigate]);
 

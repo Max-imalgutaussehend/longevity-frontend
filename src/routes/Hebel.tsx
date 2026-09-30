@@ -357,6 +357,45 @@ export function Component() {
         <div style={{ position: 'sticky', top: 90 }}>
           <Card className="glass-deep">
             <SectionLabel>Simuliertes Ergebnis</SectionLabel>
+            {simulateMut.isError && (
+              <div
+                data-testid="simulate-error-indicator"
+                role="alert"
+                style={{
+                  margin: '0 0 16px',
+                  padding: '10px 14px',
+                  borderRadius: 12,
+                  background: 'rgba(163, 45, 45, 0.08)',
+                  border: '1px solid rgba(163, 45, 45, 0.22)',
+                  color: '#a32d2d',
+                  fontSize: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                }}
+              >
+                <span>Simulation nicht synchronisiert</span>
+                <button
+                  type="button"
+                  data-testid="simulate-retry-btn"
+                  onClick={() => simulateMut.mutate(vals)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid rgba(163, 45, 45, 0.35)',
+                    borderRadius: 6,
+                    padding: '3px 8px',
+                    color: '#a32d2d',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Erneut versuchen
+                </button>
+              </div>
+            )}
             <div style={{ textAlign: 'center', padding: '20px 0 24px' }}>
               <div data-testid="sim-score" style={{ fontSize: 64, fontWeight: 500, color: '#0f6e56', lineHeight: 1, letterSpacing: '-0.03em' }}>
                 {displayScore?.toFixed(1) ?? '—'}
