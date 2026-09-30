@@ -302,7 +302,7 @@ export function InfoTooltip({ text }: { text: string }) {
 export function PageTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <div style={{ marginBottom: 40 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 500, color: '#22221f', letterSpacing: '-0.01em', marginBottom: sub ? 6 : 0, margin: 0 }}>{title}</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 500, color: '#22221f', letterSpacing: '-0.01em', marginTop: 0, marginRight: 0, marginBottom: sub ? 6 : 0, marginLeft: 0 }}>{title}</h1>
       {sub && <p style={{ fontSize: 14, color: '#888780', margin: '6px 0 0' }}>{sub}</p>}
     </div>
   );
@@ -310,7 +310,7 @@ export function PageTitle({ title, sub }: { title: string; sub?: string }) {
 
 export function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <p style={{ fontSize: 12, color: '#888780', marginBottom: 14, margin: '0 0 14px' }}>
+    <p style={{ fontSize: 12, color: '#888780', marginTop: 0, marginRight: 0, marginBottom: 14, marginLeft: 0 }}>
       {children}
     </p>
   );
