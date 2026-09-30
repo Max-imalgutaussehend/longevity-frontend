@@ -7,6 +7,7 @@ import type { User } from '../api/types.js';
 import { TutorialModal } from '../components/TutorialModal.js';
 import { InsurerSelectModal } from '../components/InsurerSelectModal.js';
 import { VerifyEmailBanner } from '../components/VerifyEmailBanner.js';
+import { FlashMessage, type FlashData } from '../components/FlashMessage.js';
 import brandIcon from '../assets/brand-icon.png';
 
 const NAV_ITEMS = [
@@ -25,7 +26,16 @@ export function Component() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showInsurerModal, setShowInsurerModal] = useState(false);
+  const [flashMessage, setFlashMessage] = useState<FlashData | null>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const flash = (location.state as { flash?: FlashData } | null)?.flash;
+    if (flash) {
+      setFlashMessage(flash);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const hasAutoOpenedRef = useRef(false);
 
@@ -326,6 +336,13 @@ export function Component() {
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <main className="main-content" style={{ padding: '128px 48px 60px', flex: 1 }}>
           <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+            {flashMessage && (
+              <FlashMessage
+                type={flashMessage.type}
+                message={flashMessage.message}
+                onDismiss={() => setFlashMessage(null)}
+              />
+            )}
             {user && !user.emailVerifiedAt && <VerifyEmailBanner />}
             <Outlet />
 
