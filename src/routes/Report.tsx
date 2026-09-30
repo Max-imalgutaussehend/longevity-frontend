@@ -96,13 +96,24 @@ export function Component() {
       {weekData.length > 0 && (
         <Card style={{ padding: '28px 32px 16px' }}>
           <SectionLabel>Score-Verlauf der Woche</SectionLabel>
-          <ResponsiveContainer width="100%" height={120}>
-            <LineChart data={weekData} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#a3a29c' }} tickLine={false} axisLine={false} />
-              <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#a3a29c' }} tickLine={false} axisLine={false} />
-              <Line type="monotone" dataKey="score" stroke="#1d9e75" strokeWidth={2.5} dot={{ r: 4, fill: '#1d9e75', strokeWidth: 0 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {weekData.length < 2 ? (
+            <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a3a29c', fontSize: 13 }}>
+              Mindestens 2 Tage Historie für den Wochenverlauf erforderlich.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={120}>
+              <LineChart data={weekData} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#a3a29c' }} tickLine={false} axisLine={false} />
+                <YAxis
+                  domain={[(dataMin: number) => Math.floor(dataMin - 2), (dataMax: number) => Math.ceil(dataMax + 2)]}
+                  tick={{ fontSize: 11, fill: '#a3a29c' }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Line type="monotone" dataKey="score" stroke="#1d9e75" strokeWidth={2.5} dot={{ r: 4, fill: '#1d9e75', strokeWidth: 0 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </Card>
       )}
 
