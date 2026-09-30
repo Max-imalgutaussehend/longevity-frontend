@@ -105,7 +105,10 @@ export function Component() {
               <LineChart data={weekData} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#a3a29c' }} tickLine={false} axisLine={false} />
                 <YAxis
-                  domain={[(dataMin: number) => Math.floor(dataMin - 2), (dataMax: number) => Math.ceil(dataMax + 2)]}
+                  domain={[
+                    (dataMin: number) => Math.max(0, Math.floor(dataMin - 2)),
+                    (dataMax: number) => Math.min(100, Math.ceil(dataMax + 2)),
+                  ]}
                   tick={{ fontSize: 11, fill: '#a3a29c' }}
                   tickLine={false}
                   axisLine={false}
