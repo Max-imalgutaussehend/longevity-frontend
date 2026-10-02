@@ -55,13 +55,13 @@ export function Component() {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
-                <FieldLabel>Neues Passwort</FieldLabel>
-                <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="reset-password-input" name="password" />
+                <FieldLabel htmlFor="reset-password-input">Neues Passwort</FieldLabel>
+                <GlassInput id="reset-password-input" type="password" autoComplete="new-password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="reset-password-input" name="password" />
                 <PasswordRequirements password={password} />
               </div>
               <div>
-                <FieldLabel>Passwort bestätigen</FieldLabel>
-                <GlassInput type="password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="reset-password-confirm" name="passwordConfirm" />
+                <FieldLabel htmlFor="reset-password-confirm">Passwort bestätigen</FieldLabel>
+                <GlassInput id="reset-password-confirm" type="password" autoComplete="new-password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="reset-password-confirm" name="passwordConfirm" />
               </div>
               {error && <p data-testid="reset-password-error" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
               <div style={{ paddingTop: 6 }}>

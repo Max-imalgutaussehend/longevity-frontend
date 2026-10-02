@@ -48,12 +48,12 @@ export function Component() {
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <div>
-                  <FieldLabel>Passwort</FieldLabel>
-                  <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="invite-password" name="password" />
+                  <FieldLabel htmlFor="invite-password">Passwort</FieldLabel>
+                  <GlassInput id="invite-password" type="password" autoComplete="new-password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="invite-password" name="password" />
                 </div>
                 <div>
-                  <FieldLabel>Passwort bestätigen</FieldLabel>
-                  <GlassInput type="password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="invite-password-confirm" name="passwordConfirm" />
+                  <FieldLabel htmlFor="invite-password-confirm">Passwort bestätigen</FieldLabel>
+                  <GlassInput id="invite-password-confirm" type="password" autoComplete="new-password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="invite-password-confirm" name="passwordConfirm" />
                 </div>
                 {error && <p data-testid="invite-error" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
                 <div style={{ paddingTop: 6 }}>

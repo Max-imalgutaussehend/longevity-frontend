@@ -151,8 +151,9 @@ export function InsurerSelectModal({ isOpen, onClose, onSuccess }: InsurerSelect
               {!useJoinCode ? (
                 <>
                   <div>
-                    <FieldLabel>Partner-Krankenkasse auswählen</FieldLabel>
+                    <FieldLabel htmlFor="insurer-select-dropdown">Partner-Krankenkasse auswählen</FieldLabel>
                     <select
+                      id="insurer-select-dropdown"
                       data-testid="insurer-select-dropdown"
                       value={selectedOrgId}
                       onChange={(e) => {
@@ -185,7 +186,7 @@ export function InsurerSelectModal({ isOpen, onClose, onSuccess }: InsurerSelect
 
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <FieldLabel>Krankenversichertennummer (KVNR)</FieldLabel>
+                      <FieldLabel htmlFor="kvnr-input">Krankenversichertennummer (KVNR)</FieldLabel>
                       {kvnrValidation?.valid && (
                         <span style={{ fontSize: 11, color: '#0f6e56', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                           <Check size={12} /> Prüfziffer gültig
@@ -193,7 +194,9 @@ export function InsurerSelectModal({ isOpen, onClose, onSuccess }: InsurerSelect
                       )}
                     </div>
                     <GlassInput
+                      id="kvnr-input"
                       type="text"
+                      autoComplete="off"
                       placeholder="z. B. A123456789"
                       value={kvnr}
                       onChange={(val) => {
@@ -212,9 +215,11 @@ export function InsurerSelectModal({ isOpen, onClose, onSuccess }: InsurerSelect
                 </>
               ) : (
                 <div>
-                  <FieldLabel>Aktionscode / Beitrittscode der Kasse</FieldLabel>
+                  <FieldLabel htmlFor="joincode-input">Aktionscode / Beitrittscode der Kasse</FieldLabel>
                   <GlassInput
+                    id="joincode-input"
                     type="text"
+                    autoComplete="off"
                     placeholder="8-stelliger Code"
                     value={joinCode}
                     onChange={(val) => {
