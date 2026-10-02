@@ -28,9 +28,28 @@ export async function fetchCsrfToken(): Promise<string | null> {
   return csrfTokenPromise;
 }
 
+export interface ApiClientOptions extends RequestInit {
+  skipAuthRedirect?: boolean;
+}
+
+export interface CurrentUser {
+  id: string;
+  email: string;
+  displayName?: string | null;
+  role?: string;
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUser | null> {
+  try {
+    return await apiClient<CurrentUser>('/me', { skipAuthRedirect: true });
+  } catch {
+    return null;
+  }
+}
+
 export async function apiClient<T>(
   path: string,
-  options: RequestInit = {},
+  options: ApiClientOptions = {},
 ): Promise<T> {
   const method = (options.method || 'GET').toUpperCase();
   const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
@@ -75,7 +94,7 @@ export async function apiClient<T>(
       // If we can't parse the body, assume session expired
     }
 
-    if (isSessionExpired && typeof window !== 'undefined') {
+    if (!options.skipAuthRedirect && isSessionExpired && typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       const search = window.location.search;
       if (!pathname.startsWith('/login') && !pathname.startsWith('/register')) {

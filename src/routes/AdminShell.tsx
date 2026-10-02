@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
 import brandIcon from '../assets/brand-icon.png';
+import { APP_ROUTES } from '../lib/routes.js';
 
 export function Component() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export function Component() {
 
   useEffect(() => {
     if (!isLoading && user && user.role !== 'platform_admin') {
-      navigate('/dashboard', {
+      navigate(APP_ROUTES.app.dashboard(), {
         replace: true,
         state: { flash: { type: 'error', message: 'Zugriff verweigert: Administrator-Berechtigung erforderlich.' } },
       });

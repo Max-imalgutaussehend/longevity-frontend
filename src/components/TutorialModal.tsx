@@ -1,173 +1,39 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { X, ArrowLeft, ArrowRight, Lightbulb, Sparkles } from 'lucide-react';
 import { ConsentModal } from './ConsentModal.js';
-import {
-  Activity,
-  Sparkles,
-  Briefcase,
-  X,
-  Heart,
-  Moon,
-  Zap,
-  Shield,
-  Bot,
-  FlaskConical,
-  Dices,
-  Check,
-  Footprints,
-  Lock,
-  ShieldCheck,
-  Gift,
-  Building2,
-  Dumbbell,
-  Watch,
-  ArrowLeft,
-  ArrowRight,
-  Lightbulb,
-  CheckCircle2,
-} from 'lucide-react';
+import { Btn } from './ui.js';
+import brandIcon from '../assets/brand-icon.png';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
-import { AppleLogo } from './BrandLogos.js';
-import { Btn, Chip } from './ui.js';
-import brandIcon from '../assets/brand-icon.png';
+import { APP_ROUTES } from '../lib/routes.js';
+import { ConfettiCanvas } from './tutorial/ConfettiCanvas.js';
+import { TutorialStepArchetype } from './tutorial/TutorialStepArchetype.js';
+import { TutorialStepSources } from './tutorial/TutorialStepSources.js';
+import { TutorialStepScore } from './tutorial/TutorialStepScore.js';
+import { TutorialStepLevers } from './tutorial/TutorialStepLevers.js';
+import { TutorialStepBenefits } from './tutorial/TutorialStepBenefits.js';
+import type { TutorialModalProps, ConsentStatus } from './tutorial/tutorialTypes.js';
 
-export interface TutorialModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  initialStep?: number;
-}
+export type { TutorialModalProps };
 
-type Archetype = 'athletic' | 'balanced' | 'starter';
-
-interface ArchetypeProfile {
-  id: Archetype;
-  label: string;
-  icon: React.ReactNode;
-  desc: string;
-  targetScore: number;
-  domains: { cardio: number; regen: number; activity: number; risk: number };
-}
-
-const ARCHETYPES: ArchetypeProfile[] = [
-  {
-    id: 'athletic',
-    label: 'Sportlich & Aktiv',
-    icon: <Activity size={24} color="#0f6e56" />,
-    desc: '10.000 Schritte, 2x Zone-2 & 8h Schlaf',
-    targetScore: 84,
-    domains: { cardio: 88, regen: 82, activity: 92, risk: 85 },
-  },
-  {
-    id: 'balanced',
-    label: 'Ausgeglichen',
-    icon: <Sparkles size={24} color="#0f6e56" />,
-    desc: '7.500 Schritte, moderate Bewegung, 7h Schlaf',
-    targetScore: 71,
-    domains: { cardio: 72, regen: 70, activity: 74, risk: 75 },
-  },
-  {
-    id: 'starter',
-    label: 'Startphase / Büro',
-    icon: <Briefcase size={24} color="#0f6e56" />,
-    desc: 'Viel Sitzen, unregelmäßiger Schlaf, Neubeginn',
-    targetScore: 54,
-    domains: { cardio: 55, regen: 50, activity: 48, risk: 62 },
-  },
-];
-
-// Confetti Particle Component
-function ConfettiCanvas() {
-  const particles = useMemo(() => {
-    const colors = ['#1d9e75', '#0f6e56', '#5dcaa5', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6'];
-    return Array.from({ length: 42 }).map((_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: -10 - Math.random() * 20,
-      size: 6 + Math.random() * 8,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      delay: Math.random() * 1.5,
-      duration: 2.2 + Math.random() * 1.8,
-      rotate: Math.random() * 360,
-    }));
-  }, []);
-
-  return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 10 }}>
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          style={{
-            position: 'absolute',
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: p.size,
-            height: p.size * (Math.random() > 0.5 ? 1 : 1.6),
-            backgroundColor: p.color,
-            borderRadius: p.size > 10 ? '50%' : 2,
-            transform: `rotate(${p.rotate}deg)`,
-            opacity: 0.9,
-            animation: `confettiFall ${p.duration}s cubic-bezier(0.25, 1, 0.5, 1) ${p.delay}s forwards`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
+/**
+ * Interactive 5-step tutorial dialog explaining longevity principles and features.
+ * Composed into modular steps under `./tutorial/`.
+ */
 export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModalProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(initialStep);
   const [dontShowAgain, setDontShowAgain] = useState(true);
+  const [mockSuccess, setMockSuccess] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
   const { data: user } = useQuery<User>({
     queryKey: ['me'],
     queryFn: () => apiClient<User>('/me'),
   });
-
-  // Reset step whenever opened
-  useEffect(() => {
-    if (isOpen) {
-      setStep(initialStep);
-    }
-  }, [isOpen, initialStep]);
-
-  // ── Step 1 State: Interactive Archetypes & Dynamic Count-Up ────────
-  const [selectedArchetype, setSelectedArchetype] = useState<Archetype>('athletic');
-  const [userAge, setUserAge] = useState<number>(30);
-  const [displayScore, setDisplayScore] = useState<number>(84);
-
-  // Smooth score count-up animation when archetype or age changes
-  const activeProfile = ARCHETYPES.find((a) => a.id === selectedArchetype) ?? ARCHETYPES[0];
-  const targetScore = activeProfile.targetScore;
-
-  useEffect(() => {
-    let current = displayScore;
-    const stepDiff = targetScore - current;
-    if (stepDiff === 0) return;
-
-    const interval = setInterval(() => {
-      current += stepDiff > 0 ? 1 : -1;
-      setDisplayScore(current);
-      if (current === targetScore) clearInterval(interval);
-    }, 18);
-
-    return () => clearInterval(interval);
-  }, [targetScore, displayScore]);
-
-  const bioAgeDelta = Number(((displayScore - 50) / 10).toFixed(1));
-  const calculatedBioAge = Number((userAge - bioAgeDelta).toFixed(1));
-
-  // ── Step 2 State: Mock Data Ingest ────────────────────────────────
-  const [mockSuccess, setMockSuccess] = useState(false);
-  const [activeSourceHighlight, setActiveSourceHighlight] = useState<string | null>(null);
-  const [showConsentModal, setShowConsentModal] = useState(false);
-
-  interface ConsentStatus {
-    hasConsented: boolean;
-  }
 
   const { data: consentData } = useQuery<ConsentStatus>({
     queryKey: ['account', 'consent'],
@@ -175,9 +41,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
   });
 
   const generateMockMutation = useMutation({
-    mutationFn: async () => {
-      return apiClient<{ ok: boolean; sampleCount?: number }>('/sources/mock/generate', { method: 'POST' });
-    },
+    mutationFn: async () => apiClient<{ ok: boolean; sampleCount?: number }>('/sources/mock/generate', { method: 'POST' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources'] });
       queryClient.invalidateQueries({ queryKey: ['metrics'] });
@@ -187,37 +51,19 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
     },
   });
 
-  function handleTriggerMock() {
+  // Reset step whenever modal is reopened
+  useEffect(() => {
+    if (isOpen) {
+      setStep(initialStep);
+    }
+  }, [isOpen, initialStep]);
+
+  const handleTriggerMock = () => {
     if (consentData?.hasConsented) {
       generateMockMutation.mutate();
     } else {
       setShowConsentModal(true);
     }
-  }
-
-  // ── Step 3 State: Interactive Simulator ───────────────────────────
-  const [stepsHabit, setStepsHabit] = useState(8500);
-  const [zone2Habit, setZone2Habit] = useState(90);
-  const [sleepHabit, setSleepHabit] = useState(7.5);
-
-  const stepContribution = Math.min(15, Math.max(0, ((stepsHabit - 5000) / 7000) * 12));
-  const zone2Contribution = Math.min(18, Math.max(0, (zone2Habit / 150) * 15));
-  const sleepDelta = Math.abs(sleepHabit - 7.5);
-  const sleepContribution = Math.max(0, 10 - sleepDelta * 6);
-  const simulatedScore = Math.round(52 + stepContribution + zone2Contribution + sleepContribution);
-  const simulatedAgeDelta = Number(((simulatedScore - 50) / 10).toFixed(1));
-  const simulatedBioAge = Number((userAge - simulatedAgeDelta).toFixed(1));
-
-  // ── Step 4 State: Cryptographic Token Simulator ───────────────────
-  const [isSigningToken, setIsSigningToken] = useState(false);
-  const [hasSignedToken, setHasSignedToken] = useState(false);
-
-  const handleSimulateSign = () => {
-    setIsSigningToken(true);
-    setTimeout(() => {
-      setIsSigningToken(false);
-      setHasSignedToken(true);
-    }, 700);
   };
 
   const handleClose = useCallback(() => {
@@ -230,6 +76,11 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
     window.dispatchEvent(new CustomEvent('tutorial-completed'));
     onClose();
   }, [dontShowAgain, onClose, user?.id]);
+
+  const handleNavigateAndClose = (route: string) => {
+    handleClose();
+    navigate(route);
+  };
 
   // Keyboard navigation
   useEffect(() => {
@@ -245,78 +96,34 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
 
   if (!isOpen) return null;
 
-  // SVG Gauge calculations
-  const radius = 46;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (displayScore / 100) * circumference;
-
   return (
     <>
-      <style>{`
-        @keyframes fadeInScale {
-          from { opacity: 0; transform: scale(0.96) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes stepSlideIn {
-          from { opacity: 0; transform: translateX(18px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes confettiFall {
-          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(520px) rotate(720deg); opacity: 0; }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 15px rgba(29,158,117,0.25); }
-          50% { box-shadow: 0 0 35px rgba(29,158,117,0.55); }
-        }
-        @keyframes shimmerBtn {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        .anim-shimmer {
-          background: linear-gradient(90deg, #1d9e75 0%, #34d399 50%, #0f6e56 100%);
-          background-size: 200% 100%;
-          animation: shimmerBtn 3s infinite linear;
-        }
-        .archetype-btn {
-          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .archetype-btn:hover {
-          transform: translateY(-2px);
-        }
-        .card-interactive {
-          transition: all 0.2s ease;
-        }
-        .card-interactive:hover {
-          border-color: #0f6e56 !important;
-          transform: translateY(-2px);
-        }
-      `}</style>
-
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Longevity Guide"
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 9999,
-          background: 'rgba(12, 20, 16, 0.52)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: 16,
-          animation: 'fadeInScale 0.25s ease-out',
+          background: 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
         }}
         onClick={handleClose}
       >
         <div
+          className="glass-panel"
           style={{
             position: 'relative',
             width: '100%',
-            maxWidth: 720,
+            maxWidth: 680,
             background: 'rgba(255, 255, 255, 0.96)',
-            backdropFilter: 'blur(28px)',
-            borderRadius: 28,
+            borderRadius: 24,
             boxShadow: '0 30px 80px -15px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.9) inset',
             overflow: 'hidden',
             display: 'flex',
@@ -325,7 +132,6 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Confetti overlay in Step 5 */}
           {step === 5 && <ConfettiCanvas />}
 
           {/* Top Header Bar */}
@@ -409,760 +215,25 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
             flexDirection: 'column',
             animation: 'stepSlideIn 0.22s ease-out',
           }}>
-            
-            {/* ════════ STEP 1: Interactive Archetypes & Dynamic Score ════════ */}
-            {step === 1 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <Chip color="teal">Schritt 1 von 5 · Interaktiver Einstieg</Chip>
-                  <h2 style={{ fontSize: 22, fontWeight: 600, color: '#22221f', margin: '10px 0 4px', letterSpacing: '-0.02em' }}>
-                    Dein Pass kennt dein Alter. Dein Körper deine Vitalität.
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#55544f', maxWidth: 540, margin: '0 auto', lineHeight: 1.45 }}>
-                    Wähle unten dein typisches Lebensstil-Profil und dein Alter, um live zu sehen,
-                    wie die 4 wissenschaftlichen Säulen deinen <strong>Score</strong> und dein <strong>Vitalitätsalter</strong> formen.
-                  </p>
-                </div>
-
-                {/* Interactive Archetype Cards */}
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, textAlign: 'center' }}>
-                    Klicke auf ein Profil zum Ausprobieren:
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                    {ARCHETYPES.map((arch) => {
-                      const isSelected = selectedArchetype === arch.id;
-                      return (
-                        <button
-                          key={arch.id}
-                          type="button"
-                          className="archetype-btn"
-                          onClick={() => setSelectedArchetype(arch.id)}
-                          style={{
-                            padding: '12px 10px',
-                            borderRadius: 16,
-                            border: isSelected ? '2px solid #0f6e56' : '1px solid rgba(0,0,0,0.08)',
-                            background: isSelected ? 'rgba(15,110,86,0.08)' : 'rgba(255,255,255,0.75)',
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            boxShadow: isSelected ? '0 4px 16px rgba(15,110,86,0.18)' : 'none',
-                          }}
-                        >
-                          <div style={{ marginBottom: 4, display: 'flex', justifyContent: 'center' }}>{arch.icon}</div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: isSelected ? '#0f6e56' : '#22221f' }}>
-                            {arch.label}
-                          </div>
-                          <div style={{ fontSize: 10, color: '#55544f', marginTop: 3, lineHeight: 1.3 }}>
-                            {arch.desc}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Animated Visual Showcase */}
-                <div style={{
-                  background: 'linear-gradient(135deg, rgba(240,248,244,0.85) 0%, rgba(230,244,238,0.65) 100%)',
-                  border: '1px solid rgba(29,158,117,0.22)',
-                  borderRadius: 20,
-                  padding: '18px 24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 20,
-                  boxShadow: '0 8px 24px rgba(29,158,117,0.12)',
-                }}>
-                  {/* Left: Circular SVG Gauge with animated stroke */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ position: 'relative', width: 108, height: 108 }}>
-                      <svg width="108" height="108" style={{ transform: 'rotate(-90deg)' }}>
-                        {/* Background track */}
-                        <circle
-                          cx="54"
-                          cy="54"
-                          r={radius}
-                          stroke="rgba(0,0,0,0.06)"
-                          strokeWidth="8"
-                          fill="transparent"
-                        />
-                        {/* Animated progress ring */}
-                        <circle
-                          cx="54"
-                          cy="54"
-                          r={radius}
-                          stroke="#1d9e75"
-                          strokeWidth="8"
-                          fill="transparent"
-                          strokeDasharray={circumference}
-                          strokeDashoffset={strokeDashoffset}
-                          strokeLinecap="round"
-                          style={{ transition: 'stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}
-                        />
-                      </svg>
-                      {/* Inner counter */}
-                      <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                        <span style={{ fontSize: 28, fontWeight: 700, color: '#0f6e56', lineHeight: 1 }}>
-                          {displayScore}
-                        </span>
-                        <span style={{ fontSize: 9, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>
-                          Score
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Chip color={displayScore >= 75 ? 'teal' : displayScore >= 60 ? 'amber' : 'neutral'}>
-                        {`Band ${Math.floor(displayScore / 10) * 10}–${Math.floor(displayScore / 10) * 10 + 9}`}
-                      </Chip>
-                      <div style={{ fontSize: 13, color: '#55544f', marginTop: 6 }}>
-                        Pass-Alter: <strong>{userAge} Jahre</strong>
-                      </div>
-                      <div style={{
-                        fontSize: 20,
-                        fontWeight: 700,
-                        color: bioAgeDelta > 0 ? '#0f6e56' : '#22221f',
-                        marginTop: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}>
-                        {calculatedBioAge} Jahre
-                        <span style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: '2px 8px',
-                          borderRadius: 99,
-                          background: bioAgeDelta > 0 ? 'rgba(29,158,117,0.15)' : 'rgba(168,168,156,0.18)',
-                          color: bioAgeDelta > 0 ? '#0f6e56' : '#55544f',
-                        }}>
-                          {bioAgeDelta > 0 ? `-${bioAgeDelta} J. jünger!` : `+${Math.abs(bioAgeDelta)} J.`}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: 4 Animated Domain Bars */}
-                  <div style={{ flex: 1, maxWidth: 220, display: 'flex', flexDirection: 'column', gap: 7 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#55544f', marginBottom: 2 }}>
-                      4 Säulen der Langlebigkeit:
-                    </div>
-                    {[
-                      { label: 'Kardiometabolik', icon: <Heart size={12} color="#0f6e56" />, val: activeProfile.domains.cardio },
-                      { label: 'Regeneration', icon: <Moon size={12} color="#0f6e56" />, val: activeProfile.domains.regen },
-                      { label: 'Aktivität', icon: <Zap size={12} color="#0f6e56" />, val: activeProfile.domains.activity },
-                      { label: 'Risiko-Faktoren', icon: <Shield size={12} color="#0f6e56" />, val: activeProfile.domains.risk },
-                    ].map((d) => (
-                      <div key={d.label}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, color: '#55544f', marginBottom: 2 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>{d.icon} {d.label}</span>
-                          <strong style={{ color: '#0f6e56' }}>{d.val}%</strong>
-                        </div>
-                        <div style={{ height: 4, borderRadius: 99, background: 'rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-                          <div style={{
-                            height: '100%',
-                            borderRadius: 99,
-                            background: 'linear-gradient(90deg, #1d9e75, #0f6e56)',
-                            width: `${d.val}%`,
-                            transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                          }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Age selector pills */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12 }}>
-                  <span style={{ color: '#888780' }}>Pass-Alter ändern:</span>
-                  {[24, 30, 42, 55].map((age) => (
-                    <button
-                      key={age}
-                      type="button"
-                      onClick={() => setUserAge(age)}
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: 99,
-                        border: userAge === age ? '1px solid #0f6e56' : '1px solid rgba(0,0,0,0.1)',
-                        background: userAge === age ? '#0f6e56' : 'transparent',
-                        color: userAge === age ? '#fff' : '#55544f',
-                        fontSize: 11,
-                        fontWeight: userAge === age ? 600 : 400,
-                        cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {age} Jahre
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ════════ STEP 2: Sources & One-Click Test Data ════════ */}
+            {step === 1 && <TutorialStepArchetype />}
             {step === 2 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <Chip color="teal">Schritt 2 von 5 · Datenquellen verbinden</Chip>
-                  <h2 style={{ fontSize: 22, fontWeight: 600, color: '#22221f', margin: '10px 0 4px', letterSpacing: '-0.02em' }}>
-                    So kommen deine Daten in das System
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#55544f', maxWidth: 520, margin: '0 auto', lineHeight: 1.45 }}>
-                    Klicke auf eine Datenquelle, um Details zu sehen. Du kannst auch direkt hier mit
-                    einem Klick <strong>90 Tage synthetische Testdaten</strong> laden.
-                  </p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  {/* Google Health Tile */}
-                  <div
-                    className="card-interactive"
-                    onClick={() => setActiveSourceHighlight('google')}
-                    style={{
-                      padding: 14,
-                      borderRadius: 16,
-                      border: activeSourceHighlight === 'google' ? '2px solid #0f6e56' : '1px solid rgba(0,0,0,0.08)',
-                      background: 'rgba(255,255,255,0.75)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Bot size={22} /></span>
-                      <strong style={{ fontSize: 13, color: '#22221f' }}>Google Health & Fit</strong>
-                    </div>
-                    <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>
-                      Health Connect Cloud: Synchronisiert bis zu 365 Tage Historie (Schritte, Ruhepuls, Schlaf & Zone 2).
-                    </p>
-                  </div>
-
-                  {/* Apple Health Tile */}
-                  <div
-                    className="card-interactive"
-                    onClick={() => setActiveSourceHighlight('apple')}
-                    style={{
-                      padding: 14,
-                      borderRadius: 16,
-                      border: activeSourceHighlight === 'apple' ? '2px solid #0f6e56' : '1px solid rgba(0,0,0,0.08)',
-                      background: 'rgba(255,255,255,0.75)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><AppleLogo size={22} color="#0f6e56" /></span>
-                      <strong style={{ fontSize: 13, color: '#22221f' }}>Apple Health</strong>
-                    </div>
-                    <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>
-                      Importiere deine <code>export.xml</code>-Datei oder nutze den Health Auto Export Webhook für automatischen Push.
-                    </p>
-                  </div>
-
-                  {/* Labor & Lifestyle Tile */}
-                  <div
-                    className="card-interactive"
-                    onClick={() => setActiveSourceHighlight('manual')}
-                    style={{
-                      padding: 14,
-                      borderRadius: 16,
-                      border: activeSourceHighlight === 'manual' ? '2px solid #0f6e56' : '1px solid rgba(0,0,0,0.08)',
-                      background: 'rgba(255,255,255,0.75)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><FlaskConical size={22} /></span>
-                      <strong style={{ fontSize: 13, color: '#22221f' }}>Laborwerte & Lifestyle</strong>
-                    </div>
-                    <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>
-                      Ergänze Cholesterin (LDL/HDL), Blutzucker (HbA1c) und deinen Lifestyle-Fragebogen mit wenigen Klicks.
-                    </p>
-                  </div>
-
-                  {/* Mock Data Generator with interactive trigger */}
-                  <div style={{
-                    padding: 14,
-                    borderRadius: 16,
-                    border: '1px solid rgba(29,158,117,0.3)',
-                    background: 'rgba(29,158,117,0.06)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                  }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Dices size={22} /></span>
-                        <strong style={{ fontSize: 13, color: '#0f6e56' }}>90 Tage Sofort-Testdaten</strong>
-                      </div>
-                      <p style={{ fontSize: 11, color: '#55544f', margin: 0, lineHeight: 1.4 }}>
-                        Ideal zum Testen: Erzeugt sofort realistische Messreihen für deinen Account.
-                      </p>
-                    </div>
-
-                    <Btn
-                      small
-                      variant={mockSuccess ? 'ghost' : 'secondary'}
-                      disabled={generateMockMutation.isPending || mockSuccess}
-                      onClick={handleTriggerMock}
-                      style={{ marginTop: 4 }}
-                    >
-                      {generateMockMutation.isPending ? (
-                        'Wird generiert...'
-                      ) : mockSuccess ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                          <Check size={14} /> 90 Tage Daten aktiv!
-                        </span>
-                      ) : (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                          <Zap size={14} /> Testdaten jetzt laden
-                        </span>
-                      )}
-                    </Btn>
-                  </div>
-                </div>
-
-                <div style={{
-                  padding: '10px 14px',
-                  borderRadius: 12,
-                  background: 'rgba(0,0,0,0.02)',
-                  fontSize: 12,
-                  color: '#55544f',
-                  textAlign: 'center',
-                }}>
-                  Alle Quellen lassen sich jederzeit im Menü unter <strong>Daten</strong> verbinden, synchronisieren oder trennen.
-                </div>
-              </div>
+              <TutorialStepSources
+                mockSuccess={mockSuccess}
+                isPending={generateMockMutation.isPending}
+                onTriggerMock={handleTriggerMock}
+              />
             )}
-
-            {/* ════════ STEP 3: Interactive Real-Time Simulator ════════ */}
-            {step === 3 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <Chip color="teal">Schritt 3 von 5 · Live Hebel-Simulator</Chip>
-                  <h2 style={{ fontSize: 22, fontWeight: 600, color: '#22221f', margin: '10px 0 4px', letterSpacing: '-0.02em' }}>
-                    Bewege die Regler und verjünge deinen Score
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#55544f', maxWidth: 520, margin: '0 auto', lineHeight: 1.45 }}>
-                    Hier erlebst du die Kernmagie von LONGEVITY: Die Score-Engine berechnet für jede
-                    Veränderung deiner Gewohnheiten in Echtzeit den exakten Impact.
-                  </p>
-                </div>
-
-                {/* Animated Score Result Box */}
-                <div style={{
-                  background: 'linear-gradient(135deg, rgba(15,110,86,0.1) 0%, rgba(29,158,117,0.15) 100%)',
-                  border: '1px solid rgba(29,158,117,0.3)',
-                  borderRadius: 18,
-                  padding: '16px 24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 8px 24px rgba(29,158,117,0.14)',
-                }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: '#55544f', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Simulierter Score</div>
-                    <div style={{ fontSize: 30, fontWeight: 700, color: '#0f6e56' }}>
-                      {simulatedScore} <span style={{ fontSize: 15, fontWeight: 400, color: '#55544f' }}>/ 100</span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: '#55544f', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Vitalitätsalter</div>
-                    <div style={{ fontSize: 26, fontWeight: 700, color: '#0f6e56' }}>
-                      {simulatedBioAge} Jahre{' '}
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#1d9e75' }}>
-                        ({simulatedAgeDelta > 0 ? `-${simulatedAgeDelta}` : `+${Math.abs(simulatedAgeDelta)}`} J.)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sliders Container */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {/* Schritte */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 500, color: '#22221f' }}>
-                        <Footprints size={15} color="#0f6e56" /> Tägliche Schritte
-                      </span>
-                      <strong style={{ color: '#0f6e56' }}>{stepsHabit.toLocaleString('de-DE')} Schritte</strong>
-                    </div>
-                    <input
-                      type="range"
-                      min={4000}
-                      max={14000}
-                      step={500}
-                      value={stepsHabit}
-                      aria-label="Tägliche Schritte"
-                      aria-valuemin={4000}
-                      aria-valuemax={14000}
-                      aria-valuenow={stepsHabit}
-                      aria-valuetext={`${stepsHabit.toLocaleString('de-DE')} Schritte`}
-                      onChange={(e) => setStepsHabit(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: '#0f6e56', cursor: 'pointer' }}
-                    />
-                  </div>
-
-                  {/* Zone 2 */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 500, color: '#22221f' }}>
-                        <Heart size={15} color="#0f6e56" /> Zone-2 Cardio (Ausdauer)
-                      </span>
-                      <strong style={{ color: '#0f6e56' }}>{zone2Habit} Min. / Woche</strong>
-                    </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={210}
-                      step={15}
-                      value={zone2Habit}
-                      aria-label="Zone-2 Cardio (Ausdauer)"
-                      aria-valuemin={0}
-                      aria-valuemax={210}
-                      aria-valuenow={zone2Habit}
-                      aria-valuetext={`${zone2Habit} Min. / Woche`}
-                      onChange={(e) => setZone2Habit(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: '#0f6e56', cursor: 'pointer' }}
-                    />
-                  </div>
-
-                  {/* Schlaf */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 500, color: '#22221f' }}>
-                        <Moon size={15} color="#0f6e56" /> Schlafdauer
-                      </span>
-                      <strong style={{ color: '#0f6e56' }}>{sleepHabit} Stunden</strong>
-                    </div>
-                    <input
-                      type="range"
-                      min={5.5}
-                      max={9.0}
-                      step={0.5}
-                      value={sleepHabit}
-                      aria-label="Schlafdauer"
-                      aria-valuemin={5.5}
-                      aria-valuemax={9.0}
-                      aria-valuenow={sleepHabit}
-                      aria-valuetext={`${sleepHabit} Stunden`}
-                      onChange={(e) => setSleepHabit(Number(e.target.value))}
-                      style={{ width: '100%', accentColor: '#0f6e56', cursor: 'pointer' }}
-                    />
-                  </div>
-                </div>
-
-                {simulatedScore >= 80 && (
-                  <div style={{
-                    padding: '8px 14px',
-                    borderRadius: 12,
-                    background: 'rgba(29,158,117,0.12)',
-                    border: '1px solid rgba(29,158,117,0.3)',
-                    fontSize: 12,
-                    color: '#0f6e56',
-                    textAlign: 'center',
-                    fontWeight: 500,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                  }}>
-                    <Sparkles size={15} color="#0f6e56" /> Fantastisch! Ab Score 80 erreichst du die höchste Stufe für Partner-Rabatte.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ════════ STEP 4: Privacy & Benefits Simulator ════════ */}
-            {step === 4 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <Chip color="teal">Schritt 4 von 5 · Privatsphäre & Vorteile</Chip>
-                  <h2 style={{ fontSize: 22, fontWeight: 600, color: '#22221f', margin: '10px 0 4px', letterSpacing: '-0.02em' }}>
-                    Gesundheit belohnen ohne Datenpreisgabe
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#55544f', maxWidth: 520, margin: '0 auto', lineHeight: 1.45 }}>
-                    Partner belohnen deinen Lebensstil. Mit unserer <strong>Zero-Knowledge Signatur</strong>
-                    überträgst du ausschließlich das Score-Band — keine Rohdaten.
-                  </p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  {/* Left: Interactive Privacy Token Box */}
-                  <div style={{
-                    padding: 16,
-                    borderRadius: 18,
-                    border: '1px solid rgba(29,158,117,0.3)',
-                    background: 'rgba(29,158,117,0.05)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 10,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Lock size={20} /></span>
-                      <strong style={{ fontSize: 13, color: '#0f6e56' }}>Kryptografischer Nachweis</strong>
-                    </div>
-
-                    <div style={{
-                      background: '#fff',
-                      borderRadius: 12,
-                      padding: '12px 14px',
-                      border: '1px dashed rgba(29,158,117,0.4)',
-                      fontSize: 12,
-                      color: '#22221f',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4,
-                    }}>
-                      <div>Freigabe: <strong>Band 70–79</strong></div>
-                      <div style={{ fontSize: 11, color: '#888780' }}>
-                        Signatur: {hasSignedToken ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            <Check size={13} color="#0f6e56" /> Ed25519 (Gültig)
-                          </span>
-                        ) : (
-                          'Nicht signiert'
-                        )}
-                      </div>
-                      <div style={{ fontSize: 10, color: '#a3a29c', wordBreak: 'break-all', fontFamily: 'monospace' }}>
-                        {hasSignedToken
-                          ? 'hash: 9f82c...e4b1 (Verifizierbar)'
-                          : 'Klicke unten, um Signatur zu testen'}
-                      </div>
-                    </div>
-
-                    <Btn
-                      small
-                      variant={hasSignedToken ? 'ghost' : 'secondary'}
-                      disabled={isSigningToken}
-                      onClick={handleSimulateSign}
-                    >
-                      {isSigningToken ? (
-                        'Signiere...'
-                      ) : hasSignedToken ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                          <Check size={14} /> Signatur erfolgreich!
-                        </span>
-                      ) : (
-                        'Signatur jetzt testen'
-                      )}
-                    </Btn>
-
-                    <div style={{ fontSize: 11, color: '#55544f', lineHeight: 1.35, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <ShieldCheck size={16} color="#0f6e56" style={{ flexShrink: 0 }} />
-                      <span><strong>Zero Raw-Data:</strong> Dein Puls, deine Schritte oder Schlafdauer verlassen niemals dein Gerät!</span>
-                    </div>
-                  </div>
-
-                  {/* Right: Partner Benefits Box */}
-                  <div style={{
-                    padding: 16,
-                    borderRadius: 18,
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    background: 'rgba(255,255,255,0.75)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 10,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', color: '#0f6e56' }}><Gift size={20} /></span>
-                      <strong style={{ fontSize: 13, color: '#22221f' }}>Freischaltbare Vorteile</strong>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12 }}>
-                      <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(29,158,117,0.08)', color: '#0f6e56' }}>
-                        <Building2 size={15} style={{ verticalAlign: 'middle', marginRight: 6, color: '#0f6e56' }} />
-                        <strong>Bis zu 15% Rabatt</strong> auf private Krankenversicherungen
-                      </div>
-                      <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(29,158,117,0.08)', color: '#0f6e56' }}>
-                        <Dumbbell size={15} style={{ verticalAlign: 'middle', marginRight: 6, color: '#0f6e56' }} />
-                        <strong>40 € monatlich</strong> Zuschuss für Fitness & Wellness
-                      </div>
-                      <div style={{ padding: '8px 10px', borderRadius: 10, background: 'rgba(29,158,117,0.08)', color: '#0f6e56' }}>
-                        <Watch size={15} style={{ verticalAlign: 'middle', marginRight: 6, color: '#0f6e56' }} />
-                        <strong>Wearable-Boni</strong> auf Oura, Garmin & Whoop
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ════════ STEP 5: Grand Finale & Onboarding Transition ════════ */}
+            {step === 3 && <TutorialStepScore />}
+            {step === 4 && <TutorialStepLevers />}
             {step === 5 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <Chip color="green">
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Schritt 5 von 5 · Einführung abgeschlossen <Sparkles size={12} />
-                    </span>
-                  </Chip>
-                  <h2 style={{ fontSize: 22, fontWeight: 600, color: '#22221f', margin: '10px 0 4px', letterSpacing: '-0.02em' }}>
-                    Nahtloser Übergang zum Onboarding
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#55544f', maxWidth: 540, margin: '0 auto', lineHeight: 1.5 }}>
-                    Du hast die Grundlagen kennengelernt! Wähle jetzt deinen ersten Schritt, um dein Cockpit mit echten Vitalitätsdaten zu beleben:
-                  </p>
-                </div>
-
-                {/* 2 Primary Action Cards for Onboarding */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  {/* Card 1: Connect Tracker */}
-                  <div
-                    style={{
-                      padding: 16,
-                      borderRadius: 16,
-                      border: '1.5px solid rgba(29,158,117,0.3)',
-                      background: 'rgba(255,255,255,0.9)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      boxShadow: '0 4px 16px -4px rgba(15,110,86,0.08)',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(29,158,117,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f6e56' }}>
-                          <Watch size={18} />
-                        </div>
-                        <div>
-                          <span style={{ fontSize: 11, color: '#0f6e56', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Empfohlen</span>
-                          <strong style={{ fontSize: 13, color: '#22221f', display: 'block' }}>1. Tracker verbinden</strong>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: 12, color: '#55544f', margin: 0, lineHeight: 1.45 }}>
-                        Apple Health, Google Health / Fit, Garmin oder Oura verbinden für kontinuierliches Tracking.
-                      </p>
-                    </div>
-                    <Btn
-                      small
-                      full
-                      onClick={() => {
-                        handleClose();
-                        navigate('/daten');
-                      }}
-                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                    >
-                      Tracker verbinden <ArrowRight size={13} />
-                    </Btn>
-                  </div>
-
-                  {/* Card 2: 90 Days Mock Data */}
-                  <div
-                    style={{
-                      padding: 16,
-                      borderRadius: 16,
-                      border: mockSuccess ? '1.5px solid rgba(29,158,117,0.4)' : '1px solid rgba(0,0,0,0.08)',
-                      background: mockSuccess ? 'rgba(29,158,117,0.06)' : 'rgba(255,255,255,0.9)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
-                          <Dices size={18} />
-                        </div>
-                        <div>
-                          <span style={{ fontSize: 11, color: '#888780', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sofort testen</span>
-                          <strong style={{ fontSize: 13, color: '#22221f', display: 'block' }}>2. 90 Tage Beispieldaten</strong>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: 12, color: '#55544f', margin: 0, lineHeight: 1.45 }}>
-                        {mockSuccess ? (
-                          <span style={{ color: '#0f6e56', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle2 size={15} /> Beispieldaten erfolgreich generiert! Dein Dashboard ist jetzt befüllt.
-                          </span>
-                        ) : (
-                          'Erkunde das Cockpit sofort mit realistischen Schritten, Schlaf- und Ruhepulskurven.'
-                        )}
-                      </p>
-                    </div>
-                    {mockSuccess ? (
-                      <Btn
-                        small
-                        full
-                        variant="secondary"
-                        onClick={() => {
-                          handleClose();
-                          navigate('/dashboard');
-                        }}
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                      >
-                        Dashboard öffnen <ArrowRight size={13} />
-                      </Btn>
-                    ) : (
-                      <Btn
-                        small
-                        full
-                        variant="secondary"
-                        onClick={handleTriggerMock}
-                        disabled={generateMockMutation.isPending}
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                      >
-                        {generateMockMutation.isPending ? (
-                          'Wird geladen...'
-                        ) : (
-                          <>
-                            <Zap size={13} /> Testdaten laden
-                          </>
-                        )}
-                      </Btn>
-                    )}
-                  </div>
-                </div>
-
-                {/* Quick links to cockpit features */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, fontSize: 12, color: '#55544f' }}>
-                  <span>Oder direkt zu:</span>
-                  <button
-                    type="button"
-                    onClick={() => { handleClose(); navigate('/dashboard'); }}
-                    style={{ background: 'none', border: 'none', color: '#0f6e56', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 12 }}
-                  >
-                    Dashboard
-                  </button>
-                  <span>·</span>
-                  <button
-                    type="button"
-                    onClick={() => { handleClose(); navigate('/hebel'); }}
-                    style={{ background: 'none', border: 'none', color: '#0f6e56', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 12 }}
-                  >
-                    Hebel-Simulator
-                  </button>
-                  <span>·</span>
-                  <button
-                    type="button"
-                    onClick={() => { handleClose(); navigate('/freigabe'); }}
-                    style={{ background: 'none', border: 'none', color: '#0f6e56', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 12 }}
-                  >
-                    Freigaben
-                  </button>
-                </div>
-
-                {/* Dont show again checkbox */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 2 }}>
-                  <input
-                    type="checkbox"
-                    id="dontShowAgain"
-                    checked={dontShowAgain}
-                    onChange={(e) => setDontShowAgain(e.target.checked)}
-                    style={{ accentColor: '#0f6e56', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="dontShowAgain" style={{ fontSize: 12, color: '#55544f', cursor: 'pointer' }}>
-                    Dieses Tutorial beim Start nicht mehr automatisch anzeigen (jederzeit im Profil und Onboarding abrufbar)
-                  </label>
-                </div>
-              </div>
+              <TutorialStepBenefits
+                mockSuccess={mockSuccess}
+                isPending={generateMockMutation.isPending}
+                onTriggerMock={handleTriggerMock}
+                onNavigate={handleNavigateAndClose}
+                dontShowAgain={dontShowAgain}
+                onToggleDontShowAgain={setDontShowAgain}
+              />
             )}
           </div>
 
@@ -1194,10 +265,7 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                 </Btn>
               ) : (
                 <Btn
-                  onClick={() => {
-                    handleClose();
-                    navigate('/dashboard');
-                  }}
+                  onClick={() => handleNavigateAndClose(APP_ROUTES.app.dashboard())}
                   className="anim-shimmer"
                   style={{ color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >

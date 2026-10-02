@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, Btn, Chip } from './ui.js';
+import { APP_ROUTES } from '../lib/routes.js';
 import { ConsentModal } from './ConsentModal.js';
 import type { ScoreResult, User } from '../api/types.js';
 
@@ -197,7 +198,7 @@ export function OnboardingCard() {
             <span>Klicke auf Ausklappen, um deine Onboarding-Schritte fortzusetzen oder die Tour zu starten.</span>
             <button
               type="button"
-              onClick={() => navigate('/daten')}
+              onClick={() => navigate(APP_ROUTES.app.daten())}
               style={{
                 background: 'none',
                 border: 'none',
@@ -318,7 +319,7 @@ export function OnboardingCard() {
                       small
                       testId="onboarding-connect-source"
                       variant="secondary"
-                      onClick={() => navigate('/daten')}
+                      onClick={() => navigate(APP_ROUTES.app.daten())}
                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                     >
                       Quellen verwalten <ArrowRight size={14} />
@@ -330,7 +331,7 @@ export function OnboardingCard() {
                         small
                         testId="onboarding-connect-source"
                         variant="primary"
-                        onClick={() => navigate('/daten')}
+                        onClick={() => navigate(APP_ROUTES.app.daten())}
                         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                       >
                         Tracker verbinden <ArrowRight size={13} />

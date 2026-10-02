@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import { Card, PageTitle, Chip } from '../components/ui.js';
+import { APP_ROUTES } from '../lib/routes.js';
 
 export function Component() {
   return (
@@ -119,11 +120,11 @@ export function Component() {
         </div>
 
         <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
-          <Link to="/dashboard" style={{ color: '#0f6e56', textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>
+          <Link to={APP_ROUTES.app.dashboard()} style={{ color: '#0f6e56', textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>
             ← Zurück zum Dashboard
           </Link>
           <span style={{ color: '#a3a29c' }}>·</span>
-          <Link to="/impressum" style={{ color: '#0f6e56', textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>
+          <Link to={APP_ROUTES.public.impressum()} style={{ color: '#0f6e56', textDecoration: 'none', fontSize: 13, fontWeight: 500 }}>
             Zum Impressum →
           </Link>
         </div>

@@ -4,6 +4,7 @@ import { apiClient } from '../api/client.js';
 import { Card, Btn, GlassInput, FieldLabel } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
 import { PasswordRequirements } from '../components/PasswordRequirements.js';
+import { APP_ROUTES } from '../lib/routes.js';
 
 function AuthShell({ children }: { children: React.ReactNode }) {
   return (
@@ -70,7 +71,7 @@ export function Component() {
               if (localStorage.getItem('longevity_tutorial_completed') !== 'true') {
                 sessionStorage.setItem('longevity_auto_open_tutorial', 'true');
               }
-              navigate('/dashboard');
+              navigate(APP_ROUTES.app.dashboard());
             }}>Weiter zum Dashboard</Btn>
           </Card>
         </div>
@@ -140,12 +141,12 @@ export function Component() {
         </Card>
         <p style={{ textAlign: 'center', fontSize: 13, color: '#888780', marginTop: 20 }}>
           Bereits registriert?{' '}
-          <Link to="/login" style={{ color: '#0f6e56', textDecoration: 'none' }}>Anmelden</Link>
+          <Link to={APP_ROUTES.public.login()} style={{ color: '#0f6e56', textDecoration: 'none' }}>Anmelden</Link>
         </p>
         <p style={{ textAlign: 'center', fontSize: 11, color: '#a3a29c', marginTop: 16 }}>
-          <Link to="/impressum" style={{ color: '#a3a29c', textDecoration: 'none' }}>Impressum</Link>
+          <Link to={APP_ROUTES.public.impressum()} style={{ color: '#a3a29c', textDecoration: 'none' }}>Impressum</Link>
           {' · '}
-          <Link to="/datenschutz" style={{ color: '#a3a29c', textDecoration: 'none' }}>Datenschutz</Link>
+          <Link to={APP_ROUTES.public.datenschutz()} style={{ color: '#a3a29c', textDecoration: 'none' }}>Datenschutz</Link>
         </p>
       </div>
     </AuthShell>

@@ -5,10 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import type { User } from '../api/types.js';
 import brandIcon from '../assets/brand-icon.png';
+import { APP_ROUTES } from '../lib/routes.js';
 
 const NAV_ITEMS = [
-  { to: '/insurer/overview', label: 'Übersicht' },
-  { to: '/insurer/vorteile', label: 'Vorteile' },
+  { to: APP_ROUTES.insurer.overview(), label: 'Übersicht' },
+  { to: APP_ROUTES.insurer.vorteile(), label: 'Vorteile' },
 ] as const;
 
 export function Component() {
@@ -25,7 +26,7 @@ export function Component() {
 
   useEffect(() => {
     if (!isLoading && user && user.role !== 'insurer_admin' && user.role !== 'insurer_staff') {
-      navigate('/dashboard', {
+      navigate(APP_ROUTES.app.dashboard(), {
         replace: true,
         state: { flash: { type: 'error', message: 'Zugriff verweigert: Krankenkassen-Berechtigung erforderlich.' } },
       });

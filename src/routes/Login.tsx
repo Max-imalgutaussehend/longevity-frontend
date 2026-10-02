@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { apiClient } from '../api/client.js';
 import { Card, Btn, GlassInput, FieldLabel } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
+import { APP_ROUTES } from '../lib/routes.js';
 
 function AuthShell({ children }: { children: React.ReactNode }) {
   return (
@@ -75,7 +76,7 @@ export function Component() {
                 <FieldLabel htmlFor="login-password">Passwort</FieldLabel>
                 <GlassInput id="login-password" type="password" autoComplete="current-password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="login-password" name="password" />
                 <div style={{ textAlign: 'right', marginTop: 6 }}>
-                  <Link to="/forgot-password" style={{ color: '#888780', fontSize: 12, textDecoration: 'none' }}>Passwort vergessen?</Link>
+                  <Link to={APP_ROUTES.public.forgotPassword()} style={{ color: '#888780', fontSize: 12, textDecoration: 'none' }}>Passwort vergessen?</Link>
                 </div>
               </div>
               {error && <p style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
@@ -87,12 +88,12 @@ export function Component() {
         </Card>
         <p style={{ textAlign: 'center', fontSize: 13, color: '#888780', marginTop: 20 }}>
           Noch kein Konto?{' '}
-          <Link to="/register" style={{ color: '#0f6e56', textDecoration: 'none' }}>Registrieren</Link>
+          <Link to={APP_ROUTES.public.register()} style={{ color: '#0f6e56', textDecoration: 'none' }}>Registrieren</Link>
         </p>
         <p style={{ textAlign: 'center', fontSize: 11, color: '#a3a29c', marginTop: 16 }}>
-          <Link to="/impressum" style={{ color: '#a3a29c', textDecoration: 'none' }}>Impressum</Link>
+          <Link to={APP_ROUTES.public.impressum()} style={{ color: '#a3a29c', textDecoration: 'none' }}>Impressum</Link>
           {' · '}
-          <Link to="/datenschutz" style={{ color: '#a3a29c', textDecoration: 'none' }}>Datenschutz</Link>
+          <Link to={APP_ROUTES.public.datenschutz()} style={{ color: '#a3a29c', textDecoration: 'none' }}>Datenschutz</Link>
         </p>
       </div>
     </AuthShell>

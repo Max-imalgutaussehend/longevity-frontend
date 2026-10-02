@@ -9,15 +9,16 @@ import { InsurerSelectModal } from '../components/InsurerSelectModal.js';
 import { VerifyEmailBanner } from '../components/VerifyEmailBanner.js';
 import { FlashMessage, type FlashData } from '../components/FlashMessage.js';
 import brandIcon from '../assets/brand-icon.png';
+import { APP_ROUTES } from '../lib/routes.js';
 
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/score',     label: 'Score' },
-  { to: '/hebel',     label: 'Hebel' },
-  { to: '/daten',     label: 'Daten' },
-  { to: '/freigabe',  label: 'Freigabe' },
-  { to: '/vorteile',  label: 'Vorteile' },
-  { to: '/report',    label: 'Bericht' },
+  { to: APP_ROUTES.app.dashboard(), label: 'Dashboard' },
+  { to: APP_ROUTES.app.score(),     label: 'Score' },
+  { to: APP_ROUTES.app.hebel(),     label: 'Hebel' },
+  { to: APP_ROUTES.app.daten(),     label: 'Daten' },
+  { to: APP_ROUTES.app.freigabe(),  label: 'Freigabe' },
+  { to: APP_ROUTES.app.vorteile(),  label: 'Vorteile' },
+  { to: APP_ROUTES.app.report(),    label: 'Bericht' },
 ] as const;
 
 export function Component() {
@@ -47,10 +48,10 @@ export function Component() {
 
   useEffect(() => {
     if (!isUserLoading && user && (user.role === 'insurer_admin' || user.role === 'insurer_staff')) {
-      navigate('/insurer/overview', { replace: true });
+      navigate(APP_ROUTES.insurer.overview(), { replace: true });
     }
     if (!isUserLoading && user && user.role === 'platform_admin') {
-      navigate('/admin', { replace: true });
+      navigate(APP_ROUTES.admin.users(), { replace: true });
     }
   }, [isUserLoading, user, navigate]);
 
@@ -284,7 +285,7 @@ export function Component() {
                   {/* Legal Links */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 8 }}>
                     <Link
-                      to="/impressum"
+                      to={APP_ROUTES.public.impressum()}
                       onClick={() => setShowProfileMenu(false)}
                       style={{ color: '#55544f', textDecoration: 'none', padding: '4px 6px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 8 }}
                     >
@@ -292,7 +293,7 @@ export function Component() {
                       <span>Impressum & Disclaimer</span>
                     </Link>
                     <Link
-                      to="/datenschutz"
+                      to={APP_ROUTES.public.datenschutz()}
                       onClick={() => setShowProfileMenu(false)}
                       style={{ color: '#55544f', textDecoration: 'none', padding: '4px 6px', borderRadius: 6, display: 'inline-flex', alignItems: 'center', gap: 8 }}
                     >
@@ -382,9 +383,9 @@ export function Component() {
                   </span>
                 </button>
                 <span>·</span>
-                <Link to="/impressum" style={{ color: '#55544f', textDecoration: 'none' }}>Impressum</Link>
+                <Link to={APP_ROUTES.public.impressum()} style={{ color: '#55544f', textDecoration: 'none' }}>Impressum</Link>
                 <span>·</span>
-                <Link to="/datenschutz" style={{ color: '#55544f', textDecoration: 'none' }}>Datenschutz</Link>
+                <Link to={APP_ROUTES.public.datenschutz()} style={{ color: '#55544f', textDecoration: 'none' }}>Datenschutz</Link>
               </div>
             </footer>
           </div>

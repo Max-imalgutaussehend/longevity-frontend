@@ -1,25 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { routes } from '../routesConfig.js';
 import { SUPPORTED_BRANDS } from '../components/BrandLogos.js';
-
-export function calculateSimulatedScore(restingHr: number, sleepHours: number, vo2max: number, zone2Min: number) {
-  const hrImpact = (65 - restingHr) * 0.45;
-  const sleepImpact = (Math.min(sleepHours, 8.2) - 6.5) * 4.2;
-  const vo2Impact = (vo2max - 38) * 0.85;
-  const zone2Impact = (Math.min(zone2Min, 240) - 90) * 0.08;
-
-  const rawScore = 60 + hrImpact + sleepImpact + vo2Impact + zone2Impact;
-  const score = Math.max(15, Math.min(98, Math.round(rawScore)));
-
-  const chronoAge = 34;
-  const ageDelta = ((score - 50) / 10) * -1.2;
-  const vitalityAge = Math.max(20, Math.round((chronoAge + ageDelta) * 10) / 10);
-
-  const bandLow = Math.min(90, Math.floor(score / 10) * 10);
-  const band = `Band ${bandLow}–${bandLow + 9}`;
-
-  return { score, vitalityAge, yearsGained: Math.round((chronoAge - vitalityAge) * 10) / 10, band };
-}
+import { calculateSimulatedScore } from '../routes/landing/landingUtils.js';
 
 describe('Router Public & Protected Structure (#9)', () => {
   it('defines the public layer at / with Landing as index', () => {
