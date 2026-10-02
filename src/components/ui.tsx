@@ -137,11 +137,27 @@ export function PercentileBar({ p }: { p: number | null }) {
   );
 }
 
-export function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
+export function Toggle({
+  on,
+  onChange,
+  id,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledby,
+}: {
+  on: boolean;
+  onChange: () => void;
+  id?: string;
+  'aria-label'?: string;
+  'aria-labelledby'?: string;
+}) {
   return (
     <button
+      id={id}
+      type="button"
       onClick={onChange}
       aria-checked={on}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledby}
       role="switch"
       style={{
         width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',

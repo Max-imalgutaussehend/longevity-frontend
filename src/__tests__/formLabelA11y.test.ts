@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { FieldLabel, GlassInput, GlassSelect } from '../components/ui.js';
+import { FieldLabel, GlassInput, GlassSelect, Toggle } from '../components/ui.js';
 import { Component as LoginComponent } from '../routes/Login.js';
 import { Component as RegisterComponent } from '../routes/Register.js';
 import { Component as ForgotPasswordComponent } from '../routes/ForgotPassword.js';
@@ -25,7 +25,7 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
 }
 
 describe('Form Label Accessibility & Autocomplete (#101)', () => {
-  describe('UI Primitives (FieldLabel & GlassInput & GlassSelect)', () => {
+  describe('UI Primitives (FieldLabel & GlassInput & GlassSelect & Toggle)', () => {
     it('FieldLabel renders label with htmlFor attribute', () => {
       const html = renderToString(createElement(FieldLabel, { htmlFor: 'test-input-id', children: 'Test Label' }));
       expect(html).toContain('for="test-input-id"');
@@ -54,6 +54,21 @@ describe('Form Label Accessibility & Autocomplete (#101)', () => {
         })
       );
       expect(html).toContain('id="test-select"');
+    });
+
+    it('Toggle renders id and aria attributes', () => {
+      const html = renderToString(
+        createElement(Toggle, {
+          id: 'test-toggle',
+          'aria-label': 'Test Toggle',
+          on: true,
+          onChange: () => {},
+        })
+      );
+      expect(html).toContain('id="test-toggle"');
+      expect(html).toContain('aria-label="Test Toggle"');
+      expect(html).toContain('role="switch"');
+      expect(html).toContain('aria-checked="true"');
     });
   });
 

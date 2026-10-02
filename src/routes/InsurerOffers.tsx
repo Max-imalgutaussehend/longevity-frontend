@@ -309,14 +309,19 @@ export function Component() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <FieldLabel>Nur für Mitglieder</FieldLabel>
+                  <FieldLabel htmlFor="offer-members-only">Nur für Mitglieder</FieldLabel>
                   <div style={{ fontSize: 12, color: '#888780' }}>
                     {form.membersOnly
                       ? 'Nur verifizierte Mitglieder Ihrer Krankenkasse sehen dieses Angebot.'
                       : 'Alle Nutzer sehen dieses Angebot, unabhängig von der Mitgliedschaft.'}
                   </div>
                 </div>
-                <Toggle on={form.membersOnly} onChange={() => setForm((f) => ({ ...f, membersOnly: !f.membersOnly }))} />
+                <Toggle
+                  id="offer-members-only"
+                  aria-label="Nur für Mitglieder"
+                  on={form.membersOnly}
+                  onChange={() => setForm((f) => ({ ...f, membersOnly: !f.membersOnly }))}
+                />
               </div>
               {error && <p data-testid="offer-error" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
