@@ -798,6 +798,11 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       max={14000}
                       step={500}
                       value={stepsHabit}
+                      aria-label="Tägliche Schritte"
+                      aria-valuemin={4000}
+                      aria-valuemax={14000}
+                      aria-valuenow={stepsHabit}
+                      aria-valuetext={`${stepsHabit.toLocaleString('de-DE')} Schritte`}
                       onChange={(e) => setStepsHabit(Number(e.target.value))}
                       style={{ width: '100%', accentColor: '#0f6e56', cursor: 'pointer' }}
                     />
@@ -817,6 +822,11 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       max={210}
                       step={15}
                       value={zone2Habit}
+                      aria-label="Zone-2 Cardio (Ausdauer)"
+                      aria-valuemin={0}
+                      aria-valuemax={210}
+                      aria-valuenow={zone2Habit}
+                      aria-valuetext={`${zone2Habit} Min. / Woche`}
                       onChange={(e) => setZone2Habit(Number(e.target.value))}
                       style={{ width: '100%', accentColor: '#0f6e56', cursor: 'pointer' }}
                     />
@@ -836,6 +846,11 @@ export function TutorialModal({ isOpen, onClose, initialStep = 1 }: TutorialModa
                       max={9.0}
                       step={0.5}
                       value={sleepHabit}
+                      aria-label="Schlafdauer"
+                      aria-valuemin={5.5}
+                      aria-valuemax={9.0}
+                      aria-valuenow={sleepHabit}
+                      aria-valuetext={`${sleepHabit} Stunden`}
                       onChange={(e) => setSleepHabit(Number(e.target.value))}
                       style={{ width: '100%', accentColor: '#0f6e56', cursor: 'pointer' }}
                     />

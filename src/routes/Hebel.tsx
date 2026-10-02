@@ -323,9 +323,17 @@ export function Component() {
                   )}
                   <div style={{ position: 'relative' }}>
                     <input
-                      type="range" min={min} max={max} step={step} value={v}
+                      type="range"
+                      min={min}
+                      max={max}
+                      step={step}
+                      value={v}
                       onChange={(e) => handleSlider(metric, Number(e.target.value))}
                       aria-label={getMetricLabel(metric)}
+                      aria-valuemin={min}
+                      aria-valuemax={max}
+                      aria-valuenow={v}
+                      aria-valuetext={`${formatMetricValue(metric, v)} ${formatMetricUnit(metric, getMetricUnit(metric))}`.trim()}
                     />
                     <div
                       data-testid={`marker-${metric}`}
