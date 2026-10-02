@@ -68,12 +68,12 @@ export function Component() {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
-                <FieldLabel>E-Mail</FieldLabel>
-                <GlassInput type="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="login-email" name="email" />
+                <FieldLabel htmlFor="login-email">E-Mail</FieldLabel>
+                <GlassInput id="login-email" type="email" autoComplete="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="login-email" name="email" />
               </div>
               <div>
-                <FieldLabel>Passwort</FieldLabel>
-                <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="login-password" name="password" />
+                <FieldLabel htmlFor="login-password">Passwort</FieldLabel>
+                <GlassInput id="login-password" type="password" autoComplete="current-password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="login-password" name="password" />
                 <div style={{ textAlign: 'right', marginTop: 6 }}>
                   <Link to="/forgot-password" style={{ color: '#888780', fontSize: 12, textDecoration: 'none' }}>Passwort vergessen?</Link>
                 </div>

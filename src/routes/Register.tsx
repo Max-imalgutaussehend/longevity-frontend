@@ -89,21 +89,21 @@ export function Component() {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
-                <FieldLabel>E-Mail</FieldLabel>
-                <GlassInput type="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="register-email" name="email" />
+                <FieldLabel htmlFor="register-email">E-Mail</FieldLabel>
+                <GlassInput id="register-email" type="email" autoComplete="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="register-email" name="email" />
               </div>
               <div>
-                <FieldLabel>Passwort</FieldLabel>
-                <GlassInput type="password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="register-password" name="password" />
+                <FieldLabel htmlFor="register-password">Passwort</FieldLabel>
+                <GlassInput id="register-password" type="password" autoComplete="new-password" placeholder="Mindestens 10 Zeichen" value={password} onChange={setPassword} testId="register-password" name="password" />
                 <PasswordRequirements password={password} />
               </div>
               <div>
-                <FieldLabel>Passwort bestätigen</FieldLabel>
-                <GlassInput type="password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="register-password-confirm" name="passwordConfirm" />
+                <FieldLabel htmlFor="register-password-confirm">Passwort bestätigen</FieldLabel>
+                <GlassInput id="register-password-confirm" type="password" autoComplete="new-password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={setPasswordConfirm} testId="register-password-confirm" name="passwordConfirm" />
               </div>
               <div>
-                <FieldLabel>Geburtsdatum</FieldLabel>
-                <GlassInput type="date" value={birthDate} onChange={setBirthDate} testId="register-birthdate" name="birthDate" />
+                <FieldLabel htmlFor="register-birthdate">Geburtsdatum</FieldLabel>
+                <GlassInput id="register-birthdate" type="date" autoComplete="bday" value={birthDate} onChange={setBirthDate} testId="register-birthdate" name="birthDate" />
               </div>
               <div>
                 <FieldLabel>Biologisches Geschlecht (für Score-Referenzkurven)</FieldLabel>
