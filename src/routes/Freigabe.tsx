@@ -52,7 +52,7 @@ export function Component() {
       setShowCreate(false);
       setCreateError(null);
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       setCreateError(err.message || 'Fehler beim Erstellen des Nachweises.');
     },
   });
@@ -72,7 +72,7 @@ export function Component() {
       setDeleteRequested(true);
       setDeleteError(null);
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       setDeleteError(err.message || 'Passwort ungültig oder Fehler bei der Anfrage.');
     },
   });
