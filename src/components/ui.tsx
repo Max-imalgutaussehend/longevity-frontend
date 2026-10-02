@@ -192,9 +192,11 @@ export function Modal({ onClose, children, zIndex = 10000 }: { onClose: () => vo
 }
 
 export function GlassInput({
+  id,
   placeholder,
   type = 'text',
   value,
+  autoComplete,
   onChange,
   onFocus,
   onBlur,
@@ -206,9 +208,11 @@ export function GlassInput({
   style,
   autoFocus,
 }: {
+  id?: string;
   placeholder?: string;
   type?: string;
   value?: string;
+  autoComplete?: string;
   onChange?: (v: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
@@ -222,9 +226,11 @@ export function GlassInput({
 }) {
   return (
     <input
+      id={id}
       type={type}
       placeholder={placeholder}
       value={value}
+      autoComplete={autoComplete}
       name={name}
       min={min}
       max={max}
@@ -246,23 +252,25 @@ export function GlassInput({
   );
 }
 
-export function FieldLabel({ children }: { children: ReactNode }) {
+export function FieldLabel({ children, htmlFor }: { children?: ReactNode; htmlFor?: string }) {
   return (
-    <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 6, letterSpacing: '0.02em' }}>
+    <label htmlFor={htmlFor} style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 6, letterSpacing: '0.02em' }}>
       {children}
     </label>
   );
 }
 
-export function GlassSelect({ value, onChange, options, testId, name }: {
+export function GlassSelect({ value, onChange, options, testId, name, id }: {
   value?: string;
   onChange?: (v: string) => void;
   options: { value: string; label: string }[];
   testId?: string;
   name?: string;
+  id?: string;
 }) {
   return (
     <select
+      id={id}
       value={value}
       name={name}
       data-testid={testId}

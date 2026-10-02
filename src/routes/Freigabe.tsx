@@ -531,8 +531,8 @@ export function Component() {
                 Gelöscht werden: alle Messwerte, Score-Snapshots, Nachweise und dein Konto. Diese Aktion ist nicht umkehrbar. Wir senden dir zur Bestätigung einen Link per E-Mail.
               </p>
               <div style={{ marginBottom: 20 }}>
-                <FieldLabel>Passwort zur Bestätigung</FieldLabel>
-                <GlassInput type="password" placeholder="Dein Passwort" value={deletePassword} onChange={setDeletePassword} />
+                <FieldLabel htmlFor="delete-account-password">Passwort zur Bestätigung</FieldLabel>
+                <GlassInput id="delete-account-password" type="password" autoComplete="current-password" placeholder="Dein Passwort" value={deletePassword} onChange={setDeletePassword} />
               </div>
               {deleteError && (
                 <div style={{ fontSize: 12, color: '#a32d2d', marginBottom: 16, padding: '10px 14px', borderRadius: 8, background: 'rgba(163,45,45,0.08)', border: '1px solid rgba(163,45,45,0.2)', lineHeight: 1.5 }}>

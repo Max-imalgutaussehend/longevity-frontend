@@ -270,20 +270,21 @@ export function Component() {
                 {editingId ? 'Angebot bearbeiten' : 'Neues Angebot'}
               </div>
               <div>
-                <FieldLabel>Titel</FieldLabel>
-                <GlassInput value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} testId="offer-title" name="title" />
+                <FieldLabel htmlFor="offer-title">Titel</FieldLabel>
+                <GlassInput id="offer-title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} testId="offer-title" name="title" />
               </div>
               <div>
-                <FieldLabel>Beschreibung</FieldLabel>
-                <GlassInput value={form.description} onChange={(v) => setForm((f) => ({ ...f, description: v }))} testId="offer-description" name="description" />
+                <FieldLabel htmlFor="offer-description">Beschreibung</FieldLabel>
+                <GlassInput id="offer-description" value={form.description} onChange={(v) => setForm((f) => ({ ...f, description: v }))} testId="offer-description" name="description" />
               </div>
               <div>
-                <FieldLabel>Mindest-Score-Band (0–100)</FieldLabel>
-                <GlassInput type="text" value={form.minBand} onChange={(v) => setForm((f) => ({ ...f, minBand: v.replace(/[^0-9]/g, '') }))} testId="offer-min-band" name="minBand" />
+                <FieldLabel htmlFor="offer-min-band">Mindest-Score-Band (0–100)</FieldLabel>
+                <GlassInput id="offer-min-band" type="text" value={form.minBand} onChange={(v) => setForm((f) => ({ ...f, minBand: v.replace(/[^0-9]/g, '') }))} testId="offer-min-band" name="minBand" />
               </div>
               <div>
-                <FieldLabel>Mindesthaltedauer (Monate, optional)</FieldLabel>
+                <FieldLabel htmlFor="offer-min-months">Mindesthaltedauer (Monate, optional)</FieldLabel>
                 <GlassInput
+                  id="offer-min-months"
                   type="text"
                   value={form.minMonths}
                   onChange={(v) => setForm((f) => ({ ...f, minMonths: v.replace(/[^0-9]/g, '') }))}
@@ -293,17 +294,17 @@ export function Component() {
                 />
               </div>
               <div>
-                <FieldLabel>Vorteil (z.B. "15% Rabatt")</FieldLabel>
-                <GlassInput value={form.valueLabel} onChange={(v) => setForm((f) => ({ ...f, valueLabel: v }))} testId="offer-value-label" name="valueLabel" />
+                <FieldLabel htmlFor="offer-value-label">Vorteil (z.B. "15% Rabatt")</FieldLabel>
+                <GlassInput id="offer-value-label" value={form.valueLabel} onChange={(v) => setForm((f) => ({ ...f, valueLabel: v }))} testId="offer-value-label" name="valueLabel" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <FieldLabel>Gültig ab (optional)</FieldLabel>
-                  <GlassInput type="date" value={form.validFrom} onChange={(v) => setForm((f) => ({ ...f, validFrom: v }))} testId="offer-valid-from" name="validFrom" />
+                  <FieldLabel htmlFor="offer-valid-from">Gültig ab (optional)</FieldLabel>
+                  <GlassInput id="offer-valid-from" type="date" value={form.validFrom} onChange={(v) => setForm((f) => ({ ...f, validFrom: v }))} testId="offer-valid-from" name="validFrom" />
                 </div>
                 <div>
-                  <FieldLabel>Gültig bis (optional)</FieldLabel>
-                  <GlassInput type="date" value={form.validUntil} onChange={(v) => setForm((f) => ({ ...f, validUntil: v }))} testId="offer-valid-until" name="validUntil" />
+                  <FieldLabel htmlFor="offer-valid-until">Gültig bis (optional)</FieldLabel>
+                  <GlassInput id="offer-valid-until" type="date" value={form.validUntil} onChange={(v) => setForm((f) => ({ ...f, validUntil: v }))} testId="offer-valid-until" name="validUntil" />
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -61,8 +61,8 @@ export function Component() {
                   Gib deine E-Mail-Adresse ein, wir schicken dir einen Link zum Zurücksetzen deines Passworts.
                 </p>
                 <div>
-                  <FieldLabel>E-Mail</FieldLabel>
-                  <GlassInput type="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="forgot-password-email" name="email" />
+                  <FieldLabel htmlFor="forgot-password-email">E-Mail</FieldLabel>
+                  <GlassInput id="forgot-password-email" type="email" autoComplete="email" placeholder="name@domain.de" value={email} onChange={setEmail} testId="forgot-password-email" name="email" />
                 </div>
                 <div style={{ paddingTop: 6 }}>
                   <Btn type="submit" full testId="forgot-password-submit">{loading ? 'Einen Moment…' : 'Link senden'}</Btn>
