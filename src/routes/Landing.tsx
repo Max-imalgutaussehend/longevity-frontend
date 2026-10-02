@@ -802,6 +802,11 @@ export function Component() {
                     min="45"
                     max="85"
                     value={restingHr}
+                    aria-label="Ruhepuls"
+                    aria-valuemin={45}
+                    aria-valuemax={85}
+                    aria-valuenow={restingHr}
+                    aria-valuetext={`${restingHr} bpm`}
                     onChange={(e) => setRestingHr(Number(e.target.value))}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
@@ -823,6 +828,11 @@ export function Component() {
                     max="9.5"
                     step="0.1"
                     value={sleepHours}
+                    aria-label="Schlafdauer"
+                    aria-valuemin={5.0}
+                    aria-valuemax={9.5}
+                    aria-valuenow={sleepHours}
+                    aria-valuetext={`${sleepHours.toFixed(1)} h / Nacht`}
                     onChange={(e) => setSleepHours(Number(e.target.value))}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
@@ -843,6 +853,11 @@ export function Component() {
                     min="26"
                     max="58"
                     value={vo2max}
+                    aria-label="Kardiovaskuläre Fitness (VO₂max)"
+                    aria-valuemin={26}
+                    aria-valuemax={58}
+                    aria-valuenow={vo2max}
+                    aria-valuetext={`${vo2max} ml/kg/min`}
                     onChange={(e) => setVo2max(Number(e.target.value))}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
@@ -864,6 +879,11 @@ export function Component() {
                     max="300"
                     step="10"
                     value={zone2Min}
+                    aria-label="Zone-2 Ausdauerminuten / Woche"
+                    aria-valuemin={0}
+                    aria-valuemax={300}
+                    aria-valuenow={zone2Min}
+                    aria-valuetext={`${zone2Min} Min`}
                     onChange={(e) => setZone2Min(Number(e.target.value))}
                   />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#888780', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
