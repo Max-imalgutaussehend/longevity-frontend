@@ -6,6 +6,7 @@ import { apiClient } from '../api/client.js';
 import { Card, PageTitle, Chip, Skeleton, Btn } from '../components/ui.js';
 import { InsurerSelectModal } from '../components/InsurerSelectModal.js';
 import type { ScoreResult, Source, User } from '../api/types.js';
+import { APP_ROUTES } from '../lib/routes.js';
 
 type ClaimStatus = 'submitted' | 'accepted' | 'rejected' | null;
 
@@ -233,7 +234,7 @@ export function Component() {
                       if (action.kind === 'share-link') {
                         return (
                           <button
-                            onClick={() => navigate('/freigabe')}
+                            onClick={() => navigate(APP_ROUTES.app.freigabe())}
                             style={{ fontSize: 12, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', marginTop: 4, display: 'block' }}
                           >
                             Nachweis erstellen →

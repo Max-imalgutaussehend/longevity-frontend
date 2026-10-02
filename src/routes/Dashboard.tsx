@@ -6,6 +6,7 @@ import { apiClient } from '../api/client.js';
 import { Card, Skeleton } from '../components/ui.js';
 import { OnboardingCard } from '../components/OnboardingCard.js';
 import type { ScoreResult } from '../api/types.js';
+import { APP_ROUTES } from '../lib/routes.js';
 
 interface HistoryPoint { date: string; score: number; coverage: number; }
 interface Lever { metric: string; currentValue: number | null; targetValue: number; delta: number; horizonWeeks: number; }
@@ -74,7 +75,7 @@ export function Component() {
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: 48, fontWeight: 500, color: '#0f6e56', lineHeight: 1 }}>50.0</div>
             <p style={{ fontSize: 14, color: '#888780', margin: '16px 0' }}>Ohne Daten gilt der Kohortenmittelwert.</p>
-            <button onClick={() => navigate('/daten')} style={{ fontSize: 13, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={() => navigate(APP_ROUTES.app.daten())} style={{ fontSize: 13, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
               Datenquelle verbinden →
             </button>
           </div>
@@ -179,7 +180,7 @@ export function Component() {
           <Card style={{ flex: 1, padding: '24px 24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 12, color: '#a3a29c' }}>Stärkster Hebel</span>
-              <button onClick={() => navigate('/hebel')} style={{ fontSize: 12, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+              <button onClick={() => navigate(APP_ROUTES.app.hebel())} style={{ fontSize: 12, color: '#0f6e56', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Alle →
               </button>
             </div>

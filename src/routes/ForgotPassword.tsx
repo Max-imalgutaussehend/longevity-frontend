@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { apiClient } from '../api/client.js';
 import { Card, Btn, GlassInput, FieldLabel } from '../components/ui.js';
 import brandIcon from '../assets/brand-icon.png';
+import { APP_ROUTES } from '../lib/routes.js';
 
 function AuthShell({ children }: { children: React.ReactNode }) {
   return (
@@ -75,7 +76,7 @@ export function Component() {
           )}
         </Card>
         <p style={{ textAlign: 'center', fontSize: 13, color: '#888780', marginTop: 20 }}>
-          <Link to="/login" style={{ color: '#0f6e56', textDecoration: 'none' }}>Zurück zur Anmeldung</Link>
+          <Link to={APP_ROUTES.public.login()} style={{ color: '#0f6e56', textDecoration: 'none' }}>Zurück zur Anmeldung</Link>
         </p>
       </div>
     </AuthShell>
