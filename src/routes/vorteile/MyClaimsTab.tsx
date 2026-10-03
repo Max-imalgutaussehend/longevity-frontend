@@ -43,6 +43,8 @@ export function MyClaimsTab({ onOpenReceipt, onOpenVoucher, onOpenCertificate }:
         const isPayout = claim.payoutMethod === 'bank_transfer' || claim.payoutMethod === 'contribution_offset';
         const isVoucher = claim.payoutMethod === 'voucher' || claim.offer?.benefitType === 'voucher';
         const isCertificate = claim.payoutMethod === 'self_submitted' || claim.offer?.benefitType === 'certificate';
+        const voucherPayload = claim.rewardPayload as { voucherCode?: string } | null;
+        const hasCode = Boolean(voucherPayload?.voucherCode);
 
         return (
           <Card key={claim.id} data-testid={`my-claim-row-${claim.id}`}>
@@ -50,7 +52,8 @@ export function MyClaimsTab({ onOpenReceipt, onOpenVoucher, onOpenCertificate }:
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{claim.offer?.title}</span>
-                  {claim.status === 'submitted' && <Chip color="amber"><Clock size={11} style={{ marginRight: 4 }} /> In Prüfung</Chip>}
+                  {claim.status === 'submitted' && <Chip color="amber"><Clock size={11} style={{ marginRight: 4 }} /> Eingegangen</Chip>}
+                  {claim.status === 'processing' && <Chip color="teal"><Clock size={11} style={{ marginRight: 4 }} /> In Bearbeitung</Chip>}
                   {claim.status === 'accepted' && <Chip color="green"><CheckCircle2 size={11} style={{ marginRight: 4 }} /> Genehmigt</Chip>}
                   {claim.status === 'rejected' && <Chip color="red"><AlertCircle size={11} style={{ marginRight: 4 }} /> Abgelehnt</Chip>}
                   <Chip color="teal">Band {claim.bandLow}–{claim.bandHigh}</Chip>
@@ -60,12 +63,23 @@ export function MyClaimsTab({ onOpenReceipt, onOpenVoucher, onOpenCertificate }:
                   {claim.offer?.partnerName} · <strong style={{ color: '#0f6e56' }}>{claim.offer?.valueLabel}</strong>
                 </div>
 
-                {/* Status details */}
                 <div style={{ fontSize: 12, color: '#888780', marginTop: 6 }}>
                   Eingereicht am {new Date(claim.submittedAt).toLocaleDateString('de-DE')}
-                  {claim.decidedAt && ` · Bestätigt am ${new Date(claim.decidedAt).toLocaleDateString('de-DE')}`}
+                  {claim.decidedAt && ` · Aktualisiert am ${new Date(claim.decidedAt).toLocaleDateString('de-DE')}`}
                   {claim.rewardPayload?.transactionRef && ` · Vorgang: ${claim.rewardPayload.transactionRef}`}
                 </div>
+
+                {claim.kvnr && (
+                  <div style={{ fontSize: 11, color: '#55544f', marginTop: 4 }}>
+                    Versichertennr. (KVNR): <code>{claim.kvnr}</code>
+                  </div>
+                )}
+
+                {claim.contactEmail && (
+                  <div style={{ fontSize: 11, color: '#0f6e56', marginTop: 4 }}>
+                    Gutschein-Zustellung per E-Mail an: <code>{claim.contactEmail}</code>
+                  </div>
+                )}
 
                 {claim.payoutIbanMasked && (
                   <div style={{ fontSize: 11, color: '#55544f', marginTop: 4 }}>
@@ -80,14 +94,13 @@ export function MyClaimsTab({ onOpenReceipt, onOpenVoucher, onOpenCertificate }:
                 )}
               </div>
 
-              {/* Actions */}
               <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center' }}>
                 {isPayout && claim.status === 'accepted' && (
                   <Btn small variant="secondary" onClick={() => onOpenReceipt(claim.id)} testId={`open-receipt-${claim.id}`}>
                     <FileText size={12} style={{ marginRight: 4 }} /> Beleg anzeigen
                   </Btn>
                 )}
-                {isVoucher && claim.status === 'accepted' && (
+                {isVoucher && claim.status === 'accepted' && hasCode && (
                   <Btn small onClick={() => onOpenVoucher(claim)} testId={`open-voucher-${claim.id}`}>
                     <Gift size={12} style={{ marginRight: 4 }} /> Gutschein anzeigen
                   </Btn>

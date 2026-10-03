@@ -1,4 +1,4 @@
-import { Check, ArrowRight, Gift, FileText } from 'lucide-react';
+import { Check, ArrowRight, Gift, FileText, Mail } from 'lucide-react';
 import { Card, Chip, Btn } from '../../components/ui.js';
 import type { PartnerOffer, ScoreResult } from '../../api/types.js';
 
@@ -22,6 +22,7 @@ export function OfferCard({
   const isClaimed = Boolean(offer.claimStatus);
   const isVoucher = offer.benefitType === 'voucher';
   const isCert = offer.benefitType === 'certificate';
+  const isEmailVoucher = isVoucher && offer.voucherDelivery === 'email';
 
   return (
     <Card key={offer.id} style={{ opacity: offer.qualified ? 1 : 0.72 }} data-testid={`offer-card-${offer.id}`}>
@@ -34,7 +35,12 @@ export function OfferCard({
             ) : (
               <Chip color="neutral">Ab Band {offer.minBand}</Chip>
             )}
-            {isVoucher && <Chip color="amber"><Gift size={11} style={{ marginRight: 4 }} /> Sofort-Gutschein</Chip>}
+            {isVoucher && (
+              <Chip color="amber">
+                {isEmailVoucher ? <Mail size={11} style={{ marginRight: 4 }} /> : <Gift size={11} style={{ marginRight: 4 }} />}
+                {isEmailVoucher ? 'Gutschein per E-Mail' : 'Sofort-Gutschein'}
+              </Chip>
+            )}
             {isCert && <Chip color="teal"><FileText size={11} style={{ marginRight: 4 }} /> § 65a SGB V</Chip>}
             {!offer.membersOnly && <Chip color="neutral">Für alle Versicherten</Chip>}
           </div>
@@ -59,12 +65,18 @@ export function OfferCard({
                 style={{ background: 'none', border: 'none', color: '#0f6e56', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
                 data-testid={`offer-claimed-status-${offer.id}`}
               >
-                {offer.claimStatus === 'accepted' ? 'Genehmigt ✓ Details →' : 'In Prüfung · Details →'}
+                {offer.claimStatus === 'accepted'
+                  ? 'Genehmigt ✓ Details →'
+                  : offer.claimStatus === 'processing'
+                  ? 'In Bearbeitung · Details →'
+                  : offer.claimStatus === 'rejected'
+                  ? 'Abgelehnt · Details →'
+                  : 'In Prüfung · Details →'}
               </button>
             ) : offer.qualified ? (
               isVoucher ? (
                 <Btn small onClick={() => onClaimVoucher(offer)} testId={`claim-voucher-btn-${offer.id}`}>
-                  Gutschein einlösen <ArrowRight size={12} style={{ marginLeft: 4 }} />
+                  {isEmailVoucher ? 'Gutschein anfordern' : 'Gutschein einlösen'} <ArrowRight size={12} style={{ marginLeft: 4 }} />
                 </Btn>
               ) : isCert ? (
                 <Btn small variant="secondary" onClick={() => onGenerateCertificate(offer)} testId={`generate-cert-btn-${offer.id}`}>

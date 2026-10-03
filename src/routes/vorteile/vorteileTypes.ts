@@ -4,7 +4,7 @@ export type { PartnerOffer, UserClaim, ClaimReceipt };
 
 export type BenefitTab = 'available' | 'my-claims';
 
-export type ClaimStatus = 'submitted' | 'accepted' | 'rejected' | null;
+export type ClaimStatus = 'submitted' | 'processing' | 'accepted' | 'rejected' | null;
 
 export interface KassenInfo {
   score: number;

@@ -10,7 +10,7 @@ import { InsurerClaimsSection } from './insurer/InsurerClaimsSection.js';
 const EMPTY_FORM: OfferFormState = {
   title: '', description: '', minBand: '', minMonths: '', valueLabel: '',
   validFrom: '', validUntil: '', membersOnly: true, benefitType: 'payout',
-  voucherCode: '', partnerUrl: '',
+  voucherDelivery: 'email', voucherCode: '', voucherCodesText: '', partnerUrl: '',
 };
 
 export function Component() {
@@ -19,7 +19,7 @@ export function Component() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<OfferFormState>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
-  const [decideModal, setDecideModal] = useState<{ claim: InsurerClaim; decision: 'accepted' | 'rejected' } | null>(null);
+  const [decideModal, setDecideModal] = useState<{ claim: InsurerClaim; decision: 'processing' | 'accepted' | 'rejected' } | null>(null);
 
   const { data: offers, isLoading: offersLoading } = useQuery<PartnerOffer[]>({
     queryKey: ['insurer-offers'],
@@ -39,7 +39,8 @@ export function Component() {
         valueLabel: form.valueLabel, validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : null,
         validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : null,
         membersOnly: form.membersOnly, benefitType: form.benefitType,
-        voucherCode: form.voucherCode || null, partnerUrl: form.partnerUrl || null,
+        voucherDelivery: form.voucherDelivery, voucherCode: form.voucherCode || null,
+        voucherCodesText: form.voucherCodesText || null, partnerUrl: form.partnerUrl || null,
       };
       return editingId
         ? apiClient(`/insurer/offers/${editingId}`, { method: 'PATCH', body: JSON.stringify(body) })
@@ -55,7 +56,7 @@ export function Component() {
   });
 
   const decideMut = useMutation({
-    mutationFn: (payload: { decision: 'accepted' | 'rejected'; transactionRef?: string; note?: string; rejectionReason?: string }) =>
+    mutationFn: (payload: { decision: 'processing' | 'accepted' | 'rejected'; transactionRef?: string; note?: string; rejectionReason?: string }) =>
       apiClient(`/insurer/claims/${decideModal?.claim.id}/decide`, { method: 'POST', body: JSON.stringify(payload) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['insurer-claims'] }); setDecideModal(null); },
   });
@@ -68,7 +69,9 @@ export function Component() {
       valueLabel: o.valueLabel, validFrom: o.validFrom ? o.validFrom.slice(0, 10) : '',
       validUntil: o.validUntil ? o.validUntil.slice(0, 10) : '', membersOnly: o.membersOnly ?? true,
       benefitType: (o.benefitType as 'payout' | 'voucher' | 'certificate') || 'payout',
-      voucherCode: o.voucherCode || '', partnerUrl: o.partnerUrl || '',
+      voucherDelivery: (o.voucherDelivery as 'code_pool' | 'email') || 'email',
+      voucherCode: o.voucherCode || '', voucherCodesText: '',
+      partnerUrl: o.partnerUrl || '', availableCodesCount: o.availableCodesCount,
     });
     setError(null);
     setShowForm(true);
@@ -92,13 +95,14 @@ export function Component() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{o.title}</span>
                     <Chip color={o.benefitType === 'voucher' ? 'amber' : o.benefitType === 'certificate' ? 'teal' : 'green'}>
-                      {o.benefitType === 'voucher' ? 'Gutschein' : o.benefitType === 'certificate' ? '§ 65a SGB V' : 'Geldprämie'}
+                      {o.benefitType === 'voucher' ? (o.voucherDelivery === 'code_pool' ? 'Gutschein (Pool)' : 'Gutschein (E-Mail)') : o.benefitType === 'certificate' ? '§ 65a SGB V' : 'Geldprämie'}
                     </Chip>
                     <Chip color="neutral">{o.membersOnly ? 'Nur Mitglieder' : 'Für alle Nutzer'}</Chip>
                   </div>
                   <div style={{ fontSize: 13, color: '#55544f' }}>{o.description}</div>
                   <div style={{ fontSize: 12, color: '#888780', marginTop: 6 }}>
                     Ab Band {o.minBand} · {o.valueLabel}
+                    {o.availableCodesCount !== undefined && ` · ${o.availableCodesCount} Codes frei`}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>

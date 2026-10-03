@@ -6,8 +6,8 @@ interface ClaimDecideModalProps {
   isOpen: boolean;
   onClose: () => void;
   claim: InsurerClaim;
-  decision: 'accepted' | 'rejected';
-  onConfirm: (payload: { decision: 'accepted' | 'rejected'; transactionRef?: string; note?: string; rejectionReason?: string }) => void;
+  decision: 'processing' | 'accepted' | 'rejected';
+  onConfirm: (payload: { decision: 'processing' | 'accepted' | 'rejected'; transactionRef?: string; note?: string; rejectionReason?: string }) => void;
   isPending: boolean;
 }
 
@@ -19,14 +19,15 @@ export function ClaimDecideModal({ isOpen, onClose, claim, decision, onConfirm, 
   if (!isOpen) return null;
 
   const isAccept = decision === 'accepted';
+  const isProcessing = decision === 'processing';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onConfirm({
       decision,
       transactionRef: isAccept && transactionRef.trim() ? transactionRef.trim() : undefined,
-      note: isAccept && note.trim() ? note.trim() : undefined,
-      rejectionReason: !isAccept && rejectionReason.trim() ? rejectionReason.trim() : undefined,
+      note: (isAccept || isProcessing) && note.trim() ? note.trim() : undefined,
+      rejectionReason: decision === 'rejected' && rejectionReason.trim() ? rejectionReason.trim() : undefined,
     });
   };
 
@@ -35,14 +36,21 @@ export function ClaimDecideModal({ isOpen, onClose, claim, decision, onConfirm, 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
           <div style={{ fontSize: 17, fontWeight: 500, color: '#22221f' }}>
-            {isAccept ? 'Einreichung genehmigen' : 'Einreichung ablehnen'}
+            {isProcessing ? 'Antrag in Bearbeitung setzen' : isAccept ? 'Einreichung genehmigen' : 'Einreichung ablehnen'}
           </div>
           <div style={{ fontSize: 13, color: '#55544f', marginTop: 4 }}>
             {claim.offerTitle} · {claim.userDisplayName || claim.userEmail}
           </div>
         </div>
 
-        {isAccept ? (
+        {isProcessing && (
+          <div>
+            <FieldLabel htmlFor="claim-note">Bearbeitungsvermerk / interne Notiz (optional)</FieldLabel>
+            <GlassInput id="claim-note" placeholder="z. B. Nachweis an Fachabteilung weitergeleitet" value={note} onChange={setNote} testId="claim-decide-note" />
+          </div>
+        )}
+
+        {isAccept && (
           <>
             <div>
               <FieldLabel htmlFor="claim-tx-ref">Kassen-Vorgangsnummer / Referenz (optional)</FieldLabel>
@@ -50,10 +58,12 @@ export function ClaimDecideModal({ isOpen, onClose, claim, decision, onConfirm, 
             </div>
             <div>
               <FieldLabel htmlFor="claim-note">Auszahlungsvermerk / Notiz (optional)</FieldLabel>
-              <GlassInput id="claim-note" placeholder="z. B. Zur Auszahlung am nächsten Zahltag angewiesen" value={note} onChange={setNote} testId="claim-decide-note" />
+              <GlassInput id="claim-note" placeholder="z. B. Zur Auszahlung angewiesen" value={note} onChange={setNote} testId="claim-decide-note" />
             </div>
           </>
-        ) : (
+        )}
+
+        {decision === 'rejected' && (
           <div>
             <FieldLabel htmlFor="claim-reject-reason">Ablehnungsgrund (wird dem Mitglied angezeigt)</FieldLabel>
             <GlassInput id="claim-reject-reason" placeholder="z. B. Nachweis unvollständig oder Mindestlaufzeit nicht erreicht" value={rejectionReason} onChange={setRejectionReason} testId="claim-decide-reason" />
@@ -62,8 +72,8 @@ export function ClaimDecideModal({ isOpen, onClose, claim, decision, onConfirm, 
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
           <Btn variant="ghost" onClick={onClose}>Abbrechen</Btn>
-          <Btn type="submit" variant={isAccept ? 'primary' : 'danger'} testId="claim-decide-confirm-btn" disabled={isPending}>
-            {isPending ? 'Wird gespeichert...' : isAccept ? 'Prämie bestätigen' : 'Ablehnen bestätigen'}
+          <Btn type="submit" variant={decision === 'rejected' ? 'danger' : 'primary'} testId="claim-decide-confirm-btn" disabled={isPending}>
+            {isPending ? 'Wird gespeichert...' : isProcessing ? 'In Bearbeitung setzen' : isAccept ? 'Prämie bestätigen' : 'Ablehnen bestätigen'}
           </Btn>
         </div>
       </form>

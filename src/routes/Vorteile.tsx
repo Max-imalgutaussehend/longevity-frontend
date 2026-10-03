@@ -8,38 +8,21 @@ import { AvailableOffersTab } from './vorteile/AvailableOffersTab.js';
 import { MyClaimsTab } from './vorteile/MyClaimsTab.js';
 import { ClaimModal } from './vorteile/ClaimModal.js';
 import { VoucherRevealModal } from './vorteile/VoucherRevealModal.js';
+import { VoucherEmailModal } from './vorteile/VoucherEmailModal.js';
 import { CertificateWizardModal } from './vorteile/CertificateWizardModal.js';
 import { ReceiptModal } from './vorteile/ReceiptModal.js';
+import { calculatePointsGap, getClaimAction, type ClaimAction } from './vorteile/vorteileHelpers.js';
 
-export function calculatePointsGap(minBand: number, score: number | null | undefined): string | null {
-  if (score === null || score === undefined) return null;
-  const diff = minBand - score;
-  return diff <= 0 ? null : diff.toFixed(1);
-}
-
-export type ClaimAction =
-  | { kind: 'none' }
-  | { kind: 'share-link' }
-  | { kind: 'submit'; label: string }
-  | { kind: 'status'; label: string };
-
-export function getClaimAction(offer: Pick<PartnerOffer, 'qualified' | 'organizationId' | 'claimStatus'>): ClaimAction {
-  if (!offer.qualified) return { kind: 'none' };
-  if (!offer.organizationId) return { kind: 'share-link' };
-  if (offer.claimStatus === 'submitted') return { kind: 'status', label: 'submitted' };
-  if (offer.claimStatus === 'accepted') return { kind: 'status', label: 'accepted' };
-  if (offer.claimStatus === 'rejected') return { kind: 'submit', label: 'Erneut einreichen' };
-  return { kind: 'submit', label: 'Bei Krankenkasse einreichen' };
-}
+export { calculatePointsGap, getClaimAction, type ClaimAction };
 
 export function Component() {
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState<'available' | 'my-claims'>('available');
   const [showInsurerModal, setShowInsurerModal] = useState(false);
 
-  // Modals state
   const [payoutOffer, setPayoutOffer] = useState<PartnerOffer | null>(null);
   const [voucherModal, setVoucherModal] = useState<{ offer: PartnerOffer; code: string } | null>(null);
+  const [emailVoucherOffer, setEmailVoucherOffer] = useState<PartnerOffer | null>(null);
   const [certOffer, setCertOffer] = useState<{ offer: PartnerOffer; claimId?: string | null; tokenId?: string | null } | null>(null);
   const [receiptClaimId, setReceiptClaimId] = useState<string | null>(null);
 
@@ -54,6 +37,17 @@ export function Component() {
       qc.invalidateQueries({ queryKey: ['offers'] });
       qc.invalidateQueries({ queryKey: ['my-claims'] });
       setVoucherModal({ offer, code: res.rewardPayload?.voucherCode || offer.voucherCode || 'VOUCHER' });
+    },
+  });
+
+  const claimEmailVoucherMut = useMutation({
+    mutationFn: ({ offer, contactEmail }: { offer: PartnerOffer; contactEmail: string }) =>
+      apiClient(`/offers/${offer.id}/claim`, { method: 'POST', body: JSON.stringify({ payoutMethod: 'voucher', contactEmail }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['offers'] });
+      qc.invalidateQueries({ queryKey: ['my-claims'] });
+      setEmailVoucherOffer(null);
+      setActiveTab('my-claims');
     },
   });
 
@@ -73,7 +67,6 @@ export function Component() {
         {score && <Chip color="teal">Dein Score: Band {score.band.low}–{score.band.high}</Chip>}
       </div>
 
-      {/* Tabs Switcher */}
       <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 10 }}>
         <button
           type="button"
@@ -109,21 +102,30 @@ export function Component() {
           user={user}
           onOpenInsurerModal={() => setShowInsurerModal(true)}
           onClaimPayout={(o) => setPayoutOffer(o)}
-          onClaimVoucher={(o) => claimVoucherMut.mutate(o)}
+          onClaimVoucher={(o) => (o.voucherDelivery === 'email' ? setEmailVoucherOffer(o) : claimVoucherMut.mutate(o))}
           onGenerateCertificate={(o) => claimCertMut.mutate(o)}
           onViewClaim={() => setActiveTab('my-claims')}
         />
       ) : (
         <MyClaimsTab
           onOpenReceipt={(id) => setReceiptClaimId(id)}
-          onOpenVoucher={(claim) => setVoucherModal({ offer: claim.offer as unknown as PartnerOffer, code: claim.rewardPayload?.voucherCode || 'VOUCHER' })}
+          onOpenVoucher={(claim) => setVoucherModal({ offer: claim.offer as unknown as PartnerOffer, code: (claim.rewardPayload as { voucherCode?: string })?.voucherCode || 'VOUCHER' })}
           onOpenCertificate={(claim) => setCertOffer({ offer: claim.offer as unknown as PartnerOffer, claimId: claim.id, tokenId: claim.shareTokenId })}
         />
       )}
 
-      {/* Modals */}
       {payoutOffer && <ClaimModal isOpen={Boolean(payoutOffer)} onClose={() => setPayoutOffer(null)} offer={payoutOffer} user={user} onSuccess={() => setActiveTab('my-claims')} />}
       {voucherModal && <VoucherRevealModal isOpen={Boolean(voucherModal)} onClose={() => setVoucherModal(null)} offer={voucherModal.offer} voucherCode={voucherModal.code} />}
+      {emailVoucherOffer && (
+        <VoucherEmailModal
+          isOpen={Boolean(emailVoucherOffer)}
+          onClose={() => setEmailVoucherOffer(null)}
+          offer={emailVoucherOffer}
+          defaultEmail={user?.email || ''}
+          onSubmit={(email) => claimEmailVoucherMut.mutate({ offer: emailVoucherOffer, contactEmail: email })}
+          isPending={claimEmailVoucherMut.isPending}
+        />
+      )}
       {certOffer && <CertificateWizardModal isOpen={Boolean(certOffer)} onClose={() => setCertOffer(null)} offer={certOffer.offer} claimId={certOffer.claimId} verifyTokenId={certOffer.tokenId} />}
       {receiptClaimId && <ReceiptModal isOpen={Boolean(receiptClaimId)} onClose={() => setReceiptClaimId(null)} claimId={receiptClaimId} />}
       <InsurerSelectModal isOpen={showInsurerModal} onClose={() => setShowInsurerModal(false)} />

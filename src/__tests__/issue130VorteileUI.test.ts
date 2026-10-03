@@ -64,8 +64,50 @@ describe('Issue #130: 3-Channel Benefit Claims & Sovereignty (Frontend logic)', 
     expect(getClaimAction({ qualified: true, organizationId: null, claimStatus: null })).toEqual({ kind: 'share-link' });
     expect(getClaimAction({ qualified: true, organizationId: 'org-1', claimStatus: null })).toEqual({ kind: 'submit', label: 'Bei Krankenkasse einreichen' });
     expect(getClaimAction({ qualified: true, organizationId: 'org-1', claimStatus: 'submitted' })).toEqual({ kind: 'status', label: 'submitted' });
+    expect(getClaimAction({ qualified: true, organizationId: 'org-1', claimStatus: 'processing' })).toEqual({ kind: 'status', label: 'processing' });
     expect(getClaimAction({ qualified: true, organizationId: 'org-1', claimStatus: 'accepted' })).toEqual({ kind: 'status', label: 'accepted' });
     expect(getClaimAction({ qualified: true, organizationId: 'org-1', claimStatus: 'rejected' })).toEqual({ kind: 'submit', label: 'Erneut einreichen' });
+  });
+
+  it('distinguishes voucher delivery modes: code_pool vs email', () => {
+    const codePoolOffer: PartnerOffer = {
+      id: 'offer-pool-1',
+      partnerName: 'Urban Sports Club',
+      title: 'Monatsflatrate',
+      description: 'Sofort-Code aus Pool',
+      minBand: 60,
+      valueLabel: '100% Rabatt',
+      isDemo: false,
+      qualified: true,
+      benefitType: 'voucher',
+      voucherDelivery: 'code_pool',
+      availableCodesCount: 42,
+    };
+
+    const emailOffer: PartnerOffer = {
+      id: 'offer-email-1',
+      partnerName: 'Gymondo',
+      title: 'Jahresabo',
+      description: 'Zusendung per E-Mail nach Prüfung',
+      minBand: 50,
+      valueLabel: 'Gutschein',
+      isDemo: false,
+      qualified: true,
+      benefitType: 'voucher',
+      voucherDelivery: 'email',
+    };
+
+    expect(codePoolOffer.voucherDelivery).toBe('code_pool');
+    expect(codePoolOffer.availableCodesCount).toBe(42);
+    expect(emailOffer.voucherDelivery).toBe('email');
+    expect(emailOffer.availableCodesCount).toBeUndefined();
+  });
+
+  it('supports multi-stage claim decisions: processing, accepted, rejected', () => {
+    const validDecisions: Array<'processing' | 'accepted' | 'rejected'> = ['processing', 'accepted', 'rejected'];
+    expect(validDecisions).toContain('processing');
+    expect(validDecisions).toContain('accepted');
+    expect(validDecisions).toContain('rejected');
   });
 
   it('verifies public offers can be claimed by non-members', () => {

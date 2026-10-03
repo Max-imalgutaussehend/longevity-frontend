@@ -329,6 +329,24 @@ export interface paths {
         patch: operations["updateInsurerOffer"];
         trace?: never;
     };
+    "/insurer/offers/{id}/voucher-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get voucher pool statistics for an offer */
+        get: operations["getVoucherCodesStats"];
+        put?: never;
+        /** Batch import voucher codes for an offer */
+        post: operations["importVoucherCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/contact/insurer": {
         parameters: {
             query?: never;
@@ -1304,6 +1322,9 @@ export interface components {
             membersOnly?: boolean;
             /** @enum {string} */
             benefitType?: "payout" | "voucher" | "certificate";
+            /** @enum {string} */
+            voucherDelivery?: "code_pool" | "email";
+            availableCodesCount?: number;
             voucherCode?: string | null;
             partnerUrl?: string | null;
             /** Format: date-time */
@@ -1313,11 +1334,13 @@ export interface components {
             /** Format: uuid */
             claimId?: string | null;
             /** @enum {string|null} */
-            claimStatus?: "submitted" | "accepted" | "rejected" | null;
+            claimStatus?: "submitted" | "processing" | "accepted" | "rejected" | null;
             /** Format: date-time */
             claimSubmittedAt?: string | null;
             payoutMethod?: string | null;
             payoutIbanMasked?: string | null;
+            contactEmail?: string | null;
+            kvnr?: string | null;
             rewardPayload?: Record<string, never> | null;
             rejectionReason?: string | null;
         };
@@ -1325,11 +1348,13 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            status: "submitted" | "accepted" | "rejected";
+            status: "submitted" | "processing" | "accepted" | "rejected";
             /** Format: date-time */
             submittedAt: string;
             payoutMethod?: string | null;
             payoutIbanMasked?: string | null;
+            contactEmail?: string | null;
+            kvnr?: string | null;
             rewardPayload?: Record<string, never> | null;
             shareTokenId?: string | null;
             verifyUrl?: string | null;
@@ -1340,12 +1365,14 @@ export interface components {
             /** Format: uuid */
             offerId?: string;
             /** @enum {string} */
-            status: "submitted" | "accepted" | "rejected";
+            status: "submitted" | "processing" | "accepted" | "rejected";
             bandLow?: number;
             bandHigh?: number;
             payoutMethod?: string | null;
             payoutIbanMasked?: string | null;
             payoutAccountHolder?: string | null;
+            contactEmail?: string | null;
+            kvnr?: string | null;
             rewardPayload?: Record<string, never> | null;
             rejectionReason?: string | null;
             /** Format: date-time */
@@ -1367,6 +1394,8 @@ export interface components {
                 valueLabel: string;
                 /** @enum {string} */
                 benefitType: "payout" | "voucher" | "certificate";
+                /** @enum {string} */
+                voucherDelivery?: "code_pool" | "email";
                 partnerUrl?: string | null;
             };
         };
@@ -1396,12 +1425,18 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            status: "submitted" | "accepted" | "rejected";
+            status: "submitted" | "processing" | "accepted" | "rejected";
             bandLow: number;
             bandHigh: number;
             payoutMethod?: string | null;
             payoutIbanMasked?: string | null;
             payoutAccountHolder?: string | null;
+            contactEmail?: string | null;
+            kvnr?: string | null;
+            /** @enum {string} */
+            benefitType?: "payout" | "voucher" | "certificate";
+            /** @enum {string} */
+            voucherDelivery?: "code_pool" | "email";
             rewardPayload?: Record<string, never> | null;
             rejectionReason?: string | null;
             /** Format: date-time */
@@ -2066,6 +2101,8 @@ export interface operations {
                     membersOnly?: boolean;
                     /** @enum {string} */
                     benefitType?: "payout" | "voucher" | "certificate";
+                    /** @enum {string} */
+                    voucherDelivery?: "code_pool" | "email";
                     voucherCode?: string | null;
                     partnerUrl?: string | null;
                 };
@@ -2174,6 +2211,8 @@ export interface operations {
                     membersOnly?: boolean;
                     /** @enum {string} */
                     benefitType?: "payout" | "voucher" | "certificate";
+                    /** @enum {string} */
+                    voucherDelivery?: "code_pool" | "email";
                     voucherCode?: string | null;
                     partnerUrl?: string | null;
                 };
@@ -2210,6 +2249,88 @@ export interface operations {
             };
             /** @description Not found or not owned by this organization */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getVoucherCodesStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Voucher code stats */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an insurer role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    importVoucherCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    codes?: string[];
+                    rawText?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Inserted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an insurer role */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3996,7 +4117,7 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @enum {string} */
-                    decision: "accepted" | "rejected";
+                    decision: "processing" | "accepted" | "rejected";
                     note?: string;
                     transactionRef?: string;
                     rejectionReason?: string;

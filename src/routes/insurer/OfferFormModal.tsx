@@ -1,4 +1,5 @@
 import { Modal, Btn, GlassInput, FieldLabel, Toggle } from '../../components/ui.js';
+import { VoucherConfigSection } from './VoucherConfigSection.js';
 
 export interface OfferFormState {
   title: string;
@@ -10,8 +11,11 @@ export interface OfferFormState {
   validUntil: string;
   membersOnly: boolean;
   benefitType: 'payout' | 'voucher' | 'certificate';
+  voucherDelivery: 'code_pool' | 'email';
   voucherCode: string;
+  voucherCodesText: string;
   partnerUrl: string;
+  availableCodesCount?: number;
 }
 
 interface OfferFormModalProps {
@@ -68,22 +72,23 @@ export function OfferFormModal({
               }}
             >
               <option value="payout">Geldprämie / Auszahlung (Girokonto / Beitragsverrechnung)</option>
-              <option value="voucher">Sofort-Gutscheincode / Rabatt (Partner-Promo)</option>
+              <option value="voucher">Gutscheincode / Rabatt (Pool-Sofortanzeige oder E-Mail)</option>
               <option value="certificate">Kassenfähiger Nachweis (§ 65a SGB V)</option>
             </select>
           </div>
 
           {form.benefitType === 'voucher' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <FieldLabel htmlFor="offer-voucher-code">Promo-Code (optional)</FieldLabel>
-                <GlassInput id="offer-voucher-code" placeholder="z. B. TK-SPORT-2026" value={form.voucherCode} onChange={(v) => setForm((f) => ({ ...f, voucherCode: v }))} testId="offer-voucher-code" />
-              </div>
-              <div>
-                <FieldLabel htmlFor="offer-partner-url">Partnershop-URL (optional)</FieldLabel>
-                <GlassInput id="offer-partner-url" placeholder="https://..." value={form.partnerUrl} onChange={(v) => setForm((f) => ({ ...f, partnerUrl: v }))} testId="offer-partner-url" />
-              </div>
-            </div>
+            <VoucherConfigSection
+              voucherDelivery={form.voucherDelivery}
+              onChangeDelivery={(d) => setForm((f) => ({ ...f, voucherDelivery: d }))}
+              voucherCode={form.voucherCode}
+              onChangeVoucherCode={(c) => setForm((f) => ({ ...f, voucherCode: c }))}
+              voucherCodesText={form.voucherCodesText}
+              onChangeVoucherCodesText={(t) => setForm((f) => ({ ...f, voucherCodesText: t }))}
+              partnerUrl={form.partnerUrl}
+              onChangePartnerUrl={(u) => setForm((f) => ({ ...f, partnerUrl: u }))}
+              availableCodesCount={form.availableCodesCount}
+            />
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
