@@ -181,4 +181,39 @@ describe('Issue #130: 3-Channel Benefit Claims & Sovereignty (Frontend logic)', 
 
     clickSpy.mockRestore();
   });
+
+  it('correctly partitions insurer claims into actionable portal requests vs informational certificate audit items', () => {
+    const claims = [
+      { id: 'c1', payoutMethod: 'bank_transfer', benefitType: 'payout', status: 'submitted' },
+      { id: 'c2', payoutMethod: 'contribution_offset', benefitType: 'payout', status: 'processing' },
+      { id: 'c3', payoutMethod: 'voucher', benefitType: 'voucher', voucherDelivery: 'email', status: 'submitted' },
+      { id: 'c4', payoutMethod: 'self_submitted', benefitType: 'certificate', status: 'accepted' },
+      { id: 'c5', payoutMethod: 'voucher', benefitType: 'voucher', voucherDelivery: 'code_pool', status: 'accepted' },
+    ];
+
+    const portalClaims = claims.filter(c =>
+      c.payoutMethod !== 'self_submitted' &&
+      c.benefitType !== 'certificate' &&
+      !(c.benefitType === 'voucher' && c.voucherDelivery === 'code_pool')
+    );
+
+    const certificateClaims = claims.filter(c =>
+      c.payoutMethod === 'self_submitted' || c.benefitType === 'certificate'
+    );
+
+    const poolVoucherClaims = claims.filter(c =>
+      c.benefitType === 'voucher' && c.voucherDelivery === 'code_pool'
+    );
+
+    // Only direct portal claims (payout + email voucher) require insurer review and decision
+    expect(portalClaims.map(c => c.id)).toEqual(['c1', 'c2', 'c3']);
+    // PDF certificate claims are strictly informational audit entries
+    expect(certificateClaims.map(c => c.id)).toEqual(['c4']);
+    // Pool voucher claims are auto-redeemed
+    expect(poolVoucherClaims.map(c => c.id)).toEqual(['c5']);
+
+    // Check open portal count
+    const openPortalCount = portalClaims.filter(c => c.status === 'submitted' || c.status === 'processing').length;
+    expect(openPortalCount).toBe(3);
+  });
 });

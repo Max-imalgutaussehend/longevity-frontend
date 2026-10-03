@@ -52,11 +52,21 @@ export function MyClaimsTab({ onOpenReceipt, onOpenVoucher, onOpenCertificate }:
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{claim.offer?.title}</span>
-                  {claim.status === 'submitted' && <Chip color="amber"><Clock size={11} style={{ marginRight: 4 }} /> Eingegangen</Chip>}
-                  {claim.status === 'processing' && <Chip color="teal"><Clock size={11} style={{ marginRight: 4 }} /> In Bearbeitung</Chip>}
-                  {claim.status === 'accepted' && <Chip color="green"><CheckCircle2 size={11} style={{ marginRight: 4 }} /> Genehmigt</Chip>}
-                  {claim.status === 'rejected' && <Chip color="red"><AlertCircle size={11} style={{ marginRight: 4 }} /> Abgelehnt</Chip>}
-                  <Chip color="teal">Band {claim.bandLow}–{claim.bandHigh}</Chip>
+                  {isCertificate ? (
+                    claim.selfSubmittedAt ? (
+                      <Chip color="green"><CheckCircle2 size={11} style={{ marginRight: 4 }} /> In Kassen-App eingereicht</Chip>
+                    ) : (
+                      <Chip color="teal"><ShieldCheck size={11} style={{ marginRight: 4 }} /> PDF ausgestellt</Chip>
+                    )
+                  ) : (
+                    <>
+                      {claim.status === 'submitted' && <Chip color="amber"><Clock size={11} style={{ marginRight: 4 }} /> Eingegangen</Chip>}
+                      {claim.status === 'processing' && <Chip color="teal"><Clock size={11} style={{ marginRight: 4 }} /> In Bearbeitung</Chip>}
+                      {claim.status === 'accepted' && <Chip color="green"><CheckCircle2 size={11} style={{ marginRight: 4 }} /> Genehmigt</Chip>}
+                      {claim.status === 'rejected' && <Chip color="red"><AlertCircle size={11} style={{ marginRight: 4 }} /> Abgelehnt</Chip>}
+                    </>
+                  )}
+                  <Chip color="neutral">Band {claim.bandLow}–{claim.bandHigh}</Chip>
                 </div>
 
                 <div style={{ fontSize: 13, color: '#55544f' }}>
@@ -64,10 +74,17 @@ export function MyClaimsTab({ onOpenReceipt, onOpenVoucher, onOpenCertificate }:
                 </div>
 
                 <div style={{ fontSize: 12, color: '#888780', marginTop: 6 }}>
-                  Eingereicht am {new Date(claim.submittedAt).toLocaleDateString('de-DE')}
-                  {claim.decidedAt && ` · Aktualisiert am ${new Date(claim.decidedAt).toLocaleDateString('de-DE')}`}
+                  {isCertificate ? `Ausgestellt am ${new Date(claim.submittedAt).toLocaleDateString('de-DE')}` : `Eingereicht am ${new Date(claim.submittedAt).toLocaleDateString('de-DE')}`}
+                  {claim.decidedAt && !isCertificate && ` · Aktualisiert am ${new Date(claim.decidedAt).toLocaleDateString('de-DE')}`}
                   {claim.rewardPayload?.transactionRef && ` · Vorgang: ${claim.rewardPayload.transactionRef}`}
                 </div>
+
+                {isCertificate && (
+                  <div style={{ fontSize: 12, color: '#0f6e56', marginTop: 4 }}>
+                    Offizieller Nachweis nach § 65a SGB V · Reiche dieses PDF in der App deiner Krankenkasse ein.
+                    {claim.selfSubmittedAt && ` (Als hochgeladen markiert am ${new Date(claim.selfSubmittedAt).toLocaleDateString('de-DE')})`}
+                  </div>
+                )}
 
                 {claim.kvnr && (
                   <div style={{ fontSize: 11, color: '#55544f', marginTop: 4 }}>

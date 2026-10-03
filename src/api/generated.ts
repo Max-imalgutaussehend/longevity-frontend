@@ -1440,6 +1440,8 @@ export interface components {
             rewardPayload?: Record<string, never> | null;
             rejectionReason?: string | null;
             /** Format: date-time */
+            selfSubmittedAt?: string | null;
+            /** Format: date-time */
             submittedAt: string;
             /** Format: date-time */
             decidedAt?: string | null;

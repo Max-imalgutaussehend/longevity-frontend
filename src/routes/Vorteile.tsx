@@ -102,8 +102,25 @@ export function Component() {
           user={user}
           onOpenInsurerModal={() => setShowInsurerModal(true)}
           onClaimPayout={(o) => setPayoutOffer(o)}
-          onClaimVoucher={(o) => (o.voucherDelivery === 'email' ? setEmailVoucherOffer(o) : claimVoucherMut.mutate(o))}
-          onGenerateCertificate={(o) => claimCertMut.mutate(o)}
+          onClaimVoucher={(o) => {
+            const existingClaim = myClaims?.find((c) => c.offerId === o.id || c.offer?.id === o.id);
+            const code = (existingClaim?.rewardPayload as { voucherCode?: string })?.voucherCode || o.voucherCode;
+            if (existingClaim && code) {
+              setVoucherModal({ offer: o, code });
+            } else if (o.voucherDelivery === 'email') {
+              setEmailVoucherOffer(o);
+            } else {
+              claimVoucherMut.mutate(o);
+            }
+          }}
+          onGenerateCertificate={(o) => {
+            const existingClaim = myClaims?.find((c) => c.offerId === o.id || c.offer?.id === o.id);
+            if (existingClaim) {
+              setCertOffer({ offer: o, claimId: existingClaim.id, tokenId: existingClaim.shareTokenId });
+            } else {
+              claimCertMut.mutate(o);
+            }
+          }}
           onViewClaim={() => setActiveTab('my-claims')}
         />
       ) : (
@@ -126,7 +143,16 @@ export function Component() {
           isPending={claimEmailVoucherMut.isPending}
         />
       )}
-      {certOffer && <CertificateWizardModal isOpen={Boolean(certOffer)} onClose={() => setCertOffer(null)} offer={certOffer.offer} claimId={certOffer.claimId} verifyTokenId={certOffer.tokenId} />}
+      {certOffer && (
+        <CertificateWizardModal
+          isOpen={Boolean(certOffer)}
+          onClose={() => setCertOffer(null)}
+          offer={certOffer.offer}
+          claimId={certOffer.claimId}
+          verifyTokenId={certOffer.tokenId}
+          initialSubmitted={Boolean(myClaims?.find((c) => c.id === certOffer.claimId)?.selfSubmittedAt)}
+        />
+      )}
       {receiptClaimId && <ReceiptModal isOpen={Boolean(receiptClaimId)} onClose={() => setReceiptClaimId(null)} claimId={receiptClaimId} />}
       <InsurerSelectModal isOpen={showInsurerModal} onClose={() => setShowInsurerModal(false)} />
     </div>

@@ -59,20 +59,40 @@ export function OfferCard({
 
           <div style={{ marginTop: 8 }}>
             {isClaimed ? (
-              <button
-                type="button"
-                onClick={onViewClaim}
-                style={{ background: 'none', border: 'none', color: '#0f6e56', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
-                data-testid={`offer-claimed-status-${offer.id}`}
-              >
-                {offer.claimStatus === 'accepted'
-                  ? 'Genehmigt ✓ Details →'
-                  : offer.claimStatus === 'processing'
-                  ? 'In Bearbeitung · Details →'
-                  : offer.claimStatus === 'rejected'
-                  ? 'Abgelehnt · Details →'
-                  : 'In Prüfung · Details →'}
-              </button>
+              isCert ? (
+                <Btn
+                  small
+                  variant="secondary"
+                  onClick={() => onGenerateCertificate(offer)}
+                  testId={`open-cert-btn-${offer.id}`}
+                >
+                  <FileText size={12} style={{ marginRight: 4 }} /> Nachweis ausgestellt · PDF ansehen
+                </Btn>
+              ) : isVoucher && offer.voucherDelivery === 'code_pool' ? (
+                <Btn
+                  small
+                  variant="secondary"
+                  onClick={() => onClaimVoucher(offer)}
+                  testId={`open-voucher-btn-${offer.id}`}
+                >
+                  <Gift size={12} style={{ marginRight: 4 }} /> Gutschein anzeigen
+                </Btn>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onViewClaim}
+                  style={{ background: 'none', border: 'none', color: '#0f6e56', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+                  data-testid={`offer-claimed-status-${offer.id}`}
+                >
+                  {offer.claimStatus === 'accepted'
+                    ? 'Genehmigt ✓ Details →'
+                    : offer.claimStatus === 'processing'
+                    ? 'In Bearbeitung · Details →'
+                    : offer.claimStatus === 'rejected'
+                    ? 'Abgelehnt · Details →'
+                    : 'In Prüfung · Details →'}
+                </button>
+              )
             ) : offer.qualified ? (
               isVoucher ? (
                 <Btn small onClick={() => onClaimVoucher(offer)} testId={`claim-voucher-btn-${offer.id}`}>

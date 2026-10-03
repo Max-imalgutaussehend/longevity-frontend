@@ -13,12 +13,13 @@ interface CertificateWizardModalProps {
   offer: PartnerOffer;
   claimId?: string | null;
   verifyTokenId?: string | null;
+  initialSubmitted?: boolean;
 }
 
-export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verifyTokenId }: CertificateWizardModalProps) {
+export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verifyTokenId, initialSubmitted }: CertificateWizardModalProps) {
   const qc = useQueryClient();
   const [selectedKasse, setSelectedKasse] = useState('tk');
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(initialSubmitted ?? false);
 
   const patchMut = useMutation({
     mutationFn: () => apiClient(`/me/claims/${claimId}`, { method: 'PATCH', body: JSON.stringify({ selfSubmitted: true, reminderDays: 14 }) }),
