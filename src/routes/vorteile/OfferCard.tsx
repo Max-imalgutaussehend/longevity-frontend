@@ -21,7 +21,7 @@ export function OfferCard({
 }: OfferCardProps) {
   const isClaimed = Boolean(offer.claimStatus);
   const isVoucher = offer.benefitType === 'voucher';
-  const isCert = offer.benefitType === 'certificate';
+  const isCert = offer.benefitType === 'certificate' || (!offer.organizationId && offer.benefitType !== 'voucher');
   const isEmailVoucher = isVoucher && offer.voucherDelivery === 'email';
 
   return (

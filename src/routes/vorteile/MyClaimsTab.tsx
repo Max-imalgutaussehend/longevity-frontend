@@ -54,7 +54,7 @@ export function MyClaimsTab({ onOpenReceipt, onOpenVoucher, onOpenCertificate }:
                   <span style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{claim.offer?.title}</span>
                   {isCertificate ? (
                     claim.selfSubmittedAt ? (
-                      <Chip color="green"><CheckCircle2 size={11} style={{ marginRight: 4 }} /> In Kassen-App eingereicht</Chip>
+                      <Chip color="green"><CheckCircle2 size={11} style={{ marginRight: 4 }} /> Bei Krankenkasse eingereicht</Chip>
                     ) : (
                       <Chip color="teal"><ShieldCheck size={11} style={{ marginRight: 4 }} /> PDF ausgestellt</Chip>
                     )
@@ -81,8 +81,8 @@ export function MyClaimsTab({ onOpenReceipt, onOpenVoucher, onOpenCertificate }:
 
                 {isCertificate && (
                   <div style={{ fontSize: 12, color: '#0f6e56', marginTop: 4 }}>
-                    Offizieller Nachweis nach § 65a SGB V · Reiche dieses PDF in der App deiner Krankenkasse ein.
-                    {claim.selfSubmittedAt && ` (Als hochgeladen markiert am ${new Date(claim.selfSubmittedAt).toLocaleDateString('de-DE')})`}
+                    Offizieller Nachweis nach § 65a SGB V · Reiche dieses PDF bei deiner Krankenkasse ein.
+                    {claim.selfSubmittedAt && ` (Als eingereicht markiert am ${new Date(claim.selfSubmittedAt).toLocaleDateString('de-DE')})`}
                   </div>
                 )}
 

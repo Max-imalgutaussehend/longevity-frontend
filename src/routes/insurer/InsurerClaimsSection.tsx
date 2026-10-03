@@ -215,7 +215,7 @@ export function InsurerClaimsSection({ claims, claimsLoading, onDecide }: Insure
             <div style={{ fontSize: 13, color: '#1d2c25', lineHeight: 1.5 }}>
               <strong>Kryptografische Selbsteinreichung nach § 65a SGB V:</strong>
               <div style={{ marginTop: 2, color: '#55544f' }}>
-                Diese Nachweise wurden von Versicherten mit digitaler Ed25519-Signatur generiert und werden eigenständig in Ihrer Kassen-App (z. B. TK-Bonusprogramm) oder per Post eingereicht.
+                Diese Nachweise wurden von Versicherten mit digitaler Ed25519-Signatur generiert und werden eigenständig eingereicht (z. B. per Kassen-App, Online-Portal oder per Post).
               </div>
               <div style={{ marginTop: 4, color: '#0f6e56', fontWeight: 500 }}>
                 ✓ Keine Bestätigung im LONGEVITY-Portal erforderlich: Diese Einträge dienen der Nachvollziehbarkeit und Echtheitsprüfung.
@@ -233,7 +233,7 @@ export function InsurerClaimsSection({ claims, claimsLoading, onDecide }: Insure
                         <span style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{c.offerTitle}</span>
                         <Chip color="teal"><ShieldCheck size={11} style={{ marginRight: 4 }} /> PDF ausgestellt</Chip>
                         {c.selfSubmittedAt && (
-                          <Chip color="green"><CheckCircle2 size={11} style={{ marginRight: 4 }} /> In Kassen-App eingereicht</Chip>
+                          <Chip color="green"><CheckCircle2 size={11} style={{ marginRight: 4 }} /> Vom Mitglied eingereicht</Chip>
                         )}
                         <Chip color="neutral">Band {c.bandLow}–{c.bandHigh}</Chip>
                       </div>
@@ -252,7 +252,7 @@ export function InsurerClaimsSection({ claims, claimsLoading, onDecide }: Insure
                         Generiert am {new Date(c.submittedAt).toLocaleDateString('de-DE')}
                         {c.selfSubmittedAt && (
                           <span style={{ color: '#0f6e56' }}>
-                            {' '}· Vom Versicherten als in Kassen-App hochgeladen markiert ({new Date(c.selfSubmittedAt).toLocaleDateString('de-DE')})
+                            {' '}· Vom Versicherten als eingereicht markiert ({new Date(c.selfSubmittedAt).toLocaleDateString('de-DE')})
                           </span>
                         )}
                       </div>

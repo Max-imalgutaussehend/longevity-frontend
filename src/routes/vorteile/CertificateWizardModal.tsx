@@ -4,7 +4,6 @@ import { ShieldCheck, Printer, CheckCircle2, Clock, ExternalLink, Download } fro
 import { apiClient } from '../../api/client.js';
 import { Modal, Btn, Chip } from '../../components/ui.js';
 import type { PartnerOffer } from '../../api/types.js';
-import { KASSEN_GUIDES } from './vorteileHelpers.js';
 import { downloadCertificatePdf, printCleanCertificate } from './certificatePdf.js';
 
 interface CertificateWizardModalProps {
@@ -18,7 +17,6 @@ interface CertificateWizardModalProps {
 
 export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verifyTokenId, initialSubmitted }: CertificateWizardModalProps) {
   const qc = useQueryClient();
-  const [selectedKasse, setSelectedKasse] = useState('tk');
   const [submitted, setSubmitted] = useState(initialSubmitted ?? false);
 
   const patchMut = useMutation({
@@ -85,7 +83,7 @@ export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verify
         {/* Actions: Download PDF or Print Clean Certificate */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderRadius: 10, background: 'rgba(29,158,117,0.06)', border: '1px solid rgba(29,158,117,0.18)', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ fontSize: 12, color: '#1d2c25' }}>
-            <strong>Offizieller Nachweis:</strong> Bereit für Upload in Kassen-App
+            <strong>Offizieller Nachweis:</strong> Bereit zur Einreichung bei deiner Krankenkasse
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <Btn small variant="secondary" onClick={() => printCleanCertificate(pdfData)} testId="certificate-print-btn">
@@ -97,31 +95,7 @@ export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verify
           </div>
         </div>
 
-        {/* Step 2: Insurer Upload Instructions */}
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#22221f', marginBottom: 8 }}>Schritt-für-Schritt Upload-Anleitung</div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-            {['tk', 'barmer', 'aok', 'allianz', 'other'].map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setSelectedKasse(k)}
-                style={{
-                  padding: '4px 10px', borderRadius: 999, border: 'none', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
-                  background: selectedKasse === k ? '#0f6e56' : 'rgba(0,0,0,0.06)',
-                  color: selectedKasse === k ? '#fff' : '#55544f',
-                }}
-              >
-                {k.toUpperCase()}
-              </button>
-            ))}
-          </div>
-          <div style={{ fontSize: 12, color: '#55544f', padding: '8px 12px', background: 'rgba(255,255,255,0.6)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
-            {KASSEN_GUIDES[selectedKasse]}
-          </div>
-        </div>
-
-        {/* Step 3: Status Tracking */}
+        {/* Step 2: Status Tracking */}
         {claimId && (
           <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: 12, color: '#55544f' }}>
@@ -130,7 +104,7 @@ export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verify
                   <CheckCircle2 size={14} /> Eingereicht markiert · Erinnerung in 14 Tagen aktiv
                 </span>
               ) : (
-                'Hast du das PDF in deiner Kassen-App hochgeladen?'
+                'Hast du das PDF bei deiner Krankenkasse eingereicht?'
               )}
             </div>
             {!submitted && (
