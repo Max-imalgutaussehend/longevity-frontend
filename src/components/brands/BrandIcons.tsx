@@ -187,11 +187,18 @@ export function PolarLogo({ size = 20, className, color, style }: LogoProps) {
       width={size}
       height={size}
       className={className}
-      fill={fill}
       style={{ display: 'inline-block', flexShrink: 0, ...style }}
       aria-label="Polar Logo"
     >
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2V7h2v5.5z" />
+      <path
+        d="M2.123 10.438 A 10 10 0 1 0 2.933 7.781 L 13.172 7.781 A 1.328 1.328 0 0 1 13.172 10.438 Z"
+        fill={fill}
+      />
+      <path
+        d="M4.209 18.27 C 4.539 16.648 4.93 15.945 5.906 15.945 L 13.719 15.945 C 16.063 15.945, 18.211 14.695, 19.383 12.938 C 20.555 11.18, 21.023 8.836, 20.66 7 A 10 10 0 0 1 4.209 18.27 Z"
+        fill="black"
+        fillOpacity={0.16}
+      />
     </svg>
   );
 }

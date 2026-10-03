@@ -1,24 +1,18 @@
 import { useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import {
-  GraduationCap,
   MapPin,
   Code,
   Briefcase,
   Users,
-  Sparkles,
   Mail,
   Check,
-  Send,
-  Copy,
-  ExternalLink,
 } from 'lucide-react';
 import teamImage from '../../assets/team.png';
 import { Card, Btn } from '../../components/ui.js';
 import { apiClient } from '../../api/client.js';
 import { EXTERNAL_LINKS } from '../../lib/routes.js';
 import { CONTACT_REASONS } from './landingTypes.js';
-import { copyToClipboard } from './landingUtils.js';
 
 interface LandingTeamAndContactProps {
   selectedReasonId: string;
@@ -38,16 +32,6 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
     message: '',
   });
 
-  const [copiedEmail, setCopiedEmail] = useState(false);
-
-  const handleCopyEmail = async () => {
-    const success = await copyToClipboard(EXTERNAL_LINKS.contactEmail);
-    if (success) {
-      setCopiedEmail(true);
-      setTimeout(() => setCopiedEmail(false), 2500);
-    }
-  };
-
   const handleContactSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setContactLoading(true);
@@ -61,7 +45,7 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
         ? 'Forschung & DHBW'
         : 'Privatperson / Allgemein');
 
-    const enrichedMessage = `[Anliegen: ${selectedReason.label}]\n\n${contactForm.message.trim()}`;
+    const enrichedMessage = `[Thema: ${selectedReason.label}]\n\n${contactForm.message.trim()}`;
 
     try {
       await apiClient('/contact/insurer', {
@@ -100,8 +84,8 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
               gap: 6,
             }}
           >
-            <GraduationCap size={14} />
-            DHBW Mannheim · Duale Hochschule Baden-Württemberg
+            <Mail size={14} />
+            Direktkontakt & Austausch
           </span>
         </div>
 
@@ -115,7 +99,7 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
             margin: '0 0 16px',
           }}
         >
-          Von Studierenden entwickelt.{' '}
+          Gerne direkt mit uns austauschen.{' '}
           <span
             style={{
               background: 'linear-gradient(135deg, #1d9e75 0%, #0f6e56 100%)',
@@ -123,7 +107,7 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Direkt als Team ansprechbar.
+            Per Kontaktformular oder direkt per Mail.
           </span>
         </h2>
 
@@ -136,10 +120,16 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
             maxWidth: 760,
           }}
         >
-          Hinter LONGEVITY steht kein anonymer Großkonzern, sondern ein 5-köpfiges Team der DHBW Mannheim:
-          Drei Software-Entwickler und zwei BWL-Expertinnen verbinden modernste Software-Architektur und
-          Datensouveränität mit fundierter Produktführung und verlässlicher Kooperation. Schreib uns direkt &ndash;
-          wir freuen uns auf jeden Austausch und antworten persönlich!
+          Ob Fragen zur Plattform, Kooperationen oder technisches Feedback: Du erreichst unser
+          5-köpfiges Team jederzeit direkt &ndash; nutze einfach das Kontaktformular oder
+          schreib uns direkt per E-Mail an{' '}
+          <a
+            href={`mailto:${EXTERNAL_LINKS.contactEmail}`}
+            style={{ color: '#0f6e56', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 2 }}
+          >
+            {EXTERNAL_LINKS.contactEmail}
+          </a>
+          . Wir antworten persönlich und zeitnah!
         </p>
       </div>
 
@@ -188,8 +178,8 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
                   boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
                 }}
               >
-                <span className="pulse-emerald-dot" />
-                <span>5 Köpfe · DHBW Team</span>
+                <Users size={13} color="#5dcaa5" />
+                <span>5 Köpfe · Kernteam</span>
               </div>
 
               {/* Bottom Gradient Overlay with Location */}
@@ -303,118 +293,6 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
               </div>
             </div>
           </div>
-
-          {/* 3 Value Pillars beneath photo */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: 12,
-            }}
-          >
-            <div
-              className="glass card-interactive"
-              style={{
-                borderRadius: 14,
-                padding: '14px 16px',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#0f6e56',
-                  textTransform: 'uppercase',
-                  marginBottom: 4,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <Users size={13} /> 3 Tech · 2 BWL
-              </div>
-              <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                Code, Architektur, Finanzen & Partnerschaften vereint
-              </div>
-            </div>
-
-            <div
-              className="glass card-interactive"
-              style={{
-                borderRadius: 14,
-                padding: '14px 16px',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#0f6e56',
-                  textTransform: 'uppercase',
-                  marginBottom: 4,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <Sparkles size={13} /> 100% Inhouse
-              </div>
-              <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                Vom Score-Algorithmus über FHIR bis zum Partnermodell
-              </div>
-            </div>
-
-            <div
-              className="glass card-interactive"
-              style={{
-                borderRadius: 14,
-                padding: '14px 16px',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#0f6e56',
-                  textTransform: 'uppercase',
-                  marginBottom: 4,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <Mail size={13} /> Direktkontakt
-              </div>
-              <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                Echte Antworten vom Team &ndash; werktags in 24h
-              </div>
-            </div>
-          </div>
-
-          {/* Mission Statement */}
-          <div
-            style={{
-              background: 'rgba(240, 244, 241, 0.85)',
-              borderRadius: 14,
-              padding: '16px 20px',
-              border: '1px solid rgba(29, 158, 117, 0.22)',
-              fontSize: 13,
-              color: '#44433e',
-              lineHeight: 1.6,
-            }}
-          >
-            <em>
-              &bdquo;Unser Anspruch: Medizinische Evidenz, modernste Software-Architektur und verlässliche
-              Partnerschaften so zu vereinen, dass Nutzer die Kontrolle über ihre Gesundheitsdaten behalten &ndash;
-              und Partner messbare Mehrwerte erzielen.&ldquo;
-            </em>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#0f6e56', marginTop: 8, textAlign: 'right' }}>
-              &mdash; Max, Victor, Till (Tech) &middot; Lea & Christina (Business)
-            </div>
-          </div>
         </div>
 
         {/* Right Column: Unified Contact Form */}
@@ -433,11 +311,12 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
             <div style={{ textAlign: 'center', padding: '36px 16px' }}>
               <Check size={44} color="#0f6e56" style={{ margin: '0 auto 14px', display: 'block' }} />
               <h3 style={{ fontSize: 20, fontWeight: 600, color: '#0f6e56', margin: '0 0 10px' }}>
-                {selectedReason.id === 'insurer' ? 'Vielen Dank für Ihre Anfrage!' : 'Vielen Dank für deine Nachricht!'}
+                {selectedReason.id === 'insurer' ? 'Vielen Dank für Ihre Anfrage!' : 'Danke für deine Nachricht!'}
               </h3>
               <p style={{ fontSize: 14, color: '#55544f', margin: '0 auto 20px', maxWidth: 420, lineHeight: 1.55 }}>
-                Wir haben dein Anliegen erhalten. Ein Mitglied unseres Entwicklerteams wird sich
-                innerhalb von 24 Stunden persönlich bei dir melden.
+                {selectedReason.id === 'insurer'
+                  ? 'Wir haben Ihre Anfrage erhalten und melden uns in Kürze persönlich bei Ihnen.'
+                  : 'Wir haben deine Nachricht erhalten und melden uns zeitnah bei dir.'}
               </p>
               <button
                 type="button"
@@ -456,7 +335,7 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
                   fontWeight: 500,
                 }}
               >
-                Weitere Nachricht verfassen
+                Weitere Nachricht senden
               </button>
             </div>
           ) : (
@@ -464,74 +343,48 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
               {/* Card Header */}
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                  marginBottom: 16,
+                  marginBottom: 20,
                   borderBottom: '1px solid rgba(0,0,0,0.06)',
                   paddingBottom: 14,
                 }}
               >
-                <div>
-                  <h3 style={{ fontSize: 19, fontWeight: 600, color: '#22221f', margin: 0 }}>
-                    Kontaktformular & Direktanfrage
-                  </h3>
-                  <div style={{ fontSize: 12, color: '#888780', marginTop: 2 }}>
-                    Direkt an das DHBW-Entwicklerteam
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: '#0f6e56',
-                    background: '#e1f5ee',
-                    padding: '4px 12px',
-                    borderRadius: 999,
-                    border: '1px solid rgba(29, 158, 117, 0.25)',
-                  }}
-                >
-                  <span className="pulse-emerald-dot" />
-                  <span>Team erreichbar</span>
-                </div>
-              </div>
-
-              {/* Reason Selector Chips */}
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#22221f', marginBottom: 8 }}>
-                  Anliegen auswählen:
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {CONTACT_REASONS.map((reason) => {
-                    const isActive = selectedReasonId === reason.id;
-                    return (
-                      <button
-                        key={reason.id}
-                        type="button"
-                        onClick={() => onSelectReasonId(reason.id)}
-                        className={`team-topic-chip ${isActive ? 'is-active' : ''}`}
-                        style={{ fontSize: 11.5, padding: '6px 12px' }}
-                      >
-                        <span>{reason.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <h3 style={{ fontSize: 19, fontWeight: 600, color: '#22221f', margin: 0 }}>
+                  Nachricht an das Team
+                </h3>
+                <p style={{ fontSize: 13, color: '#55544f', margin: '4px 0 0', lineHeight: 1.4 }}>
+                  Fragen, Anregungen oder Interesse an einer Zusammenarbeit? Schreib uns direkt.
+                </p>
               </div>
 
               {/* Form Inputs */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Topic Select */}
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
+                  <label htmlFor="contact-reason" style={labelStyle}>
+                    Thema
+                  </label>
+                  <select
+                    id="contact-reason"
+                    name="reason"
+                    value={selectedReasonId}
+                    onChange={(e) => onSelectReasonId(e.target.value)}
+                    style={selectStyle}
+                  >
+                    {CONTACT_REASONS.map((reason) => (
+                      <option key={reason.id} value={reason.id}>
+                        {reason.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="contact-company" style={labelStyle}>
                     {selectedReason.companyLabel}
                   </label>
                   <input
+                    id="contact-company"
+                    name="company"
                     required={selectedReason.companyRequired}
                     type="text"
                     placeholder={selectedReason.companyPlaceholder}
@@ -542,12 +395,15 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                    Ansprechpartner / Name *
+                  <label htmlFor="contact-name" style={labelStyle}>
+                    Name *
                   </label>
                   <input
+                    id="contact-name"
+                    name="name"
                     required
                     type="text"
+                    autoComplete="name"
                     placeholder={selectedReason.id === 'insurer' ? 'Dr. Vorname Nachname' : 'Vorname Nachname'}
                     value={contactForm.name}
                     onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
@@ -556,13 +412,16 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
+                  <label htmlFor="contact-email" style={labelStyle}>
                     {selectedReason.emailLabel}
                   </label>
                   <input
+                    id="contact-email"
+                    name="email"
                     required
                     type="email"
-                    placeholder={selectedReason.id === 'insurer' ? 'name@organisation.de' : 'deine.mail@beispiel.de'}
+                    autoComplete="email"
+                    placeholder={selectedReason.id === 'insurer' ? 'name@organisation.de' : 'name@beispiel.de'}
                     value={contactForm.email}
                     onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                     style={inputStyle}
@@ -570,11 +429,13 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#55544f', marginBottom: 4 }}>
-                    Nachricht oder Anliegen
+                  <label htmlFor="contact-message" style={labelStyle}>
+                    Nachricht
                   </label>
                   <textarea
-                    rows={3}
+                    id="contact-message"
+                    name="message"
+                    rows={4}
                     placeholder={selectedReason.messagePlaceholder}
                     value={contactForm.message}
                     onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
@@ -583,133 +444,47 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
                 </div>
 
                 {contactError && (
-                  <p style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{contactError}</p>
+                  <p role="alert" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>
+                    {contactError}
+                  </p>
                 )}
 
-                <Btn type="submit" full disabled={contactLoading} style={{ marginTop: 2, padding: '12px 20px', fontSize: 14 }}>
-                  {contactLoading ? 'Wird übermittelt…' : selectedReason.btnText}
+                <Btn
+                  type="submit"
+                  full
+                  disabled={contactLoading}
+                  style={{ marginTop: 4, padding: '12px 20px', fontSize: 14 }}
+                >
+                  {contactLoading
+                    ? 'Wird gesendet…'
+                    : selectedReason.id === 'insurer'
+                    ? 'Anfrage senden'
+                    : 'Nachricht senden'}
                 </Btn>
 
-                {/* Team Email Box */}
-                <div
+                {/* Direct email link */}
+                <p
                   style={{
-                    background: 'linear-gradient(135deg, rgba(225, 245, 238, 0.7) 0%, rgba(240, 244, 241, 0.75) 100%)',
-                    border: '1px solid rgba(29, 158, 117, 0.32)',
-                    borderRadius: 12,
-                    padding: '12px 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 10,
-                    marginTop: 4,
+                    fontSize: 12.5,
+                    color: '#666560',
+                    margin: '10px 0 0',
+                    textAlign: 'center',
+                    lineHeight: 1.5,
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: 10.5, fontWeight: 500, color: '#888780', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }}>
-                      Offizielle Team-Adresse
-                    </div>
-                    <a
-                      href={`mailto:${EXTERNAL_LINKS.contactEmail}?subject=${encodeURIComponent(selectedReason.subject)}`}
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 600,
-                        color: '#0f6e56',
-                        textDecoration: 'none',
-                        fontFamily: 'monospace',
-                      }}
-                    >
-                      {EXTERNAL_LINKS.contactEmail}
-                    </a>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <button
-                      type="button"
-                      onClick={handleCopyEmail}
-                      title="E-Mail-Adresse in die Zwischenablage kopieren"
-                      style={{
-                        background: copiedEmail ? '#0f6e56' : '#ffffff',
-                        color: copiedEmail ? '#ffffff' : '#22221f',
-                        border: copiedEmail ? '1px solid #0f6e56' : '1px solid rgba(168, 168, 156, 0.35)',
-                        padding: '6px 12px',
-                        borderRadius: 8,
-                        fontSize: 12,
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        transition: 'all 0.15s ease',
-                        fontFamily: 'inherit',
-                      }}
-                    >
-                      {copiedEmail ? <Check size={13} /> : <Copy size={13} />}
-                      <span>{copiedEmail ? 'Kopiert!' : 'Kopieren'}</span>
-                    </button>
-
-                    <a
-                      href={`mailto:${EXTERNAL_LINKS.contactEmail}?subject=${encodeURIComponent(selectedReason.subject)}`}
-                      style={{
-                        textDecoration: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        background: 'linear-gradient(135deg, #1d9e75 0%, #0f6e56 100%)',
-                        color: '#ffffff',
-                        border: '1px solid rgba(15,110,86,0.4)',
-                        boxShadow: '0 2px 10px rgba(29,158,117,0.25)',
-                        padding: '6px 13px',
-                        borderRadius: 8,
-                        fontSize: 12,
-                        fontWeight: 500,
-                        fontFamily: 'inherit',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Send size={12} style={{ marginRight: 2 }} />
-                      Mail öffnen
-                    </a>
-                  </div>
-                </div>
-
-                {/* Footer Row: Guarantee & GitHub Link */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    fontSize: 11,
-                    color: '#888780',
-                    borderTop: '1px solid rgba(0,0,0,0.06)',
-                    paddingTop: 10,
-                    marginTop: 2,
-                    flexWrap: 'wrap',
-                    gap: 8,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Check size={12} color="#1d9e75" />
-                    <span>Antwort in der Regel binnen 24 Stunden</span>
-                  </div>
-
+                  Alternativ erreichst du uns direkt per E-Mail unter{' '}
                   <a
-                    href={EXTERNAL_LINKS.github}
-                    target="_blank"
-                    rel="noreferrer"
+                    href={`mailto:${EXTERNAL_LINKS.contactEmail}?subject=${encodeURIComponent(selectedReason.subject)}`}
                     style={{
                       color: '#0f6e56',
-                      textDecoration: 'none',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      fontWeight: 500,
+                      fontWeight: 600,
+                      textDecoration: 'underline',
+                      textUnderlineOffset: 2,
                     }}
                   >
-                    <ExternalLink size={12} />
-                    GitHub Repository ↗
+                    {EXTERNAL_LINKS.contactEmail}
                   </a>
-                </div>
+                </p>
               </div>
             </form>
           )}
@@ -718,6 +493,14 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
     </section>
   );
 }
+
+const labelStyle: CSSProperties = {
+  display: 'block',
+  fontSize: 12,
+  fontWeight: 500,
+  color: '#55544f',
+  marginBottom: 4,
+};
 
 const inputStyle: CSSProperties = {
   width: '100%',
@@ -730,4 +513,11 @@ const inputStyle: CSSProperties = {
   color: '#22221f',
   outline: 'none',
   transition: 'border-color 0.15s',
+  boxSizing: 'border-box',
+};
+
+const selectStyle: CSSProperties = {
+  ...inputStyle,
+  cursor: 'pointer',
+  appearance: 'auto',
 };
