@@ -3,8 +3,6 @@ import { FieldLabel, GlassInput } from '../../components/ui.js';
 interface VoucherConfigSectionProps {
   voucherDelivery: 'code_pool' | 'email';
   onChangeDelivery: (d: 'code_pool' | 'email') => void;
-  voucherCode: string;
-  onChangeVoucherCode: (code: string) => void;
   voucherCodesText: string;
   onChangeVoucherCodesText: (text: string) => void;
   partnerUrl: string;
@@ -15,8 +13,6 @@ interface VoucherConfigSectionProps {
 export function VoucherConfigSection({
   voucherDelivery,
   onChangeDelivery,
-  voucherCode,
-  onChangeVoucherCode,
   voucherCodesText,
   onChangeVoucherCodesText,
   partnerUrl,
@@ -58,15 +54,11 @@ export function VoucherConfigSection({
               id="offer-voucher-codes-text"
               data-testid="offer-voucher-codes-input"
               rows={3}
-              placeholder="PROMO-001&#10;PROMO-002&#10;oder kommagetrennt"
+              placeholder="CODE-001&#10;CODE-002&#10;oder kommagetrennt"
               value={voucherCodesText}
               onChange={(e) => onChangeVoucherCodesText(e.target.value)}
               style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.7)', fontSize: 12, fontFamily: 'monospace' }}
             />
-          </div>
-          <div>
-            <FieldLabel htmlFor="offer-voucher-code">Fallback Promo-Code (optional)</FieldLabel>
-            <GlassInput id="offer-voucher-code" placeholder="z. B. GENERAL-2026" value={voucherCode} onChange={onChangeVoucherCode} testId="offer-voucher-code" />
           </div>
         </div>
       ) : (

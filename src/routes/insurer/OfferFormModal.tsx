@@ -5,7 +5,7 @@ export interface OfferFormState {
   title: string; description: string; minBand: string; minMonths: string; valueLabel: string;
   validFrom: string; validUntil: string; membersOnly: boolean;
   benefitType: 'payout' | 'voucher' | 'certificate'; voucherDelivery: 'code_pool' | 'email';
-  voucherCode: string; voucherCodesText: string; partnerUrl: string; availableCodesCount?: number;
+  voucherCodesText: string; partnerUrl: string; availableCodesCount?: number;
 }
 
 interface OfferFormModalProps {
@@ -65,8 +65,6 @@ export function OfferFormModal({
             <VoucherConfigSection
               voucherDelivery={form.voucherDelivery}
               onChangeDelivery={(d) => setForm((f) => ({ ...f, voucherDelivery: d }))}
-              voucherCode={form.voucherCode}
-              onChangeVoucherCode={(c) => setForm((f) => ({ ...f, voucherCode: c }))}
               voucherCodesText={form.voucherCodesText}
               onChangeVoucherCodesText={(t) => setForm((f) => ({ ...f, voucherCodesText: t }))}
               partnerUrl={form.partnerUrl}

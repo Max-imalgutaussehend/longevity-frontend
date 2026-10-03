@@ -10,7 +10,7 @@ import { InsurerClaimsSection } from './insurer/InsurerClaimsSection.js';
 const EMPTY_FORM: OfferFormState = {
   title: '', description: '', minBand: '', minMonths: '', valueLabel: '',
   validFrom: '', validUntil: '', membersOnly: true, benefitType: 'payout',
-  voucherDelivery: 'email', voucherCode: '', voucherCodesText: '', partnerUrl: '',
+  voucherDelivery: 'email', voucherCodesText: '', partnerUrl: '',
 };
 
 export function Component() {
@@ -39,7 +39,7 @@ export function Component() {
         valueLabel: form.valueLabel, validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : null,
         validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : null,
         membersOnly: form.benefitType === 'payout' ? true : form.membersOnly, benefitType: form.benefitType,
-        voucherDelivery: form.voucherDelivery, voucherCode: form.voucherCode || null,
+        voucherDelivery: form.voucherDelivery,
         voucherCodesText: form.voucherCodesText || null, partnerUrl: form.partnerUrl || null,
       };
       return editingId
@@ -70,7 +70,7 @@ export function Component() {
       validUntil: o.validUntil ? o.validUntil.slice(0, 10) : '', membersOnly: o.membersOnly ?? true,
       benefitType: (o.benefitType as 'payout' | 'voucher' | 'certificate') || 'payout',
       voucherDelivery: (o.voucherDelivery as 'code_pool' | 'email') || 'email',
-      voucherCode: o.voucherCode || '', voucherCodesText: '',
+      voucherCodesText: '',
       partnerUrl: o.partnerUrl || '', availableCodesCount: o.availableCodesCount,
     });
     setError(null);
