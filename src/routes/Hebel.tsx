@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
 import { PageTitle } from '../components/ui.js';
 import type { ScoreResult } from '../api/types.js';
@@ -12,6 +12,7 @@ import {
   writeFocusMetric,
   METRIC_RANGE,
   METRIC_COHORT_MEAN,
+  getMetricCohortMean,
   getScoreBand,
   extractActualMetricValues,
 } from './hebel/hebelUtils.js';
@@ -26,6 +27,7 @@ export {
   writeFocusMetric,
   METRIC_RANGE,
   METRIC_COHORT_MEAN,
+  getMetricCohortMean,
   getScoreBand,
   extractActualMetricValues,
 };
@@ -44,7 +46,7 @@ export function Component() {
     queryKey: ['score', 'current'],
     queryFn: () => apiClient<ScoreResult>('/score/current'),
   });
-  const { data: me } = useQuery<{ id: string }>({
+  const { data: me } = useQuery<{ id: string; chronoAge?: number; sex?: string }>({
     queryKey: ['me'],
     queryFn: () => apiClient('/me'),
   });
@@ -53,7 +55,10 @@ export function Component() {
 
   const [vals, setVals] = useState<Record<string, number>>({});
   const [simResult, setSimResult] = useState<SimResult | null>(null);
+  const [isError, setIsError] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const latestRequestIdRef = useRef<number>(0);
   const [focusMetric, setFocusMetric] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,30 +71,79 @@ export function Component() {
     writeFocusMetric(me?.id, next);
   }
 
-  const simulateMut = useMutation({
-    mutationFn: (overrides: Record<string, number>) =>
-      apiClient<SimResult>('/score/simulate', { method: 'POST', body: JSON.stringify({ overrides }) }),
-    onSuccess: (data) => setSimResult(data),
-  });
+  function executeSimulation(overrides: Record<string, number>) {
+    if (Object.keys(overrides).length === 0) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      setIsError(false);
+      setSimResult(null);
+      return;
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentRequestId = ++latestRequestIdRef.current;
+
+    apiClient<SimResult>('/score/simulate', {
+      method: 'POST',
+      body: JSON.stringify({ overrides }),
+      signal: controller.signal,
+    })
+      .then((data) => {
+        if (currentRequestId === latestRequestIdRef.current) {
+          setSimResult(data);
+          setIsError(false);
+        }
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError' || controller.signal.aborted) {
+          return;
+        }
+        if (currentRequestId === latestRequestIdRef.current) {
+          setIsError(true);
+        }
+      });
+  }
 
   function handleSlider(metric: string, value: number) {
-    const next = { ...vals, [metric]: value };
+    const actual = actualValues[metric];
+    const hasActual = actual !== null && actual !== undefined;
+    const cohortMean = getMetricCohortMean(metric, score?.chronoAge ?? me?.chronoAge, me?.sex);
+    const baseVal = hasActual ? actual : (cohortMean ?? 0);
+
+    const next = { ...vals };
+    if (value === baseVal) {
+      delete next[metric];
+    } else {
+      next[metric] = value;
+    }
+
     setVals(next);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      simulateMut.mutate(next);
-    }, 120);
+      executeSimulation(next);
+    }, 200);
   }
 
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
   }, []);
 
   function reset() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    simulateMut.reset();
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsError(false);
     setVals({});
     setSimResult(null);
   }
@@ -115,10 +169,12 @@ export function Component() {
         simResult={simResult}
         baseScore={score?.score}
         baseBioAge={score?.bioAge}
-        isError={simulateMut.isError}
+        chronoAge={score?.chronoAge ?? me?.chronoAge}
+        sex={me?.sex}
+        isError={isError}
         onSliderChange={handleSlider}
         onReset={reset}
-        onRetry={() => simulateMut.mutate(vals)}
+        onRetry={() => executeSimulation(vals)}
       />
     </div>
   );
