@@ -241,4 +241,61 @@ describe('Hebel Simulator Istwerte & Score-Band (#82)', () => {
       }
     });
   });
+
+  describe('Issue #126: Tracker auto-sync & simulator actual values mirroring', () => {
+    it('extracts real tracker metrics immediately when score is updated', () => {
+      const newlySyncedScore: ScoreResult = {
+        score: 72,
+        coverage: 0.6,
+        bioAge: 33,
+        chronoAge: 35,
+        band: { low: 70, high: 79 },
+        engineVersion: '2026.01',
+        computedAt: new Date().toISOString(),
+        domains: [
+          {
+            domain: 'cardio',
+            weight: 0.35,
+            score: 70,
+            metrics: [
+              { metric: 'vo2max', domain: 'cardio', value: 46.2, unit: 'ml/kg/min', available: true, percentile: 65, ageDays: 0, freshness: 1, effectiveWeight: 0.2, contribution: 14 },
+              { metric: 'resting_hr', domain: 'cardio', value: 54, unit: 'bpm', available: true, percentile: 85, ageDays: 0, freshness: 1, effectiveWeight: 0.2, contribution: 17 },
+            ],
+          },
+          {
+            domain: 'recovery',
+            weight: 0.25,
+            score: 75,
+            metrics: [
+              { metric: 'sleep_duration', domain: 'recovery', value: 7.9, unit: 'h', available: true, percentile: 80, ageDays: 0, freshness: 1, effectiveWeight: 0.2, contribution: 16 },
+              { metric: 'hrv_rmssd', domain: 'recovery', value: 62, unit: 'ms', available: true, percentile: 78, ageDays: 0, freshness: 1, effectiveWeight: 0.2, contribution: 15 },
+            ],
+          },
+        ],
+      };
+
+      const actuals = extractActualMetricValues(newlySyncedScore, []);
+      expect(actuals.vo2max).toBe(46.2);
+      expect(actuals.resting_hr).toBe(54);
+      expect(actuals.sleep_duration).toBe(7.9);
+      expect(actuals.hrv_rmssd).toBe(62);
+      expect(actuals.steps).toBeUndefined();
+    });
+
+    it('uses actual tracker value as baseVal when available, falling back to demographic mean', () => {
+      const actuals: Record<string, number | null> = {
+        vo2max: 48.0,
+        resting_hr: null,
+      };
+
+      const getBaseVal = (metric: string) => {
+        const actual = actuals[metric];
+        return actual !== null && actual !== undefined ? actual : METRIC_COHORT_MEAN[metric];
+      };
+
+      expect(getBaseVal('vo2max')).toBe(48.0);
+      expect(getBaseVal('resting_hr')).toBe(METRIC_COHORT_MEAN.resting_hr);
+    });
+  });
 });
+

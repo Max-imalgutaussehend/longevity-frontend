@@ -1,7 +1,8 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
-import { PageTitle } from '../components/ui.js';
+import { PageTitle, Btn, Chip } from '../components/ui.js';
+import { RefreshCw, Check } from 'lucide-react';
 import type { ScoreResult } from '../api/types.js';
 import {
   type Lever,
@@ -38,6 +39,11 @@ export type { Lever, SimResult };
  * Decomposed into LeverCardsSection and SimulatorSection under `./hebel/`.
  */
 export function Component() {
+  const queryClient = useQueryClient();
+  const [isSyncingTrackers, setIsSyncingTrackers] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const hasAutoSyncedRef = useRef(false);
+
   const { data: levers, isLoading: leversLoading } = useQuery<Lever[]>({
     queryKey: ['score', 'levers'],
     queryFn: () => apiClient<Lever[]>('/score/levers'),
@@ -50,6 +56,34 @@ export function Component() {
     queryKey: ['me'],
     queryFn: () => apiClient('/me'),
   });
+
+  const triggerSync = async () => {
+    setIsSyncingTrackers(true);
+    try {
+      const res = await apiClient<{ ok: boolean; synced: number; totalInserted: number }>('/sources/sync-all', {
+        method: 'POST',
+      });
+      if (res?.synced > 0 || res?.totalInserted > 0) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['score'] }),
+          queryClient.invalidateQueries({ queryKey: ['sources'] }),
+          queryClient.invalidateQueries({ queryKey: ['samples'] }),
+        ]);
+        setSyncNotice('Aktuelle Tracker-Daten synchronisiert');
+      }
+    } catch {
+      // Graceful fallback if offline
+    } finally {
+      setIsSyncingTrackers(false);
+      setTimeout(() => setSyncNotice(null), 4000);
+    }
+  };
+
+  useEffect(() => {
+    if (hasAutoSyncedRef.current) return;
+    hasAutoSyncedRef.current = true;
+    triggerSync();
+  }, []);
 
   const actualValues = useMemo(() => extractActualMetricValues(score, levers), [score, levers]);
 
@@ -150,10 +184,39 @@ export function Component() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-      <PageTitle
-        title="Hebel & Simulator"
-        sub="Die drei größten Hebel — berechnet aus einer realistisch erreichbaren Verbesserung (+0,5σ)."
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+        <PageTitle
+          title="Hebel & Simulator"
+          sub="Die drei größten Hebel — berechnet aus einer realistisch erreichbaren Verbesserung (+0,5σ)."
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {isSyncingTrackers && (
+            <Chip color="neutral">
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <RefreshCw size={12} />
+                Synchronisiere Tracker...
+              </span>
+            </Chip>
+          )}
+          {!isSyncingTrackers && syncNotice && (
+            <Chip color="teal">
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Check size={12} />
+                {syncNotice}
+              </span>
+            </Chip>
+          )}
+          <Btn
+            variant="secondary"
+            small
+            onClick={triggerSync}
+            disabled={isSyncingTrackers}
+            testId="sync-trackers-btn"
+          >
+            {isSyncingTrackers ? 'Synchronisiere...' : 'Tracker synchronisieren'}
+          </Btn>
+        </div>
+      </div>
 
       <LeverCardsSection
         levers={levers}
