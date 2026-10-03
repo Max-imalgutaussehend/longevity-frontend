@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import {
-  GraduationCap,
   MapPin,
   Code,
   Briefcase,
   Users,
-  Sparkles,
   Mail,
   Check,
 } from 'lucide-react';
@@ -86,8 +84,8 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
               gap: 6,
             }}
           >
-            <GraduationCap size={14} />
-            DHBW Mannheim · Duale Hochschule Baden-Württemberg
+            <Mail size={14} />
+            Direktkontakt & Austausch
           </span>
         </div>
 
@@ -101,7 +99,7 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
             margin: '0 0 16px',
           }}
         >
-          Von Studierenden entwickelt.{' '}
+          Gerne direkt mit uns austauschen.{' '}
           <span
             style={{
               background: 'linear-gradient(135deg, #1d9e75 0%, #0f6e56 100%)',
@@ -109,7 +107,7 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Direkt als Team ansprechbar.
+            Per Kontaktformular oder direkt per Mail.
           </span>
         </h2>
 
@@ -122,10 +120,16 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
             maxWidth: 760,
           }}
         >
-          Hinter LONGEVITY steht kein anonymer Großkonzern, sondern ein 5-köpfiges Team der DHBW Mannheim:
-          Drei Software-Entwickler und zwei BWL-Expertinnen verbinden modernste Software-Architektur und
-          Datensouveränität mit fundierter Produktführung und verlässlicher Kooperation. Schreib uns direkt &ndash;
-          wir freuen uns auf jeden Austausch und antworten persönlich!
+          Ob Fragen zur Plattform, Kooperationen oder technisches Feedback: Du erreichst unser
+          5-köpfiges Team jederzeit direkt &ndash; nutze einfach das Kontaktformular oder
+          schreib uns direkt per E-Mail an{' '}
+          <a
+            href={`mailto:${EXTERNAL_LINKS.contactEmail}`}
+            style={{ color: '#0f6e56', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 2 }}
+          >
+            {EXTERNAL_LINKS.contactEmail}
+          </a>
+          . Wir antworten persönlich und zeitnah!
         </p>
       </div>
 
@@ -175,7 +179,7 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
                 }}
               >
                 <Users size={13} color="#5dcaa5" />
-                <span>5 Köpfe · DHBW Team</span>
+                <span>5 Köpfe · Kernteam</span>
               </div>
 
               {/* Bottom Gradient Overlay with Location */}
@@ -287,118 +291,6 @@ export function LandingTeamAndContact({ selectedReasonId, onSelectReasonId }: La
                 <div style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>Business & Strategie</div>
                 <div style={{ fontSize: 12, color: '#55544f' }}>Lea & Christina</div>
               </div>
-            </div>
-          </div>
-
-          {/* 3 Value Pillars beneath photo */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: 12,
-            }}
-          >
-            <div
-              className="glass card-interactive"
-              style={{
-                borderRadius: 14,
-                padding: '14px 16px',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#0f6e56',
-                  textTransform: 'uppercase',
-                  marginBottom: 4,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <Users size={13} /> 3 Tech · 2 BWL
-              </div>
-              <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                Code, Architektur, Finanzen & Partnerschaften vereint
-              </div>
-            </div>
-
-            <div
-              className="glass card-interactive"
-              style={{
-                borderRadius: 14,
-                padding: '14px 16px',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#0f6e56',
-                  textTransform: 'uppercase',
-                  marginBottom: 4,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <Sparkles size={13} /> 100% Inhouse
-              </div>
-              <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                Vom Score-Algorithmus über FHIR bis zum Partnermodell
-              </div>
-            </div>
-
-            <div
-              className="glass card-interactive"
-              style={{
-                borderRadius: 14,
-                padding: '14px 16px',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#0f6e56',
-                  textTransform: 'uppercase',
-                  marginBottom: 4,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                }}
-              >
-                <Mail size={13} /> Direktkontakt
-              </div>
-              <div style={{ fontSize: 12, color: '#55544f', lineHeight: 1.4 }}>
-                Echte Antworten vom Team &ndash; werktags in 24h
-              </div>
-            </div>
-          </div>
-
-          {/* Mission Statement */}
-          <div
-            style={{
-              background: 'rgba(240, 244, 241, 0.85)',
-              borderRadius: 14,
-              padding: '16px 20px',
-              border: '1px solid rgba(29, 158, 117, 0.22)',
-              fontSize: 13,
-              color: '#44433e',
-              lineHeight: 1.6,
-            }}
-          >
-            <em>
-              &bdquo;Unser Anspruch: Medizinische Evidenz, modernste Software-Architektur und verlässliche
-              Partnerschaften so zu vereinen, dass Nutzer die Kontrolle über ihre Gesundheitsdaten behalten &ndash;
-              und Partner messbare Mehrwerte erzielen.&ldquo;
-            </em>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#0f6e56', marginTop: 8, textAlign: 'right' }}>
-              &mdash; Max, Victor, Till (Tech) &middot; Lea & Christina (Business)
             </div>
           </div>
         </div>
