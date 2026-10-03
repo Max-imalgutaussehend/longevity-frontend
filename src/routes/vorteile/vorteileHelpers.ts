@@ -21,3 +21,12 @@ export function getClaimAction(offer: Pick<PartnerOffer, 'qualified' | 'organiza
   if (offer.claimStatus === 'rejected') return { kind: 'submit', label: 'Erneut einreichen' };
   return { kind: 'submit', label: 'Bei Krankenkasse einreichen' };
 }
+
+export const KASSEN_GUIDES: Record<string, string> = {
+  tk: 'TK-App öffnen → Bonusprogramm → Nachweis hochladen → Dieses PDF auswählen.',
+  barmer: 'Barmer-App → Bonusprogramm → Aktivität einreichen → Bestätigung hochladen.',
+  aok: 'Meine AOK App / Portal → Bonusprogramm → Nachweis einreichen.',
+  allianz: 'MeineAllianz Portal → Krankenversicherung → Vitalitätsnachweis übermitteln.',
+  other: 'Online-Geschäftsstelle deiner Krankenkasse öffnen → Bonusprogramm / Kostenerstattung → Nachweis anhängen.',
+};
+

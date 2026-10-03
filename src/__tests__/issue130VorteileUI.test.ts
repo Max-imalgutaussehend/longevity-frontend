@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { getClaimAction } from '../routes/Vorteile.js';
 import type { PartnerOffer } from '../api/types.js';
+import { downloadCertificatePdf } from '../routes/vorteile/certificatePdf.js';
 
 describe('Issue #130: 3-Channel Benefit Claims & Sovereignty (Frontend logic)', () => {
   it('identifies benefit types accurately on partner offers', () => {
@@ -150,5 +151,34 @@ describe('Issue #130: 3-Channel Benefit Claims & Sovereignty (Frontend logic)', 
 
     const isTkMemberEligible = !memberOffer.membersOnly || memberOffer.organizationId === 'tk-org-id';
     expect(isTkMemberEligible).toBe(true);
+  });
+
+  it('triggers clean PDF download with correct filename and parameters', () => {
+    const createObjectURLMock = vi.fn().mockReturnValue('blob:test-pdf-url');
+    const revokeObjectURLMock = vi.fn();
+    globalThis.URL.createObjectURL = createObjectURLMock;
+    globalThis.URL.revokeObjectURL = revokeObjectURLMock;
+
+    let clickedDownloadName = '';
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clickedDownloadName = this.download;
+    });
+
+    downloadCertificatePdf({
+      partnerName: 'Techniker Krankenkasse',
+      title: 'Bonusprogramm 2026',
+      bandLow: 70,
+      bandHigh: 79,
+      tokenId: 'test-token-uuid-1234',
+      verifyUrl: 'https://longevity.app/verify/test-token-uuid-1234',
+      qrUrl: 'https://api.qrserver.com/v1/create-qr-code/?data=test',
+    });
+
+    expect(createObjectURLMock).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    expect(clickedDownloadName).toBe('Longevity-Nachweis-SGB-V-70-79.pdf');
+    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:test-pdf-url');
+
+    clickSpy.mockRestore();
   });
 });

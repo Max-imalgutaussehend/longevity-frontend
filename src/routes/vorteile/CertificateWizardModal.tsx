@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Printer, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Printer, CheckCircle2, Clock, ExternalLink, Download } from 'lucide-react';
 import { apiClient } from '../../api/client.js';
 import { Modal, Btn, Chip } from '../../components/ui.js';
 import type { PartnerOffer } from '../../api/types.js';
+import { KASSEN_GUIDES } from './vorteileHelpers.js';
+import { downloadCertificatePdf, printCleanCertificate } from './certificatePdf.js';
 
 interface CertificateWizardModalProps {
   isOpen: boolean;
@@ -12,14 +14,6 @@ interface CertificateWizardModalProps {
   claimId?: string | null;
   verifyTokenId?: string | null;
 }
-
-const GUIDES: Record<string, string> = {
-  tk: 'TK-App öffnen → Bonusprogramm → Nachweis hochladen → Dieses PDF auswählen.',
-  barmer: 'Barmer-App → Bonusprogramm → Aktivität einreichen → Bestätigung hochladen.',
-  aok: 'Meine AOK App / Portal → Bonusprogramm → Nachweis einreichen.',
-  allianz: 'MeineAllianz Portal → Krankenversicherung → Vitalitätsnachweis übermitteln.',
-  other: 'Online-Geschäftsstelle deiner Krankenkasse öffnen → Bonusprogramm / Kostenerstattung → Nachweis anhängen.',
-};
 
 export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verifyTokenId }: CertificateWizardModalProps) {
   const qc = useQueryClient();
@@ -38,6 +32,16 @@ export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verify
 
   const verifyUrl = `${window.location.origin}/verify/${verifyTokenId || 'demo-token'}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(verifyUrl)}`;
+
+  const pdfData = {
+    partnerName: offer.partnerName,
+    title: offer.title,
+    bandLow: offer.minBand,
+    bandHigh: offer.minBand + 9,
+    tokenId: verifyTokenId || 'demo-token',
+    verifyUrl,
+    qrUrl,
+  };
 
   return (
     <Modal onClose={onClose}>
@@ -77,12 +81,19 @@ export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verify
           </div>
         </div>
 
-        {/* Action: Print Certificate */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: 10, background: 'rgba(0,0,0,0.03)' }}>
-          <span style={{ fontSize: 12, color: '#55544f' }}>PDF für Upload in Kassen-App:</span>
-          <Btn small variant="secondary" onClick={() => window.print()} testId="certificate-print-btn">
-            <Printer size={13} style={{ marginRight: 6 }} /> Als PDF speichern / drucken
-          </Btn>
+        {/* Actions: Download PDF or Print Clean Certificate */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderRadius: 10, background: 'rgba(29,158,117,0.06)', border: '1px solid rgba(29,158,117,0.18)', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ fontSize: 12, color: '#1d2c25' }}>
+            <strong>Offizieller Nachweis:</strong> Bereit für Upload in Kassen-App
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Btn small variant="secondary" onClick={() => printCleanCertificate(pdfData)} testId="certificate-print-btn">
+              <Printer size={13} style={{ marginRight: 6 }} /> Druckansicht
+            </Btn>
+            <Btn small onClick={() => downloadCertificatePdf(pdfData)} testId="certificate-download-pdf-btn">
+              <Download size={13} style={{ marginRight: 6 }} /> PDF herunterladen
+            </Btn>
+          </div>
         </div>
 
         {/* Step 2: Insurer Upload Instructions */}
@@ -105,7 +116,7 @@ export function CertificateWizardModal({ isOpen, onClose, offer, claimId, verify
             ))}
           </div>
           <div style={{ fontSize: 12, color: '#55544f', padding: '8px 12px', background: 'rgba(255,255,255,0.6)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
-            {GUIDES[selectedKasse]}
+            {KASSEN_GUIDES[selectedKasse]}
           </div>
         </div>
 
