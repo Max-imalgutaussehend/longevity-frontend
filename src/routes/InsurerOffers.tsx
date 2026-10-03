@@ -1,59 +1,17 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client.js';
-import { Card, PageTitle, Btn, Chip, GlassInput, FieldLabel, Modal, Skeleton, Toggle } from '../components/ui.js';
+import { Card, PageTitle, Btn, Chip, Skeleton } from '../components/ui.js';
+import type { PartnerOffer, InsurerClaim } from '../api/types.js';
+import { OfferFormModal, type OfferFormState } from './insurer/OfferFormModal.js';
+import { ClaimDecideModal } from './insurer/ClaimDecideModal.js';
+import { InsurerClaimsSection } from './insurer/InsurerClaimsSection.js';
 
-interface Offer {
-  id: string;
-  title: string;
-  description: string;
-  minBand: number;
-  minMonths?: number | null;
-  valueLabel: string;
-  validFrom: string | null;
-  validUntil: string | null;
-  membersOnly: boolean;
-}
-
-interface InsurerClaim {
-  id: string;
-  status: 'submitted' | 'accepted' | 'rejected';
-  bandLow: number;
-  bandHigh: number;
-  submittedAt: string;
-  decidedAt: string | null;
-  offerTitle: string;
-  userEmail: string;
-  userDisplayName: string | null;
-  verifyUrl: string;
-}
-
-interface OfferFormState {
-  title: string;
-  description: string;
-  minBand: string;
-  minMonths: string;
-  valueLabel: string;
-  validFrom: string;
-  validUntil: string;
-  membersOnly: boolean;
-}
-
-const EMPTY_FORM: OfferFormState = { title: '', description: '', minBand: '', minMonths: '', valueLabel: '', validFrom: '', validUntil: '', membersOnly: true };
-
-function toOfferBody(form: OfferFormState) {
-  const minMonthsNum = form.minMonths.trim() !== '' ? Number(form.minMonths) : null;
-  return {
-    title: form.title,
-    description: form.description,
-    minBand: Number(form.minBand),
-    minMonths: minMonthsNum,
-    valueLabel: form.valueLabel,
-    validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : null,
-    validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : null,
-    membersOnly: form.membersOnly,
-  };
-}
+const EMPTY_FORM: OfferFormState = {
+  title: '', description: '', minBand: '', minMonths: '', valueLabel: '',
+  validFrom: '', validUntil: '', membersOnly: true, benefitType: 'payout',
+  voucherCode: '', partnerUrl: '',
+};
 
 export function Component() {
   const qc = useQueryClient();
@@ -61,22 +19,34 @@ export function Component() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<OfferFormState>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
+  const [decideModal, setDecideModal] = useState<{ claim: InsurerClaim; decision: 'accepted' | 'rejected' } | null>(null);
 
-  const { data: offers, isLoading } = useQuery<Offer[]>({
+  const { data: offers, isLoading: offersLoading } = useQuery<PartnerOffer[]>({
     queryKey: ['insurer-offers'],
-    queryFn: () => apiClient('/insurer/offers'),
+    queryFn: () => apiClient<PartnerOffer[]>('/insurer/offers'),
   });
 
-  const createMut = useMutation({
-    mutationFn: () => apiClient('/insurer/offers', { method: 'POST', body: JSON.stringify(toOfferBody(form)) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['insurer-offers'] }); closeForm(); },
-    onError: (err: unknown) => setError((err as Error).message ?? 'Angebot konnte nicht erstellt werden.'),
+  const { data: claims, isLoading: claimsLoading } = useQuery<InsurerClaim[]>({
+    queryKey: ['insurer-claims'],
+    queryFn: () => apiClient<InsurerClaim[]>('/insurer/claims'),
   });
 
-  const updateMut = useMutation({
-    mutationFn: () => apiClient(`/insurer/offers/${editingId}`, { method: 'PATCH', body: JSON.stringify(toOfferBody(form)) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['insurer-offers'] }); closeForm(); },
-    onError: (err: unknown) => setError((err as Error).message ?? 'Angebot konnte nicht aktualisiert werden.'),
+  const saveMut = useMutation({
+    mutationFn: () => {
+      const body = {
+        title: form.title, description: form.description, minBand: Number(form.minBand),
+        minMonths: form.minMonths.trim() !== '' ? Number(form.minMonths) : null,
+        valueLabel: form.valueLabel, validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : null,
+        validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : null,
+        membersOnly: form.membersOnly, benefitType: form.benefitType,
+        voucherCode: form.voucherCode || null, partnerUrl: form.partnerUrl || null,
+      };
+      return editingId
+        ? apiClient(`/insurer/offers/${editingId}`, { method: 'PATCH', body: JSON.stringify(body) })
+        : apiClient('/insurer/offers', { method: 'POST', body: JSON.stringify(body) });
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['insurer-offers'] }); setShowForm(false); },
+    onError: (err: unknown) => setError((err as Error).message ?? 'Fehler beim Speichern.'),
   });
 
   const deleteMut = useMutation({
@@ -84,256 +54,74 @@ export function Component() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['insurer-offers'] }),
   });
 
-  const { data: claims, isLoading: claimsLoading } = useQuery<InsurerClaim[]>({
-    queryKey: ['insurer-claims'],
-    queryFn: () => apiClient('/insurer/claims'),
-  });
-
   const decideMut = useMutation({
-    mutationFn: ({ id, decision }: { id: string; decision: 'accepted' | 'rejected' }) =>
-      apiClient(`/insurer/claims/${id}/decide`, { method: 'POST', body: JSON.stringify({ decision }) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['insurer-claims'] }),
+    mutationFn: (payload: { decision: 'accepted' | 'rejected'; transactionRef?: string; note?: string; rejectionReason?: string }) =>
+      apiClient(`/insurer/claims/${decideModal?.claim.id}/decide`, { method: 'POST', body: JSON.stringify(payload) }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['insurer-claims'] }); setDecideModal(null); },
   });
 
-  function openCreate() {
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-    setError(null);
-    setShowForm(true);
-  }
-
-  function openEdit(offer: Offer) {
-    setEditingId(offer.id);
+  const openEdit = (o: PartnerOffer) => {
+    setEditingId(o.id);
     setForm({
-      title: offer.title,
-      description: offer.description,
-      minBand: String(offer.minBand),
-      minMonths: offer.minMonths !== null && offer.minMonths !== undefined ? String(offer.minMonths) : '',
-      valueLabel: offer.valueLabel,
-      validFrom: offer.validFrom ? offer.validFrom.slice(0, 10) : '',
-      validUntil: offer.validUntil ? offer.validUntil.slice(0, 10) : '',
-      membersOnly: offer.membersOnly,
+      title: o.title, description: o.description, minBand: String(o.minBand),
+      minMonths: o.minMonths !== null && o.minMonths !== undefined ? String(o.minMonths) : '',
+      valueLabel: o.valueLabel, validFrom: o.validFrom ? o.validFrom.slice(0, 10) : '',
+      validUntil: o.validUntil ? o.validUntil.slice(0, 10) : '', membersOnly: o.membersOnly ?? true,
+      benefitType: (o.benefitType as 'payout' | 'voucher' | 'certificate') || 'payout',
+      voucherCode: o.voucherCode || '', partnerUrl: o.partnerUrl || '',
     });
     setError(null);
     setShowForm(true);
-  }
-
-  function closeForm() {
-    setShowForm(false);
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    const minBandNum = Number(form.minBand);
-    if (!form.title || !form.description || !form.valueLabel || form.minBand === '' || Number.isNaN(minBandNum)) {
-      setError('Bitte alle Pflichtfelder ausfüllen.');
-      return;
-    }
-    if (minBandNum < 0 || minBandNum > 100) {
-      setError('Mindest-Score-Band muss zwischen 0 und 100 liegen.');
-      return;
-    }
-    if (form.minMonths.trim() !== '') {
-      const m = Number(form.minMonths);
-      if (Number.isNaN(m) || !Number.isInteger(m) || m < 0 || m > 36) {
-        setError('Mindesthaltedauer muss eine ganze Zahl zwischen 0 und 36 Monaten sein.');
-        return;
-      }
-    }
-    if (editingId) updateMut.mutate();
-    else createMut.mutate();
-  }
-
-  const isExpired = (offer: Offer) => offer.validUntil && new Date(offer.validUntil) < new Date();
+  };
 
   return (
     <div>
-      <PageTitle title="Vorteile" sub="Eigene Angebote für Mitglieder verwalten" />
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Btn onClick={openCreate} testId="offer-create-open">+ Neues Angebot</Btn>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <PageTitle title="Vorteile-Verwaltung" sub="Eigene Prämien & Nachweise für Mitglieder und Versicherte steuern" />
+        <Btn onClick={() => { setEditingId(null); setForm(EMPTY_FORM); setError(null); setShowForm(true); }} testId="offer-create-open">
+          + Neues Angebot
+        </Btn>
       </div>
 
-      {isLoading ? (
+      {offersLoading ? <Skeleton height={100} /> : (
         <div style={{ display: 'grid', gap: 12 }}>
-          <Skeleton height={80} />
-          <Skeleton height={80} />
-        </div>
-      ) : offers && offers.length > 0 ? (
-        <div style={{ display: 'grid', gap: 12 }}>
-          {offers.map((offer) => (
-            <Card key={offer.id} style={{ padding: 20 }} data-testid={`offer-row-${offer.id}`}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
+          {offers?.map((o) => (
+            <Card key={o.id} style={{ padding: 20 }} data-testid={`offer-row-${o.id}`}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>
-                    {offer.title}
-                    {isExpired(offer) && (
-                      <span style={{ marginLeft: 8, fontSize: 11, color: '#a32d2d', fontWeight: 400 }}>· abgelaufen</span>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 500, color: '#22221f' }}>{o.title}</span>
+                    <Chip color={o.benefitType === 'voucher' ? 'amber' : o.benefitType === 'certificate' ? 'teal' : 'green'}>
+                      {o.benefitType === 'voucher' ? 'Gutschein' : o.benefitType === 'certificate' ? '§ 65a SGB V' : 'Geldprämie'}
+                    </Chip>
+                    <Chip color="neutral">{o.membersOnly ? 'Nur Mitglieder' : 'Für alle Nutzer'}</Chip>
                   </div>
-                  <div style={{ fontSize: 13, color: '#55544f', marginTop: 4 }}>{offer.description}</div>
-                  <div style={{ fontSize: 12, color: '#888780', marginTop: 8 }}>
-                    Ab Score-Band {offer.minBand}
-                    {offer.minMonths && offer.minMonths > 0 ? ` (mind. ${offer.minMonths} Monate gehalten)` : ''} · {offer.valueLabel}
-                    {offer.validUntil && ` · gültig bis ${new Date(offer.validUntil).toLocaleDateString('de-DE')}`}
-                  </div>
-                  <div style={{ marginTop: 8 }}>
-                    {offer.membersOnly ? (
-                      <Chip color="teal">Nur für Mitglieder</Chip>
-                    ) : (
-                      <Chip color="neutral">Für alle sichtbar</Chip>
-                    )}
+                  <div style={{ fontSize: 13, color: '#55544f' }}>{o.description}</div>
+                  <div style={{ fontSize: 12, color: '#888780', marginTop: 6 }}>
+                    Ab Band {o.minBand} · {o.valueLabel}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                  <Btn small variant="secondary" onClick={() => openEdit(offer)} testId={`offer-edit-${offer.id}`}>Bearbeiten</Btn>
-                  <Btn small variant="danger" onClick={() => deleteMut.mutate(offer.id)} testId={`offer-delete-${offer.id}`}>Löschen</Btn>
+                  <Btn small variant="secondary" onClick={() => openEdit(o)} testId={`offer-edit-${o.id}`}>Bearbeiten</Btn>
+                  <Btn small variant="danger" onClick={() => deleteMut.mutate(o.id)} testId={`offer-delete-${o.id}`}>Löschen</Btn>
                 </div>
               </div>
             </Card>
           ))}
         </div>
-      ) : (
-        <Card style={{ padding: 24, textAlign: 'center' }}>
-          <p style={{ fontSize: 13, color: '#888780', margin: 0 }}>Noch keine Angebote angelegt.</p>
-        </Card>
       )}
 
-      <div style={{ marginTop: 40 }}>
-        <PageTitle title="Eingereichte Nachweise" sub="Direkt eingereichte Vorteils-Nachweise Ihrer Mitglieder" />
+      <InsurerClaimsSection
+        claims={claims}
+        claimsLoading={claimsLoading}
+        onDecide={(claim, decision) => setDecideModal({ claim, decision })}
+      />
 
-        {claimsLoading ? (
-          <div style={{ display: 'grid', gap: 12 }}>
-            <Skeleton height={70} />
-            <Skeleton height={70} />
-          </div>
-        ) : claims && claims.length > 0 ? (
-          <div style={{ display: 'grid', gap: 12 }}>
-            {claims.map((claim) => (
-              <Card key={claim.id} style={{ padding: 20 }} data-testid={`claim-row-${claim.id}`}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 500, color: '#22221f' }}>{claim.offerTitle}</span>
-                      {claim.status === 'submitted' && <Chip color="amber">In Prüfung</Chip>}
-                      {claim.status === 'accepted' && <Chip color="green">Angenommen</Chip>}
-                      {claim.status === 'rejected' && <Chip color="red">Abgelehnt</Chip>}
-                    </div>
-                    <div style={{ fontSize: 13, color: '#55544f' }}>
-                      {claim.userDisplayName ?? claim.userEmail} · Band {claim.bandLow}–{claim.bandHigh}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#888780', marginTop: 4 }}>
-                      Eingereicht am {new Date(claim.submittedAt).toLocaleDateString('de-DE')}
-                      {claim.decidedAt && ` · entschieden am ${new Date(claim.decidedAt).toLocaleDateString('de-DE')}`}
-                    </div>
-                  </div>
-                  {claim.status === 'submitted' && (
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <Btn
-                        small
-                        variant="secondary"
-                        onClick={() => decideMut.mutate({ id: claim.id, decision: 'rejected' })}
-                        disabled={decideMut.isPending}
-                        testId={`claim-reject-${claim.id}`}
-                      >
-                        Ablehnen
-                      </Btn>
-                      <Btn
-                        small
-                        onClick={() => decideMut.mutate({ id: claim.id, decision: 'accepted' })}
-                        disabled={decideMut.isPending}
-                        testId={`claim-accept-${claim.id}`}
-                      >
-                        Annehmen
-                      </Btn>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card style={{ padding: 24, textAlign: 'center' }}>
-            <p style={{ fontSize: 13, color: '#888780', margin: 0 }}>Noch keine Nachweise eingereicht.</p>
-          </Card>
-        )}
-      </div>
-
-      {showForm && (
-        <Modal onClose={closeForm}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ fontSize: 16, fontWeight: 500, color: '#22221f' }}>
-                {editingId ? 'Angebot bearbeiten' : 'Neues Angebot'}
-              </div>
-              <div>
-                <FieldLabel htmlFor="offer-title">Titel</FieldLabel>
-                <GlassInput id="offer-title" value={form.title} onChange={(v) => setForm((f) => ({ ...f, title: v }))} testId="offer-title" name="title" />
-              </div>
-              <div>
-                <FieldLabel htmlFor="offer-description">Beschreibung</FieldLabel>
-                <GlassInput id="offer-description" value={form.description} onChange={(v) => setForm((f) => ({ ...f, description: v }))} testId="offer-description" name="description" />
-              </div>
-              <div>
-                <FieldLabel htmlFor="offer-min-band">Mindest-Score-Band (0–100)</FieldLabel>
-                <GlassInput id="offer-min-band" type="text" value={form.minBand} onChange={(v) => setForm((f) => ({ ...f, minBand: v.replace(/[^0-9]/g, '') }))} testId="offer-min-band" name="minBand" />
-              </div>
-              <div>
-                <FieldLabel htmlFor="offer-min-months">Mindesthaltedauer (Monate, optional)</FieldLabel>
-                <GlassInput
-                  id="offer-min-months"
-                  type="text"
-                  value={form.minMonths}
-                  onChange={(v) => setForm((f) => ({ ...f, minMonths: v.replace(/[^0-9]/g, '') }))}
-                  placeholder="z.B. 3 (leer = keine Mindestdauer)"
-                  testId="offer-min-months"
-                  name="minMonths"
-                />
-              </div>
-              <div>
-                <FieldLabel htmlFor="offer-value-label">Vorteil (z.B. "15% Rabatt")</FieldLabel>
-                <GlassInput id="offer-value-label" value={form.valueLabel} onChange={(v) => setForm((f) => ({ ...f, valueLabel: v }))} testId="offer-value-label" name="valueLabel" />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <FieldLabel htmlFor="offer-valid-from">Gültig ab (optional)</FieldLabel>
-                  <GlassInput id="offer-valid-from" type="date" value={form.validFrom} onChange={(v) => setForm((f) => ({ ...f, validFrom: v }))} testId="offer-valid-from" name="validFrom" />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="offer-valid-until">Gültig bis (optional)</FieldLabel>
-                  <GlassInput id="offer-valid-until" type="date" value={form.validUntil} onChange={(v) => setForm((f) => ({ ...f, validUntil: v }))} testId="offer-valid-until" name="validUntil" />
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <FieldLabel htmlFor="offer-members-only">Nur für Mitglieder</FieldLabel>
-                  <div style={{ fontSize: 12, color: '#888780' }}>
-                    {form.membersOnly
-                      ? 'Nur verifizierte Mitglieder Ihrer Krankenkasse sehen dieses Angebot.'
-                      : 'Alle Nutzer sehen dieses Angebot, unabhängig von der Mitgliedschaft.'}
-                  </div>
-                </div>
-                <Toggle
-                  id="offer-members-only"
-                  aria-label="Nur für Mitglieder"
-                  on={form.membersOnly}
-                  onChange={() => setForm((f) => ({ ...f, membersOnly: !f.membersOnly }))}
-                />
-              </div>
-              {error && <p data-testid="offer-error" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <Btn variant="ghost" onClick={closeForm}>Abbrechen</Btn>
-                <Btn type="submit" testId="offer-submit" disabled={createMut.isPending || updateMut.isPending}>
-                  {createMut.isPending || updateMut.isPending ? 'Speichern…' : editingId ? 'Speichern' : 'Erstellen'}
-                </Btn>
-              </div>
-            </div>
-          </form>
-        </Modal>
-      )}
+      <OfferFormModal isOpen={showForm} onClose={() => setShowForm(false)} editingId={editingId} form={form} setForm={setForm} onSubmit={(e) => { e.preventDefault(); saveMut.mutate(); }} error={error} isPending={saveMut.isPending} />
+      {decideModal && <ClaimDecideModal isOpen={Boolean(decideModal)} onClose={() => setDecideModal(null)} claim={decideModal.claim} decision={decideModal.decision} onConfirm={(payload) => decideMut.mutate(payload)} isPending={decideMut.isPending} />}
     </div>
   );
 }
+
+export { Component as InsurerOffers };
+export default Component;

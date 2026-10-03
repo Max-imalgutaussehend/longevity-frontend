@@ -10,6 +10,10 @@ export type HistoryPoint = components["schemas"]["HistoryPoint"];
 export type Source = components["schemas"]["Source"];
 export type ShareToken = components["schemas"]["ShareToken"];
 export type PartnerOffer = components["schemas"]["PartnerOffer"];
+export type BenefitClaim = components["schemas"]["BenefitClaim"];
+export type UserClaim = components["schemas"]["UserClaim"];
+export type InsurerClaim = components["schemas"]["InsurerClaim"];
+export type ClaimReceipt = components["schemas"]["ClaimReceipt"];
 export type WeeklyReport = components["schemas"]["WeeklyReport"];
 
 export interface PublicOrganization {
