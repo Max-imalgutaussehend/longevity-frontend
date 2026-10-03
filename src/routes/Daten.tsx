@@ -105,6 +105,8 @@ export function Component() {
       queryClient.invalidateQueries({ queryKey: ['sources'] });
       queryClient.invalidateQueries({ queryKey: ['score'] });
       queryClient.invalidateQueries({ queryKey: ['samples'] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      setUploadSuccess('Tracker erfolgreich verbunden. Messwerte und Longevity Score wurden automatisch synchronisiert!');
       setActiveTab('metrics');
       window.history.replaceState({}, '', window.location.pathname);
     }
