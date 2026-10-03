@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { routes } from '../routesConfig.js';
 import { SUPPORTED_BRANDS, PolarLogo } from '../components/BrandLogos.js';
@@ -100,10 +101,13 @@ describe('Landing Page Partner Brand Logos', () => {
     expect(rendered.props['aria-label']).toBe('Polar Logo');
     expect(rendered.props.viewBox).toBe('0 0 24 24');
 
-    const children = Array.isArray(rendered.props.children)
+    const rawChildren: unknown[] = Array.isArray(rendered.props.children)
       ? rendered.props.children
       : [rendered.props.children];
-    const pathDs = children.map((c: any) => c.props.d).join(' ');
+    const pathDs = rawChildren
+      .filter((c: unknown): c is React.ReactElement<{ d?: string }> => Boolean(c && typeof c === 'object' && 'props' in c))
+      .map((c: React.ReactElement<{ d?: string }>) => c.props.d ?? '')
+      .join(' ');
     expect(pathDs).toContain('M2.123');
     expect(pathDs).not.toContain('zm1 14.5h-2v-2h2v2zm0-4h-2V7h2v5.5z');
   });
