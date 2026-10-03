@@ -43,7 +43,23 @@ describe('Landing Contact Form Anti-AI & Anti-Slop Refactor (#117)', () => {
         })
       );
 
-      // Clean header
+      // Section header emphasizes direct contact via form or mail (not student project focus)
+      expect(html).toContain('Gerne direkt mit uns austauschen');
+      expect(html).toContain('Per Kontaktformular oder direkt per Mail');
+      expect(html).not.toContain('Von Studierenden entwickelt');
+
+      // Superfluous boxes & quote removed under photo
+      expect(html).not.toContain('Unser Anspruch:');
+      expect(html).not.toContain('100% Inhouse');
+      expect(html).not.toContain('3 Tech · 2 BWL');
+
+      // Concise team roles info preserved
+      expect(html).toContain('Tech &amp; Engineering');
+      expect(html).toContain('Max, Victor &amp; Till');
+      expect(html).toContain('Business &amp; Strategie');
+      expect(html).toContain('Lea &amp; Christina');
+
+      // Clean card header
       expect(html).toContain('Nachricht an das Team');
       expect(html).not.toContain('Kontaktformular &amp; Direktanfrage');
       expect(html).not.toContain('Team erreichbar');
