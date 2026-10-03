@@ -329,6 +329,24 @@ export interface paths {
         patch: operations["updateInsurerOffer"];
         trace?: never;
     };
+    "/insurer/offers/{id}/voucher-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get voucher pool statistics for an offer */
+        get: operations["getVoucherCodesStats"];
+        put?: never;
+        /** Batch import voucher codes for an offer */
+        post: operations["importVoucherCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/contact/insurer": {
         parameters: {
             query?: never;
@@ -924,7 +942,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/account": {
+    "/account/request-delete": {
         parameters: {
             query?: never;
             header?: never;
@@ -933,9 +951,26 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
-        /** Delete account */
-        delete: operations["deleteAccount"];
+        /** DSGVO Art. 17, step 1 — verify password and email a time-limited confirmation link */
+        post: operations["requestAccountDeletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/account/confirm-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DSGVO Art. 17, step 2 — consume the confirmation token and delete the account (public, token-authenticated) */
+        post: operations["confirmAccountDeletion"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1105,8 +1140,59 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Submit a qualified offer directly to its issuing insurer */
+        /** Submit a qualified offer directly to its issuing insurer or claim reward */
         post: operations["submitBenefitClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all benefit claims for the authenticated user */
+        get: operations["listMyClaims"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/claims/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update claim submission status or reminders */
+        patch: operations["updateMyClaim"];
+        trace?: never;
+    };
+    "/claims/{id}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get official payment receipt for an accepted claim */
+        get: operations["getClaimReceipt"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1234,26 +1320,127 @@ export interface components {
             /** Format: uuid */
             organizationId?: string | null;
             membersOnly?: boolean;
+            /** @enum {string} */
+            benefitType?: "payout" | "voucher" | "certificate";
+            /** @enum {string} */
+            voucherDelivery?: "code_pool" | "email";
+            availableCodesCount?: number;
+            voucherCode?: string | null;
+            partnerUrl?: string | null;
+            /** Format: date-time */
+            validFrom?: string | null;
+            /** Format: date-time */
+            validUntil?: string | null;
+            /** Format: uuid */
+            claimId?: string | null;
             /** @enum {string|null} */
-            claimStatus?: "submitted" | "accepted" | "rejected" | null;
+            claimStatus?: "submitted" | "processing" | "accepted" | "rejected" | null;
             /** Format: date-time */
             claimSubmittedAt?: string | null;
+            payoutMethod?: string | null;
+            payoutIbanMasked?: string | null;
+            contactEmail?: string | null;
+            kvnr?: string | null;
+            rewardPayload?: Record<string, never> | null;
+            rejectionReason?: string | null;
         };
         BenefitClaim: {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            status: "submitted" | "accepted" | "rejected";
+            status: "submitted" | "processing" | "accepted" | "rejected";
             /** Format: date-time */
             submittedAt: string;
+            payoutMethod?: string | null;
+            payoutIbanMasked?: string | null;
+            contactEmail?: string | null;
+            kvnr?: string | null;
+            rewardPayload?: Record<string, never> | null;
+            shareTokenId?: string | null;
+            verifyUrl?: string | null;
+        };
+        UserClaim: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            offerId?: string;
+            /** @enum {string} */
+            status: "submitted" | "processing" | "accepted" | "rejected";
+            bandLow?: number;
+            bandHigh?: number;
+            payoutMethod?: string | null;
+            payoutIbanMasked?: string | null;
+            payoutAccountHolder?: string | null;
+            contactEmail?: string | null;
+            kvnr?: string | null;
+            rewardPayload?: Record<string, never> | null;
+            rejectionReason?: string | null;
+            /** Format: date-time */
+            selfSubmittedAt?: string | null;
+            /** Format: date-time */
+            reminderAt?: string | null;
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+            shareTokenId?: string | null;
+            verifyUrl?: string | null;
+            offer: {
+                /** Format: uuid */
+                id: string;
+                title: string;
+                partnerName: string;
+                description?: string;
+                valueLabel: string;
+                /** @enum {string} */
+                benefitType: "payout" | "voucher" | "certificate";
+                /** @enum {string} */
+                voucherDelivery?: "code_pool" | "email";
+                partnerUrl?: string | null;
+            };
+        };
+        ClaimReceipt: {
+            receiptNumber: string;
+            /** Format: uuid */
+            claimId: string;
+            status: string;
+            userDisplayName: string;
+            /** Format: email */
+            userEmail: string;
+            offerTitle: string;
+            partnerName: string;
+            valueLabel: string;
+            payoutMethod?: string | null;
+            payoutIbanMasked?: string | null;
+            payoutAccountHolder?: string | null;
+            transactionRef?: string | null;
+            note?: string | null;
+            voucherCode?: string | null;
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
         };
         InsurerClaim: {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            status: "submitted" | "accepted" | "rejected";
+            status: "submitted" | "processing" | "accepted" | "rejected";
             bandLow: number;
             bandHigh: number;
+            payoutMethod?: string | null;
+            payoutIbanMasked?: string | null;
+            payoutAccountHolder?: string | null;
+            contactEmail?: string | null;
+            kvnr?: string | null;
+            /** @enum {string} */
+            benefitType?: "payout" | "voucher" | "certificate";
+            /** @enum {string} */
+            voucherDelivery?: "code_pool" | "email";
+            rewardPayload?: Record<string, never> | null;
+            rejectionReason?: string | null;
+            /** Format: date-time */
+            selfSubmittedAt?: string | null;
             /** Format: date-time */
             submittedAt: string;
             /** Format: date-time */
@@ -1914,6 +2101,12 @@ export interface operations {
                     validUntil?: string;
                     /** @description Exclusive to the organization's own verified members (default true) vs. visible to all users. */
                     membersOnly?: boolean;
+                    /** @enum {string} */
+                    benefitType?: "payout" | "voucher" | "certificate";
+                    /** @enum {string} */
+                    voucherDelivery?: "code_pool" | "email";
+                    voucherCode?: string | null;
+                    partnerUrl?: string | null;
                 };
             };
         };
@@ -2018,6 +2211,12 @@ export interface operations {
                     /** Format: date-time */
                     validUntil?: string | null;
                     membersOnly?: boolean;
+                    /** @enum {string} */
+                    benefitType?: "payout" | "voucher" | "certificate";
+                    /** @enum {string} */
+                    voucherDelivery?: "code_pool" | "email";
+                    voucherCode?: string | null;
+                    partnerUrl?: string | null;
                 };
             };
         };
@@ -2052,6 +2251,88 @@ export interface operations {
             };
             /** @description Not found or not owned by this organization */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getVoucherCodesStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Voucher code stats */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an insurer role */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    importVoucherCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    codes?: string[];
+                    rawText?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Inserted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an insurer role */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3236,7 +3517,7 @@ export interface operations {
             };
         };
     };
-    deleteAccount: {
+    requestAccountDeletion: {
         parameters: {
             query?: never;
             header?: never;
@@ -3251,15 +3532,60 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Deleted */
-            204: {
+            /** @description Confirmation email sent */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
             /** @description Wrong password */
-            401: {
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    confirmAccountDeletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Account deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid, expired, or already-used token */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3571,7 +3897,16 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    payoutMethod?: "bank_transfer" | "contribution_offset" | "voucher" | "self_submitted";
+                    iban?: string;
+                    accountHolder?: string;
+                };
+            };
+        };
         responses: {
             /** @description Created */
             201: {
@@ -3596,6 +3931,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Members-only offer or invalid organization */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Offer not found */
             404: {
                 headers: {
@@ -3605,6 +3947,117 @@ export interface operations {
             };
             /** @description An active (submitted or accepted) claim already exists for this offer */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listMyClaims: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description UserClaim[] */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserClaim"][];
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateMyClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    selfSubmitted?: boolean;
+                    reminderDays?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getClaimReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ClaimReceipt */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimReceipt"];
+                };
+            };
+            /** @description Unauthenticated */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3666,7 +4119,10 @@ export interface operations {
             content: {
                 "application/json": {
                     /** @enum {string} */
-                    decision: "accepted" | "rejected";
+                    decision: "processing" | "accepted" | "rejected";
+                    note?: string;
+                    transactionRef?: string;
+                    rejectionReason?: string;
                 };
             };
         };
