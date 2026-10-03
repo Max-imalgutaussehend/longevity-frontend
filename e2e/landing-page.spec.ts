@@ -51,7 +51,7 @@ test.describe('Landing Page & Public Layer (#8, #9, #10, #18)', () => {
     await page.locator('input[placeholder*="name@organisation.de"]').fill('b.koch@aok-test.de');
     await page.locator('textarea').fill('Wir interessieren uns für ein Pilotprojekt zur Incentivierung von Vorsorgeuntersuchungen.');
 
-    await page.getByRole('button', { name: 'Erstkontakt anfordern' }).click();
+    await page.getByRole('button', { name: 'Anfrage senden' }).click();
 
     // Check success state
     await expect(page.getByText('Vielen Dank für Ihre Anfrage!')).toBeVisible({ timeout: 5000 });
