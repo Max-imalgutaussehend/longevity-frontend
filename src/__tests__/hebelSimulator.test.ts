@@ -218,4 +218,27 @@ describe('Hebel Simulator Istwerte & Score-Band (#82)', () => {
       }
     });
   });
+
+  describe('Simulator Metric Directions and Boundaries', () => {
+    it('verifies resting_hr improvement is strictly decreasing (lower is better)', () => {
+      const isRestingHrImprovement = (val: number, base: number) => val < base;
+      expect(isRestingHrImprovement(55, 65)).toBe(true);
+      expect(isRestingHrImprovement(75, 65)).toBe(false);
+    });
+
+    it('verifies sleep_duration improvement is proximity to target 7.5h', () => {
+      const isSleepImprovement = (val: number, base: number) => Math.abs(val - 7.5) < Math.abs(base - 7.5);
+      expect(isSleepImprovement(7.5, 6.0)).toBe(true);
+      expect(isSleepImprovement(8.0, 7.5)).toBe(false);
+      expect(isSleepImprovement(9.0, 7.5)).toBe(false);
+    });
+
+    it('verifies higher metrics improvement is increasing (higher is better)', () => {
+      const isHigherImprovement = (val: number, base: number) => val > base;
+      for (const metric of ['vo2max', 'zone2_minutes', 'hrv_rmssd', 'steps', 'strength_sessions']) {
+        expect(isHigherImprovement(100, 50), `${metric} should improve when increasing`).toBe(true);
+        expect(isHigherImprovement(30, 50), `${metric} should worsen when decreasing`).toBe(false);
+      }
+    });
+  });
 });

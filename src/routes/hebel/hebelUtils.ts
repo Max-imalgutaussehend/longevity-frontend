@@ -81,6 +81,42 @@ export const METRIC_COHORT_MEAN: Record<string, number> = {
   strength_sessions: 1,
 };
 
+/**
+ * Computes demographic-adjusted cohort means matching the score engine's reference norms.
+ * Ensures the simulator baseline starts at the user's true neutral point (z = 0, delta = 0).
+ */
+export function getMetricCohortMean(
+  metric: string,
+  chronoAge?: number | null,
+  sex?: 'm' | 'f' | string | null,
+): number {
+  const age = chronoAge ?? 35;
+  const isFemale = sex === 'f';
+
+  switch (metric) {
+    case 'vo2max': {
+      const mu = isFemale ? 40 - 0.30 * (age - 25) : 48 - 0.33 * (age - 25);
+      return Math.round(mu * 10) / 10;
+    }
+    case 'resting_hr':
+      return isFemale ? 70 : 66;
+    case 'hrv_rmssd': {
+      const mu = 55 - 0.5 * (age - 25);
+      return Math.round(Math.max(15, mu));
+    }
+    case 'sleep_duration':
+      return 7.5;
+    case 'zone2_minutes':
+      return 90;
+    case 'steps':
+      return 7500;
+    case 'strength_sessions':
+      return 1;
+    default:
+      return METRIC_COHORT_MEAN[metric] ?? 50;
+  }
+}
+
 export function getScoreBand(scoreVal: number): string {
   const low = Math.min(90, Math.floor(scoreVal / 10) * 10);
   const high = low === 90 ? 100 : low + 9;

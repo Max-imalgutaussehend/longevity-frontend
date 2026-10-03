@@ -3,7 +3,7 @@ import { Info } from 'lucide-react';
 import { Card, SectionLabel, Chip } from '../../components/ui.js';
 import { getMetricLabel, getMetricUnit, formatMetricValue, formatMetricUnit } from '../../lib/formatters.js';
 import { getMetricEducation } from '../../lib/metricEducation.js';
-import { METRIC_RANGE, METRIC_COHORT_MEAN, getScoreBand, type SimResult } from './hebelUtils.js';
+import { METRIC_RANGE, getMetricCohortMean, getScoreBand, type SimResult } from './hebelUtils.js';
 
 interface SimulatorSectionProps {
   actualValues: Record<string, number | null>;
@@ -11,6 +11,8 @@ interface SimulatorSectionProps {
   simResult: SimResult | null;
   baseScore: number | undefined;
   baseBioAge: number | undefined;
+  chronoAge?: number | null;
+  sex?: 'm' | 'f' | string | null;
   isError: boolean;
   onSliderChange: (metric: string, value: number) => void;
   onReset: () => void;
@@ -23,6 +25,8 @@ export function SimulatorSection({
   simResult,
   baseScore,
   baseBioAge,
+  chronoAge,
+  sex,
   isError,
   onSliderChange,
   onReset,
@@ -58,7 +62,8 @@ export function SimulatorSection({
           {Object.entries(METRIC_RANGE).map(([metric, [min, max, step]]) => {
             const actual = actualValues[metric];
             const hasActual = actual !== null && actual !== undefined;
-            const baseVal = hasActual ? actual : (METRIC_COHORT_MEAN[metric] ?? min);
+            const cohortMean = getMetricCohortMean(metric, chronoAge, sex);
+            const baseVal = hasActual ? actual : (cohortMean ?? min);
             const v = vals[metric] ?? baseVal;
             const changed = vals[metric] !== undefined && vals[metric] !== baseVal;
             const markerPct = Math.max(0, Math.min(100, ((baseVal - min) / (max - min)) * 100));
@@ -66,11 +71,50 @@ export function SimulatorSection({
             const edu = getMetricEducation(metric);
             const isTipOpen = openSliderTip === metric;
 
+            const metricDelta = simResult?.perMetric.find((p) => p.metric === metric)?.delta;
+            const isImprovement =
+              metric === 'resting_hr'
+                ? v < baseVal
+                : metric === 'sleep_duration'
+                ? Math.abs(v - 7.5) < Math.abs(baseVal - 7.5)
+                : v > baseVal;
+
+            const isWorsening =
+              metric === 'resting_hr'
+                ? v > baseVal
+                : metric === 'sleep_duration'
+                ? Math.abs(v - 7.5) > Math.abs(baseVal - 7.5)
+                : v < baseVal;
+
+            const valueColor = changed
+              ? metricDelta !== undefined
+                ? metricDelta > 0
+                  ? '#0f6e56'
+                  : metricDelta < 0
+                  ? '#c2410c'
+                  : '#55544f'
+                : isImprovement
+                ? '#0f6e56'
+                : isWorsening
+                ? '#c2410c'
+                : '#55544f'
+              : '#22221f';
+
             return (
               <div key={metric}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                   <span style={{ fontSize: 13, color: '#22221f', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                     {getMetricLabel(metric)}
+                    {metric === 'resting_hr' && (
+                      <span style={{ fontSize: 11, color: '#888780', fontWeight: 400 }}>
+                        (niedriger = besser)
+                      </span>
+                    )}
+                    {metric === 'sleep_duration' && (
+                      <span style={{ fontSize: 11, color: '#888780', fontWeight: 400 }}>
+                        (Optimum ~7,5 h)
+                      </span>
+                    )}
                     {edu && (
                       <button
                         type="button"
@@ -91,11 +135,24 @@ export function SimulatorSection({
                       </button>
                     )}
                   </span>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: changed ? '#0f6e56' : '#22221f' }}>
-                    {formatMetricValue(metric, v)}{' '}
-                    <span style={{ color: '#888780', fontWeight: 400 }}>
-                      {formatMetricUnit(metric, getMetricUnit(metric))}
+                  <span style={{ fontSize: 13, fontWeight: 500, color: valueColor, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span>
+                      {formatMetricValue(metric, v)}{' '}
+                      <span style={{ color: '#888780', fontWeight: 400 }}>
+                        {formatMetricUnit(metric, getMetricUnit(metric))}
+                      </span>
                     </span>
+                    {changed && metricDelta !== undefined && metricDelta !== 0 && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 500,
+                          color: metricDelta > 0 ? '#0f6e56' : '#c2410c',
+                        }}
+                      >
+                        ({metricDelta > 0 ? '+' : ''}{metricDelta.toFixed(1)})
+                      </span>
+                    )}
                   </span>
                 </div>
                 {edu && isTipOpen && (
@@ -128,7 +185,7 @@ export function SimulatorSection({
                   />
                   <div
                     data-testid={`marker-${metric}`}
-                    title={hasActual ? `Ist-Wert: ${formatMetricValue(metric, actual)}` : `Kohortenmittelwert: ${formatMetricValue(metric, METRIC_COHORT_MEAN[metric])}`}
+                    title={hasActual ? `Ist-Wert: ${formatMetricValue(metric, actual)}` : `Kohortenmittelwert: ${formatMetricValue(metric, cohortMean)}`}
                     style={{
                       position: 'absolute',
                       top: -3,
@@ -144,10 +201,11 @@ export function SimulatorSection({
                   />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                  <span style={{ fontSize: 11, color: '#a3a29c' }}>{formatMetricValue(metric, min)}</span>
                   <span style={{ fontSize: 11, color: '#a3a29c' }}>
                     {hasActual
                       ? `Ist: ${formatMetricValue(metric, actual)}`
-                      : `Ø Kohorte: ${formatMetricValue(metric, METRIC_COHORT_MEAN[metric])} (kein Ist-Wert)`}
+                      : `Ø Kohorte: ${formatMetricValue(metric, cohortMean)} (kein Ist-Wert)`}
                   </span>
                   <span style={{ fontSize: 11, color: '#a3a29c' }}>{formatMetricValue(metric, max)}</span>
                 </div>
