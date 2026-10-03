@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { useScrollReveal } from './landing/landingUtils.js';
 import { CursorSpotlight } from './landing/CursorSpotlight.js';
 import { LandingHero } from './landing/LandingHero.js';
@@ -16,6 +17,7 @@ import { LandingCtaBanner } from './landing/LandingCtaBanner.js';
  */
 export function Component() {
   useScrollReveal();
+  const { user } = useOutletContext<{ user?: { id: string } | null }>() ?? {};
   const [selectedReasonId, setSelectedReasonId] = useState<string>('insurer');
 
   const scrollTo = (id: string) => {
@@ -31,11 +33,15 @@ export function Component() {
   };
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden' }}>
+    <div style={{ width: '100%', position: 'relative' }}>
+      {/* Subtle Ambient Cursor Light Spotlight */}
       <CursorSpotlight />
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 20px', position: 'relative', zIndex: 1 }}>
-        <LandingHero onExploreClick={() => scrollTo('produkt')} />
+      {/* ── 1. FULLSCREEN CLEAN VIDEO HERO (100vh) & BRAND RIBBON ── */}
+      <LandingHero user={user} onExploreClick={() => scrollTo('produkt')} />
+
+      {/* ── 2. PRODUCT VALUE PROPOSITION & BIOMETRICS HUD ─────────── */}
+      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '32px 20px 0' }}>
         <LandingProduct />
         <LandingFeatures />
         <LandingSimulator />
