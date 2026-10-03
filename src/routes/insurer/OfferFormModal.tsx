@@ -2,20 +2,10 @@ import { Modal, Btn, GlassInput, FieldLabel, Toggle } from '../../components/ui.
 import { VoucherConfigSection } from './VoucherConfigSection.js';
 
 export interface OfferFormState {
-  title: string;
-  description: string;
-  minBand: string;
-  minMonths: string;
-  valueLabel: string;
-  validFrom: string;
-  validUntil: string;
-  membersOnly: boolean;
-  benefitType: 'payout' | 'voucher' | 'certificate';
-  voucherDelivery: 'code_pool' | 'email';
-  voucherCode: string;
-  voucherCodesText: string;
-  partnerUrl: string;
-  availableCodesCount?: number;
+  title: string; description: string; minBand: string; minMonths: string; valueLabel: string;
+  validFrom: string; validUntil: string; membersOnly: boolean;
+  benefitType: 'payout' | 'voucher' | 'certificate'; voucherDelivery: 'code_pool' | 'email';
+  voucherCode: string; voucherCodesText: string; partnerUrl: string; availableCodesCount?: number;
 }
 
 interface OfferFormModalProps {
@@ -30,16 +20,10 @@ interface OfferFormModalProps {
 }
 
 export function OfferFormModal({
-  isOpen,
-  onClose,
-  editingId,
-  form,
-  setForm,
-  onSubmit,
-  error,
-  isPending,
+  isOpen, onClose, editingId, form, setForm, onSubmit, error, isPending,
 }: OfferFormModalProps) {
   if (!isOpen) return null;
+  const isPayout = form.benefitType === 'payout';
 
   return (
     <Modal onClose={onClose}>
@@ -65,15 +49,15 @@ export function OfferFormModal({
               id="offer-benefit-type"
               data-testid="offer-benefit-type-select"
               value={form.benefitType}
-              onChange={(e) => setForm((f) => ({ ...f, benefitType: e.target.value as 'payout' | 'voucher' | 'certificate' }))}
-              style={{
-                width: '100%', padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(0,0,0,0.12)',
-                background: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: 'inherit', color: '#22221f',
+              onChange={(e) => {
+                const val = e.target.value as 'payout' | 'voucher' | 'certificate';
+                setForm((f) => ({ ...f, benefitType: val, membersOnly: val === 'payout' ? true : f.membersOnly }));
               }}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(0,0,0,0.12)', background: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: 'inherit', color: '#22221f' }}
             >
-              <option value="payout">Geldprämie / Auszahlung (Girokonto / Beitragsverrechnung)</option>
+              <option value="payout">Kassen-Prämie (Direkte Einreichung im Portal – nur für Mitglieder)</option>
               <option value="voucher">Gutscheincode / Rabatt (Pool-Sofortanzeige oder E-Mail)</option>
-              <option value="certificate">Kassenfähiger Nachweis (§ 65a SGB V)</option>
+              <option value="certificate">Kassen-Nachweis (§ 65a SGB V – Selbsteinreichung per PDF)</option>
             </select>
           </div>
 
@@ -122,12 +106,16 @@ export function OfferFormModal({
             <div>
               <FieldLabel htmlFor="offer-members-only">Nur für Mitglieder</FieldLabel>
               <div style={{ fontSize: 12, color: '#888780' }}>
-                {form.membersOnly
+                {isPayout
+                  ? 'Geldprämien erfolgen direkt über das Kassenkonto und sind daher ausschließlich für Mitglieder verfügbar.'
+                  : form.membersOnly
                   ? 'Nur verifizierte Mitglieder Ihrer Kasse können diesen Vorteil beanspruchen.'
-                  : 'Offen für alle Plattform-Nutzer (auch Nicht-Mitglieder erhalten Prämie per Girokonto / Gutschein).'}
+                  : 'Offen für alle Plattform-Nutzer (z. B. Partner-Gutschein oder Kassen-Nachweis).'}
               </div>
             </div>
-            <Toggle id="offer-members-only" aria-label="Nur für Mitglieder" on={form.membersOnly} onChange={() => setForm((f) => ({ ...f, membersOnly: !f.membersOnly }))} />
+            {!isPayout && (
+              <Toggle id="offer-members-only" aria-label="Nur für Mitglieder" on={form.membersOnly} onChange={() => setForm((f) => ({ ...f, membersOnly: !f.membersOnly }))} />
+            )}
           </div>
 
           {error && <p data-testid="offer-error" style={{ color: '#a32d2d', fontSize: 13, margin: 0 }}>{error}</p>}

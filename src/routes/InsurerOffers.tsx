@@ -38,7 +38,7 @@ export function Component() {
         minMonths: form.minMonths.trim() !== '' ? Number(form.minMonths) : null,
         valueLabel: form.valueLabel, validFrom: form.validFrom ? new Date(form.validFrom).toISOString() : null,
         validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : null,
-        membersOnly: form.membersOnly, benefitType: form.benefitType,
+        membersOnly: form.benefitType === 'payout' ? true : form.membersOnly, benefitType: form.benefitType,
         voucherDelivery: form.voucherDelivery, voucherCode: form.voucherCode || null,
         voucherCodesText: form.voucherCodesText || null, partnerUrl: form.partnerUrl || null,
       };
