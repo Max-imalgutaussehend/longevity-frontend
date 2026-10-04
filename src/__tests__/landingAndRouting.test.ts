@@ -1,6 +1,7 @@
+import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { routes } from '../routesConfig.js';
-import { SUPPORTED_BRANDS } from '../components/BrandLogos.js';
+import { SUPPORTED_BRANDS, PolarLogo } from '../components/BrandLogos.js';
 import { calculateSimulatedScore } from '../routes/landing/landingUtils.js';
 
 describe('Router Public & Protected Structure (#9)', () => {
@@ -69,6 +70,8 @@ describe('Landing Page Partner Brand Logos', () => {
     expect(brandIds).toContain('oura');
     expect(brandIds).toContain('strava');
     expect(brandIds).toContain('withings');
+    expect(brandIds).toContain('whoop');
+    expect(brandIds).toContain('polar');
   });
 
   it('provides valid Logo component and metadata for each brand', () => {
@@ -86,6 +89,27 @@ describe('Landing Page Partner Brand Logos', () => {
     expect(appleBrand).toBeDefined();
     expect(appleBrand?.name).toBe('Apple Health');
     expect(appleBrand?.accentColor).toBe('#1d1d1f');
+  });
+
+  it('verifies Polar brand logo uses official emblem paths and standard 24x24 viewBox', () => {
+    const polarBrand = SUPPORTED_BRANDS.find((b) => b.id === 'polar');
+    expect(polarBrand).toBeDefined();
+    expect(polarBrand?.name).toBe('Polar');
+    expect(polarBrand?.accentColor).toBe('#D0142C');
+
+    const rendered = PolarLogo({ size: 24 });
+    expect(rendered.props['aria-label']).toBe('Polar Logo');
+    expect(rendered.props.viewBox).toBe('0 0 24 24');
+
+    const rawChildren: unknown[] = Array.isArray(rendered.props.children)
+      ? rendered.props.children
+      : [rendered.props.children];
+    const pathDs = rawChildren
+      .filter((c: unknown): c is React.ReactElement<{ d?: string }> => Boolean(c && typeof c === 'object' && 'props' in c))
+      .map((c: React.ReactElement<{ d?: string }>) => c.props.d ?? '')
+      .join(' ');
+    expect(pathDs).toContain('M2.123');
+    expect(pathDs).not.toContain('zm1 14.5h-2v-2h2v2zm0-4h-2V7h2v5.5z');
   });
 });
 
